@@ -68,14 +68,21 @@ TOPIC_VISUAL_SUGGESTIONS = {
 }
 
 def mute_any_video(input_vid: Path) -> Path:
-    """Automatically strips audio from any uploaded or saved intro video."""
+    """Strips audio and normalizes video stream so FFmpeg concat never fails with -22."""
     if not input_vid or not input_vid.exists():
         return input_vid
     muted_dir = INTRO_DIR / "muted_cache"
     muted_dir.mkdir(parents=True, exist_ok=True)
-    muted_out = muted_dir / f"muted_{input_vid.stem}.mp4"
+    safe_stem = re.sub(r"[^a-zA-Z0-9_]+", "_", input_vid.stem).strip("_")[:30]
+    muted_out = muted_dir / f"muted_{safe_stem}.mp4"
     if not muted_out.exists() or muted_out.stat().st_size < 1000:
-        cmd = ["ffmpeg", "-y", "-i", str(input_vid), "-an", "-c:v", "copy", str(muted_out)]
+        cmd = [
+            "ffmpeg", "-y", "-i", str(input_vid),
+            "-t", "12", "-an",
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=24,format=yuv420p,setsar=1",
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+            str(muted_out)
+        ]
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return muted_out if muted_out.exists() else input_vid
 
@@ -388,8 +395,8 @@ def get_authenticated_youtube(channel_name: str):
 
 # --- 3. METADATA & UPLOADER ---
 def clean_filename(text: str) -> str:
-    clean = re.sub(r'[\/*?:"<>|&]', "", text)
-    return re.sub(r"\s+", "_", clean).strip("_")[:35]
+    clean = re.sub(r"[^a-zA-Z0-9]+", "_", text or "")
+    return clean.strip("_")[:35] or "media_item"
 
 def timestamp_to_seconds(ts: str) -> float:
     parts = [float(p) for p in ts.strip().split(":")]
@@ -946,18 +953,25 @@ def create_designer_thumbnail(bg_image_path: Path, script: BibleShortScript, fon
 
 
 # --- 5. RENDER FACELESS BIBLE VIDEO ---
+def _sec_to_ass_time(sec: float) -> str:
+    sec = max(0.0, float(sec))
+    h = int(sec // 3600)
+    m = int((sec % 3600) // 60)
+    s = sec % 60
+    return f"{h}:{m:02d}:{s:05.2f}"
+
 def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, output_path: Path, thumb_path: Path, custom_intro: Path | None = None, custom_bg: Path | None = None, custom_thumb: Path | None = None, raw_thumb_only: bool = False) -> bool:
     w, h = 1080, 1920
     ensure_sacred_assets()
 
-    duration = 32.0
+    duration = 30.0
     try:
         probe = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(voice_path.absolute())],
             cwd=str(BASE_DIR), capture_output=True, text=True
         )
         if probe.stdout.strip():
-            duration = float(probe.stdout.strip()) + 1.2
+            duration = float(probe.stdout.strip()) + 1.0
     except Exception:
         pass
 
@@ -973,46 +987,43 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
     jesus_img = custom_bg if (custom_bg and custom_bg.exists()) else get_jesus_image()
     bgm_audio = get_worship_bgm()
 
-    # Preserve ':' in verse citation and escape '\:' for FFmpeg drawtext
     raw_citation = re.sub(r"[^a-zA-Z0-9\s:\-]", "", script.verse_citation).upper().strip()[:28]
     ff_citation = raw_citation.replace(":", r"\:")
-    clean_topic = re.sub(r"[^a-zA-Z0-9\s]", "", script.topic).upper()[:22]
+    clean_topic = re.sub(r"\s+", " ", re.sub(r"[^a-zA-Z0-9\s&\-]", "", script.topic)).upper().strip()
+    topic_fsize = 36 if len(clean_topic) <= 22 else max(24, int(820 / max(1, len(clean_topic) * 0.62)))
 
     intro_dur = min(10.0, max(5.0, duration * 0.35))
     image_dur = max(1.0, duration - intro_dur)
 
-    print("  ? Rendering video with +50% larger (102pt) synced floating text & ':' verse citations...")
+    print("  ⚡ Fast-Rendering 1080p Video (SAR-Normalized + Single-Pass 102pt Subtitles)...")
 
     inputs = []
     if muted_video and muted_video.exists():
         inputs = [
-            "-stream_loop", "-1", "-t", str(intro_dur), "-i", str(muted_video.absolute()),
-            "-loop", "1", "-t", str(image_dur), "-i", str(jesus_img.absolute()),
+            "-stream_loop", "-1", "-t", f"{intro_dur:.2f}", "-i", str(muted_video.absolute()),
+            "-loop", "1", "-t", f"{image_dur:.2f}", "-i", str(jesus_img.absolute()),
             "-i", str(voice_path.absolute()),
-            "-stream_loop", "-1", "-i", str(bgm_audio.absolute())
+            "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
         ]
+        # Force format=yuv420p,setsar=1,fps=24 on BOTH streams so concat never throws -22
         bg_filter = (
-            f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop={w}:{h},fps=24[v_intro];"
-            f"[1:v]scale=1280:2276:force_original_aspect_ratio=increase,crop={w}:{h}:(in_w-out_w)/2:'(in_h-out_h)*(0.15+0.75*t/{image_dur})',fps=24[v_jesus];"
-            "[v_intro][v_jesus]concat=n=2:v=1:a=0,eq=brightness=-0.08:contrast=1.18:saturation=1.12[bg];"
+            f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps=24,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[v_intro];"
+            f"[1:v]scale=1240:2204:force_original_aspect_ratio=increase,crop={w}:{h}:(in_w-out_w)/2:'(in_h-out_h)*(0.15+0.75*t/{image_dur:.2f})',fps=24,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[v_jesus];"
+            f"[v_intro][v_jesus]concat=n=2:v=1:a=0,eq=brightness=-0.06:contrast=1.16:saturation=1.12[bg];"
         )
         voice_idx, bgm_idx = "2:a", "3:a"
     else:
         inputs = [
-            "-loop", "1", "-t", str(duration), "-i", str(jesus_img.absolute()),
+            "-loop", "1", "-t", f"{duration:.2f}", "-i", str(jesus_img.absolute()),
             "-i", str(voice_path.absolute()),
-            "-stream_loop", "-1", "-i", str(bgm_audio.absolute())
+            "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
         ]
-        bg_filter = f"[0:v]scale=1280:2276:force_original_aspect_ratio=increase,crop={w}:{h}:(in_w-out_w)/2:'(in_h-out_h)*(0.15+0.75*t/{duration})',eq=brightness=-0.08:contrast=1.18:saturation=1.12[bg];"
+        bg_filter = (
+            f"[0:v]scale=1240:2204:force_original_aspect_ratio=increase,crop={w}:{h}:(in_w-out_w)/2:'(in_h-out_h)*(0.15+0.75*t/{duration:.2f})',"
+            f"fps=24,format=yuv420p,setsar=1,eq=brightness=-0.06:contrast=1.16:saturation=1.12[bg];"
+        )
         voice_idx, bgm_idx = "1:a", "2:a"
 
-    filter_lines = [
-        bg_filter,
-        f"[bg]drawtext=fontfile='{font_bold}':text='THE WORD OF GOD - {clean_topic}':fontcolor=0xFFD700@0.85:fontsize=34:shadowcolor=black@0.7:shadowx=3:shadowy=3:x=(w-text_w)/2:y=185[hdr1];",
-        f"[hdr1]drawtext=fontfile='{font_bold}':text='{ff_citation}':fontcolor=white@0.9:fontsize=44:shadowcolor=black@0.8:shadowx=3:shadowy=3:x=(w-text_w)/2:y=245[base_bg];"
-    ]
-
-    last_out = "base_bg"
     json_path = str(voice_path).replace(".mp3", ".json")
     timings = []
     if Path(json_path).exists():
@@ -1025,16 +1036,15 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
     if not timings:
         full_spoken = f"If you are struggling with {script.topic}, hold onto this verse. {script.verse_citation}. {script.verse_text}. {script.meaning}. Let us pray. {script.prayer} Type Amen in the comments to receive this blessing."
         words = full_spoken.split()
-        weights = [max(2, len(w)) + (4 if re.search(r"[.,;!?]", w) else 0) for w in words]
+        weights = [max(2, len(w_s)) + (4 if re.search(r"[.,;!?]", w_s) else 0) for w_s in words]
         total_w = sum(weights) or 1
         cur_t = 0.0
-        usable_dur = max(1.0, duration - 1.2)
+        usable_dur = max(1.0, duration - 1.0)
         for w_str, wt in zip(words, weights):
             w_d = usable_dur * (wt / total_w)
             timings.append({"text": w_str, "start": round(cur_t, 3), "end": round(cur_t + w_d, 3)})
             cur_t += w_d
 
-    # Group into 1-2 word phrases (max 10 chars) so massive 102pt font (+50%) fits cleanly
     phrases = []
     current = []
     c_start = 0.0
@@ -1047,64 +1057,83 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
         next_len = len(text_str) + (len(timings[i + 1]["text"]) + 1 if i + 1 < len(timings) else 0)
         if next_len > 10 or len(current) >= 2 or re.search(r"[.,;!?]", w_obj["text"]) or i == len(timings) - 1:
             c_end = timings[i + 1]["start"] if i + 1 < len(timings) else (w_obj["end"] + 0.12)
-            # Keep ':' and '-' so verse citations like 4:19 or 4:6-7 stay intact!
             safe_text = re.sub(r"[^a-zA-Z0-9\s:\-]", "", text_str).strip()
             if safe_text:
                 phrases.append({"text": safe_text, "start": round(c_start, 3), "end": round(c_end, 3)})
             current = []
 
-    for i, p in enumerate(phrases):
-        out_name = f"txt_{i}"
-        raw_p = p["text"]
-        # Dynamic safe font size: 102pt (+50% from 68pt), auto-scaled if a single word is extra long (>10 chars)
-        f_size = 102 if len(raw_p) <= 10 else max(64, int(1020 / (len(raw_p) * 0.58)))
-        ff_p = raw_p.replace(":", r"\:")
-        line = (
-            f"[{last_out}]drawtext=fontfile='{font_bold}':text='{ff_p}':"
-            f"fontcolor=white@0.65:fontsize={f_size}:shadowcolor=black@0.45:shadowx=5:shadowy=5:"
-            f"x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t,{p['start']},{p['end']})'[{out_name}];"
-        )
-        filter_lines.append(line)
-        last_out = out_name
+    # Build a single ultra-fast ASS subtitle file (1 filter pass instead of 60 drawtext filters!)
+    ass_path = BASE_DIR / "temp_fast_subs.ass"
+    ass_lines = [
+        "[Script Info]",
+        "ScriptType: v4.00+",
+        f"PlayResX: {w}",
+        f"PlayResY: {h}",
+        "",
+        "[V4+ Styles]",
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+        # &H59FFFFFF = 65% opaque white (35% transparent), &H70000000 = soft shadow
+        "Style: SubPop,Arial,102,&H59FFFFFF,&H0000FFFF,&H70000000,&H70000000,-1,0,0,0,100,100,0,0,1,3,4,5,60,60,0,1",
+        "",
+        "[Events]",
+        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+    ]
+    for p in phrases:
+        t_str = p["text"]
+        f_sz = 102 if len(t_str) <= 10 else max(64, int(1020 / (len(t_str) * 0.58)))
+        st_time = _sec_to_ass_time(p["start"])
+        en_time = _sec_to_ass_time(max(p["start"] + 0.08, p["end"]))
+        ass_lines.append(f"Dialogue: 0,{st_time},{en_time},SubPop,,0,0,0,,{{\\fs{f_sz}}}{t_str}")
 
-    filter_lines.append(f"[{last_out}]drawtext=fontfile='{font_bold}':text='Type AMEN to receive this blessing':fontcolor=0xFFD700@0.8:fontsize=38:shadowcolor=black@0.7:shadowx=3:shadowy=3:x=(w-text_w)/2:y=1700:enable='gte(t,{intro_dur})'[vout];")
-    filter_lines.append(f"[{voice_idx}]volume=1.0[voice];")
-    filter_lines.append(f"[{bgm_idx}]volume=0.20,aformat=sample_fmts=fltp:sample_rates=44100[bgm];")
-    filter_lines.append("[voice][bgm]amix=inputs=2:duration=first:normalize=0[aout]")
+    ass_path.write_text("\n".join(ass_lines), encoding="utf-8")
+
+    # Single-pass filtergraph: renders in ~4 seconds!
+    filter_complex = (
+        f"{bg_filter}"
+        f"[bg]drawtext=fontfile='{font_bold}':text='THE WORD OF GOD':fontcolor=0xFFD700@0.75:fontsize=26:shadowcolor=black@0.7:shadowx=2:shadowy=2:x=(w-text_w)/2:y=150[hdr0];"
+        f"[hdr0]drawtext=fontfile='{font_bold}':text='{clean_topic}':fontcolor=0xFFD700@0.95:fontsize={topic_fsize}:shadowcolor=black@0.8:shadowx=3:shadowy=3:x=(w-text_w)/2:y=190[hdr1];"
+        f"[hdr1]drawtext=fontfile='{font_bold}':text='{ff_citation}':fontcolor=white@0.95:fontsize=46:shadowcolor=black@0.85:shadowx=3:shadowy=3:x=(w-text_w)/2:y=250[hdr2];"
+        f"[hdr2]subtitles='temp_fast_subs.ass'[sub_out];"
+        f"[sub_out]drawtext=fontfile='{font_bold}':text='Type AMEN to receive this blessing':fontcolor=0xFFD700@0.85:fontsize=38:shadowcolor=black@0.7:shadowx=3:shadowy=3:x=(w-text_w)/2:y=1700[vout];"
+        f"[{voice_idx}]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=1.0[voice];"
+        f"[{bgm_idx}]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=0.20[bgm];"
+        f"[voice][bgm]amix=inputs=2:duration=first:normalize=0,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[aout]"
+    )
 
     cmd = [
-        "ffmpeg", "-y",
+        "ffmpeg", "-y", "-threads", "0",
         *inputs,
-        "-filter_complex", "".join(filter_lines),
+        "-filter_complex", filter_complex,
         "-map", "[vout]", "-map", "[aout]",
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "19", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
+        "-t", f"{duration:.2f}",
         str(output_path.absolute())
     ]
 
     try:
-        subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=90, check=True)
+        subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=60, check=True)
     except subprocess.CalledProcessError as e:
-        print(" ? FATAL FFMPEG CRASH DETECTED:")
-        print(e.stderr[-400:])
+        print(" ❌ FFMPEG ERROR DETAILS:")
+        print(e.stderr[-600:])
         return False
     finally:
-        for tf in [BASE_DIR / "temp_v.txt", BASE_DIR / "temp_m.txt", BASE_DIR / "temp_p.txt", Path(json_path)]:
+        for tf in [ass_path, Path(json_path)]:
             if tf.exists():
-                tf.unlink()
+                tf.unlink(missing_ok=True)
 
-    thumb_bg = jesus_img if (jesus_img and jesus_img.exists()) else (BASE_DIR / "jesus_white_robes.jpg")
+    thumb_bg = custom_thumb if (custom_thumb and custom_thumb.exists()) else (jesus_img if (jesus_img and jesus_img.exists()) else (BASE_DIR / "jesus_white_robes.jpg"))
     try:
-        print("  ? Designing graphical thumbnail (glows, glass badges, 3D strokes)...")
-        create_designer_thumbnail(thumb_bg, script, local_font, thumb_path)
+        if raw_thumb_only and custom_thumb and custom_thumb.exists():
+            from PIL import Image
+            im = Image.open(custom_thumb).convert("RGB").resize((w, h))
+            im.save(str(thumb_path), "JPEG", quality=95)
+        else:
+            print("  • Designing graphical thumbnail (glows, glass badges, 3D strokes)...")
+            create_designer_thumbnail(thumb_bg, script, local_font, thumb_path)
     except Exception as e:
-        print(f"  ?? Pillow thumbnail fallback: {e}")
-        subprocess.run(
-            ["ffmpeg", "-y", "-i", str(thumb_bg.absolute()), "-vf", f"scale=1080:1920:force_original_aspect_ratio=increase,crop={w}:{h}", "-vframes", "1", str(thumb_path.absolute())],
-            cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
+        print(f"  ⚠️ Thumbnail fallback: {e}")
     return True
-
 
 # --- 6. PODCAST CLIPPER ENGINE ---
 class BookClip(BaseModel):

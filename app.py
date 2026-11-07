@@ -36,7 +36,7 @@ st.markdown('<div class="sub-header">Connected directly to main.py • 102pt Syn
 channels = backend.load_channels()
 channel_names = list(channels.keys())
 
-col_ch1, col_ch2, col_ch3, col_ch4 = st.columns([2, 1.5, 1, 1.2])
+col_ch1, col_ch2, col_ch3, col_ch4, col_ch5 = st.columns([1.8, 1.2, 1, 1.1, 1.1])
 with col_ch1:
     if channel_names:
         active_channel = st.selectbox("📺 Default Target YouTube Channel:", channel_names)
@@ -66,6 +66,15 @@ with col_ch4:
                 st.success(msg)
             else:
                 st.warning(msg)
+
+with col_ch5:
+    st.write("")
+    if st.button("🛑 Cancel Task", width="stretch"):
+        import subprocess
+        subprocess.run(["taskkill", "/F", "/IM", "ffmpeg.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["taskkill", "/F", "/IM", "yt-dlp.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        st.warning("🛑 Cancelled active rendering/download task!")
+        st.stop()
 
 st.divider()
 
