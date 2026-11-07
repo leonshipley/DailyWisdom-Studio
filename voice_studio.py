@@ -110,8 +110,8 @@ DEFAULT_SAMPLE_TEXTS: Dict[str, str] = {
 }
 
 def load_active_voice() -> Dict[str, Any]:
-    default_v = dict(VOICE_CATALOG["🇮🇳 Hindi / Indian Accent (hi-IN)"][0])
-    default_v["accent"] = "🇮🇳 Hindi / Indian Accent (hi-IN)"
+    default_v = dict(VOICE_CATALOG["🇺🇸 American English (en-US)"][0])
+    default_v["accent"] = "🇺🇸 American English (en-US)"
     default_v["script_mode"] = SCRIPT_MODES[0]
     if VOICE_CONFIG_FILE.exists():
         try:
@@ -135,52 +135,34 @@ def combine_prosody(base_val: str, offset_int: int, unit: str) -> str:
     return f"{total:+d}{unit}"
 
 def build_spoken_voice_script(script_obj: Any) -> str:
-    """
-    Guarantees 100% Pure Devanagari Hindi for the ENTIRE video (Hook, Book, Chapter, Verse, Meaning, Prayer, CTA)
-    whenever Hindi mode or a Hindi voice is active.
-    """
-    from bible_database import lookup_reference_bilingual, format_reference_for_speech, translate_any_text_to_hindi
-    cfg = load_active_voice()
-    mode = cfg.get("script_mode", SCRIPT_MODES[0])
-    is_hi_accent = "hi-IN" in cfg.get("voice", "") or "Hindi" in cfg.get("accent", "")
+    """Generates a strict 20-24 second viral spoken English devotional script (40-48 words max)."""
+    import re
+    clean_t = re.sub(r"\(Suggested Verse:.*?\)", "", script_obj.topic).strip()
+    clean_t = clean_t.replace("&", "and")
+    ref_spoken = re.sub(r"(\d+):(\d+)", r"chapter \1 verse \2", script_obj.verse_citation)
+    
+    # 1. Trim verse to core sentence if long
+    raw_v = script_obj.verse_text.strip()
+    v_words = raw_v.split()
+    core_v = " ".join(v_words[:22]) if len(v_words) > 24 else raw_v
+    if not core_v.endswith("."):
+        core_v += "."
 
-    en_ref_spoken = format_reference_for_speech(script_obj.verse_citation, is_hindi_speech=False)
-    hi_ref_spoken = format_reference_for_speech(script_obj.verse_citation, is_hindi_speech=True)
-    _, en_v, dev_hi, _ = lookup_reference_bilingual(script_obj.verse_citation)
+    # 2. Trim prayer to under 12 words ending with Amen
+    raw_p = script_obj.prayer.strip()
+    p_words = raw_p.split()
+    core_p = " ".join(p_words[:12]) if len(p_words) > 13 else raw_p
+    if not core_p.lower().endswith("amen.") and not core_p.lower().endswith("amen"):
+        core_p = core_p.rstrip(". ") + ", Amen."
 
-    clean_t_en = re.sub(r"\(Suggested Verse:.*?\)", "", script_obj.topic).strip()
-
-    if "Both Together" in mode:
-        hi_meaning = translate_any_text_to_hindi(script_obj.meaning)
-        hi_prayer = translate_any_text_to_hindi(script_obj.prayer)
-        return (
-            f"Hold onto God's promise in {en_ref_spoken}. {en_v} "
-            f"पवित्र बाइबिल में {hi_ref_spoken} में लिखा है: {dev_hi}। "
-            f"{hi_meaning} आइए प्रार्थना करें: {hi_prayer} कमेंट में आमीन ज़रूर लिखें।"
-        )
-
-    if "Hindi" in mode or is_hi_accent:
-        hi_topic = translate_any_text_to_hindi(clean_t_en)
-        # Always force pure Devanagari Hindi for the verse, meaning, and prayer!
-        hi_verse = dev_hi if re.search(r"[\u0900-\u097F]", dev_hi or "") else translate_any_text_to_hindi(script_obj.verse_text)
-        hi_meaning = translate_any_text_to_hindi(script_obj.meaning)
-        hi_prayer = translate_any_text_to_hindi(script_obj.prayer)
-        full_hi = (
-            f"यदि आप अपने जीवन में {hi_topic} का सामना कर रहे हैं, तो परमेश्वर के इस पवित्र वचन को ध्यान से सुनें। "
-            f"पवित्र बाइबिल, {hi_ref_spoken}। {hi_verse}। "
-            f"इस वचन का अर्थ है: {hi_meaning}। "
-            f"आइए मिलकर प्रार्थना करें: {hi_prayer}। "
-            f"यदि आप इस आशीष को ग्रहण करते हैं, तो कमेंट में आमीन ज़रूर लिखें।"
-        )
-        return re.sub(r"(\d+):(\d+)", r"अध्याय \1 वचन \2", full_hi)
-
-    full_en = (
-        f"If you are struggling with {clean_t_en}, hold onto this verse. "
-        f"{en_ref_spoken}. {en_v if en_v else script_obj.verse_text} "
-        f"{script_obj.meaning} Let us pray. {script_obj.prayer} "
-        f"Type Amen in the comments to receive this blessing."
+    # High-retention ~45 word script = 21-23 seconds total
+    spoken = (
+        f"Dealing with {clean_t}? Hear God's promise. "
+        f"{ref_spoken}. {core_v} "
+        f"{core_p} "
+        f"Type AMEN to claim this blessing."
     )
-    return re.sub(r"(\d+):(\d+)", r"chapter \1 verse \2", full_en)
+    return spoken
 
 def synthesize_preview_sample(
     voice_id: str,

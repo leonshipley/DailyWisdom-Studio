@@ -155,14 +155,38 @@ with st.sidebar:
 
     st.divider()
     st.markdown("### 📌 Pinterest Quick-Grab")
-    pin_in = st.text_input("Paste Pin URL (Video or Image):", placeholder="https://pin.it/...")
+    pin_in = st.text_input("Paste Pin URL (Video or Image):", placeholder="https://pin.it/...", key="sb_pin_input")
     if st.button("📥 Download Pin to Studio", width="stretch") and pin_in.strip():
-        with st.spinner("Downloading Pin..."):
+        with st.spinner("Resolving & Downloading Pin..."):
             saved_p = backend.download_pinterest_media(pin_in.strip(), sync_to_studio=True)
-            if saved_p:
-                st.success(f"Saved: {saved_p.name}")
-                time.sleep(0.5)
+            if saved_p and saved_p.exists() and saved_p.stat().st_size > 1000:
+                is_vid = saved_p.suffix.lower() == ".mp4"
+                st.success(f"✅ PASSED: Saved {'🎬 Video' if is_vid else '🖼️ HD Image'} `{saved_p.name}`!")
+                time.sleep(1.0)
                 st.rerun()
+            else:
+                st.error("❌ FAILED: Could not extract media. Please check URL.")
+
+    st.divider()
+    st.markdown("### 🎥 YouTube Media Grabber")
+    yt_in = st.text_input("Paste YouTube Video URL:", placeholder="https://youtube.com/watch?v=...", key="sb_yt_input")
+    c_y1, c_y2 = st.columns(2)
+    with c_y1:
+        if st.button("🎵 MP3 Audio", width="stretch") and yt_in.strip():
+            with st.spinner("Extracting MP3 (192kbps)..."):
+                out_a = backend.download_youtube_audio_direct(yt_in.strip())
+                if out_a and out_a.exists():
+                    st.success(f"✅ PASSED: `{out_a.name}`")
+                else:
+                    st.error("❌ FAILED: Could not extract audio.")
+    with c_y2:
+        if st.button("📹 1080p MP4", width="stretch") and yt_in.strip():
+            with st.spinner("Downloading 1080p Video..."):
+                out_v = backend.download_youtube_video_direct(yt_in.strip())
+                if out_v and out_v.exists():
+                    st.success(f"✅ PASSED: `{out_v.name}`")
+                else:
+                    st.error("❌ FAILED: Could not download video.")
 
 # --- TOP NAVBAR & KPI CARDS ---
 st.markdown(f"""
@@ -374,7 +398,11 @@ def render_maker_workspace(lang_code: str):
 
     with col_mid:
         with st.container(border=True):
-            st.markdown("#### 🎨 Step 2: Visuals & Thumbnail Picker")
+            st.markdown("#### 🎨 Step 2: Visuals, BGM & Thumbnail")
+            # BGM & Volume Controls
+            bgm_options = ["Default Worship Piano", "Ambient Pad"]
+            sel_bgm_preset = st.selectbox("🎵 Worship BGM:", bgm_options, key=f"{pfx}_bgm_preset")
+            bgm_vol = st.slider("🔊 BGM Music Volume:", min_value=0.05, max_value=0.45, value=0.18, step=0.01, format="%.2f", key=f"{pfx}_bgm_vol")
             palette_style = st.selectbox("Thumbnail Palette:", ["Gold Classic", "Midnight Blue", "Sunrise", "Crimson Glory"], key=f"{pfx}_pal")
             raw_thumb_toggle = st.checkbox("Use uploaded thumbnail raw (No 3D text)", value=False, key=f"{pfx}_raw_th")
 
@@ -460,7 +488,7 @@ def render_maker_workspace(lang_code: str):
             ok = backend.render_faceless_bible_video(
                 script, temp_voice, out_video, out_thumb,
                 custom_intro=c_intro_path, custom_bg=c_bg_path,
-                custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle
+                custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle, palette_name=palette_style, bgm_volume=bgm_vol
             )
             if temp_voice.exists():
                 temp_voice.unlink(missing_ok=True)
@@ -542,11 +570,12 @@ def render_maker_workspace(lang_code: str):
 # ==============================================================================
 # 4 MAIN STUDIO TABS (SEPARATED ENGLISH MAKER & HINDI MAKER)
 # ==============================================================================
-tab_en, tab_hi, tab_lib, tab_pod = st.tabs([
+tab_en, tab_hi, tab_lib, tab_pod, tab_stats = st.tabs([
     "🇬🇧 1. English Channel Shorts Maker",
     "🇮🇳 2. Hindi Channel Shorts Maker (पवित्र बाइबिल)",
-    "📁 3. Sequential Video Library & Publisher",
+    "📂 3. Sequential Video Library & Publisher",
     "🎙️ 4. Podcast Clipper & Virality Spy",
+    "📊 5. Channel Analytics & Performance",
 ])
 
 with tab_en:
@@ -632,3 +661,48 @@ with tab_pod:
                     win_t, _, win_tags = backend.optimize_with_virality_engine(spy_q, f"Prayer for {spy_q}", "", ["Shorts"], channel_names[0])
                     st.success(f"🚀 **Winning Title:** `{win_t}`")
                     st.code(", ".join(win_tags), language="text")
+
+
+with tab_stats:
+    st.markdown("### 📊 YouTube Channel Performance & Growth Graphs")
+    if not channel_names:
+        st.warning("No YouTube channels connected yet.")
+    else:
+        stat_ch = st.selectbox("Select Channel to Audit:", channel_names, key="stats_ch_sel")
+        if st.button("🔄 Refresh Channel Performance Data", key="refresh_stats_btn"):
+            backend._CHANNEL_STATS_CACHE.pop(stat_ch, None)
+
+        with st.spinner(f"Pulling live performance metrics for {stat_ch}..."):
+            top_vids = backend.get_my_top_shorts(stat_ch, max_results=12)
+
+        if not top_vids:
+            st.info(f"No video statistics available yet for [{stat_ch}]. Upload a few Shorts to begin graphing!")
+        else:
+            tot_views = sum(v["views"] for v in top_vids)
+            tot_likes = sum(v["likes"] for v in top_vids)
+            tot_comments = sum(v["comments"] for v in top_vids)
+            avg_views = tot_views // max(1, len(top_vids))
+
+            m1, m2, m3, m4 = st.columns(4)
+            with m1:
+                st.metric("Total Views Analyzed", f"{tot_views:,}")
+            with m2:
+                st.metric("Average Views / Short", f"{avg_views:,}")
+            with m3:
+                st.metric("Total Likes", f"{tot_likes:,}")
+            with m4:
+                st.metric("Total Comments", f"{tot_comments:,}")
+
+            st.write("")
+            st.markdown("#### 📈 Views per Short Comparison")
+            chart_data = {v["title"][:28] + "...": v["views"] for v in top_vids}
+            st.bar_chart(chart_data)
+
+            st.write("")
+            st.markdown("#### 💬 Engagement: Likes vs Comments")
+            import pandas as pd
+            df_eng = pd.DataFrame([
+                {"Short Title": v["title"][:26] + "...", "Likes": v["likes"], "Comments": v["comments"]}
+                for v in top_vids
+            ]).set_index("Short Title")
+            st.line_chart(df_eng)

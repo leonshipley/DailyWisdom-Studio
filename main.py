@@ -33,6 +33,56 @@ CLIPS_DIR = BASE_DIR / "clips"
 CLIPS_DIR.mkdir(exist_ok=True)
 DOWNLOADS_DIR = BASE_DIR / "downloads"
 DOWNLOADS_DIR.mkdir(exist_ok=True)
+
+def get_video_duration(video_path: Path) -> float:
+    """Returns exact float duration in seconds using ffprobe."""
+    try:
+        cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(video_path.absolute())]
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=8)
+        return round(float(res.stdout.strip()), 1)
+    except Exception:
+        return 0.0
+
+def download_youtube_audio_direct(url: str) -> Path | None:
+    """Downloads 192kbps MP3 without interactive prompt."""
+    try:
+        out_tmpl = str(DOWNLOADS_DIR / '%(title)s.%(ext)s')
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': out_tmpl,
+            'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}],
+            'overwrites': True,
+            'quiet': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url.strip(), download=True)
+            fname = ydl.prepare_filename(info)
+            mp3_path = Path(fname).with_suffix(".mp3")
+            return mp3_path if mp3_path.exists() else None
+    except Exception:
+        return None
+
+def download_youtube_video_direct(url: str) -> Path | None:
+    """Downloads 1080p MP4 without interactive prompt."""
+    try:
+        out_tmpl = str(DOWNLOADS_DIR / '%(title)s.%(ext)s')
+        ydl_opts = {
+            'format': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best',
+            'outtmpl': out_tmpl,
+            'merge_output_format': 'mp4',
+            'overwrites': True,
+            'quiet': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url.strip(), download=True)
+            fname = ydl.prepare_filename(info)
+            mp4_path = Path(fname)
+            if not mp4_path.exists():
+                mp4_path = mp4_path.with_suffix(".mp4")
+            return mp4_path if mp4_path.exists() else None
+    except Exception:
+        return None
+
 CHANNELS_DIR = BASE_DIR / "channels"
 CHANNELS_DIR.mkdir(exist_ok=True)
 CHANNELS_CONFIG = BASE_DIR / "channels.json"
@@ -314,6 +364,11 @@ def ensure_sacred_assets():
     if not bgm_file.exists() or bgm_file.stat().st_size < 10000:
         cmd_audio = ["ffmpeg", "-y", "-f", "lavfi", "-i", "sine=frequency=130.81:sample_rate=44100", "-f", "lavfi", "-i", "sine=frequency=164.81:sample_rate=44100", "-filter_complex", "amix=inputs=2:normalize=0,volume=0.25,lowpass=f=450", "-t", "120", str(bgm_file)]
         subprocess.run(cmd_audio, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if not BGM_PODCAST_FILE.exists() or BGM_PODCAST_FILE.stat().st_size < 10000:
+        try:
+            shutil.copy(bgm_file, BGM_PODCAST_FILE)
+        except Exception:
+            pass
 
 # --- 2. MULTI-CHANNEL SYSTEM ---
 def load_channels() -> dict:
@@ -405,18 +460,6 @@ def timestamp_to_seconds(ts: str) -> float:
     elif len(parts) == 2:
         return parts[0] * 60 + parts[1]
     return parts[0]
-
-def get_next_sequence_folder(label: str) -> Path:
-    nums = []
-    for d in CLIPS_DIR.iterdir():
-        if d.is_dir():
-            m = re.match(r"^(\d{3})_", d.name)
-            if m:
-                nums.append(int(m.group(1)))
-    next_n = (max(nums) + 1) if nums else 1
-    folder = CLIPS_DIR / f"{next_n:03d}_{clean_filename(label)}"
-    folder.mkdir(parents=True, exist_ok=True)
-    return folder
 
 def get_next_sequence_folder(label: str) -> Path:
     nums = []
@@ -548,7 +591,7 @@ Respond ONLY in valid JSON with these exact keys:
 
     ai_result = None
     if API_KEY:
-        for m_name in ["gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash"]:
+        for m_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"]:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={API_KEY}"
                 payload = {
@@ -656,8 +699,6 @@ def save_clip_metadata(video_path: Path, title: str, description: str, tags: lis
         json.dump({"title": title, "description": description, "tags": tags, "youtube_id": None}, f, indent=2)
     txt_path = video_path.parent / "youtube_details.txt"
     txt_path.write_text(f"TITLE:\n{title}\n\nDESCRIPTION:\n{description}\n", encoding="utf-8")
-    txt_path = video_path.parent / "youtube_details.txt"
-    txt_path.write_text(f"TITLE:\n{title}\n\nDESCRIPTION:\n{description}\n", encoding="utf-8")
 
 def load_clip_metadata(video_path: Path) -> dict:
     meta_path = video_path.with_suffix(".json")
@@ -748,7 +789,7 @@ def generate_bible_content(topic_query: str) -> BibleShortScript:
 
     from voice_studio import load_active_voice, HINDI_BIBLE_VAULT
     active_v_cfg = load_active_voice()
-    is_hindi_script = ("Hindi" in active_v_cfg.get("script_mode", "") or "hi-IN" in active_v_cfg.get("voice", ""))
+    is_hindi_script = False  # Locked to 100% Pure English Mode
     if is_hindi_script:
         for hk, hval in HINDI_BIBLE_VAULT.items():
             if hk.lower() in topic_query.lower():
@@ -765,7 +806,7 @@ def generate_bible_content(topic_query: str) -> BibleShortScript:
     user_prompt = f"""Seed: {seed}
 Topic: {topic_query}
 CRITICAL: DO NOT use these verses: [{avoid_list}].
-Select a unique, powerful Bible verse specifically about '{topic_query}'. Provide a 2-sentence meaning and a 1-sentence prayer ending in Amen."""
+Select a powerful Bible verse for '{topic_query}'. Keep meaning to EXACTLY 1 sentence (under 16 words) and prayer to EXACTLY 1 sentence (under 14 words) ending with Amen."""
 
     script_data = None
 
@@ -912,7 +953,7 @@ topic, title, verse_citation, verse_text, meaning, prayer, thumbnail_hook, hasht
 IMPORTANT: Keep verse_citation as '{ref_str}' and verse_text as '{v_text_final}'."""
 
     if API_KEY:
-        for m_name in ["gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-3.6-flash"]:
+        for m_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.5-flash-lite"]:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={API_KEY}"
                 payload = {
@@ -961,8 +1002,8 @@ def generate_voiceover(text: str, output_voice_path: Path):
     """Generates audio AND millisecond-synced word timings using the selected Voice Studio profile (Hindi/Indian/UK/US)."""
     from voice_studio import load_active_voice
     active_v = load_active_voice()
-    v_name = active_v.get("voice", "hi-IN-MadhurNeural")
-    v_rate = active_v.get("rate", "-4%")
+    v_name = active_v.get("voice", "en-US-ChristopherNeural")
+    v_rate = active_v.get("rate", "+5%")
     v_pitch = active_v.get("pitch", "+0Hz")
     print(f"   🎙️ Speaking with Voice: {active_v.get('name')} [{v_name} | Rate: {v_rate} | Pitch: {v_pitch}]")
 
@@ -1072,7 +1113,20 @@ def _sec_to_ass_time(sec: float) -> str:
     s = sec % 60
     return f"{h}:{m:02d}:{s:05.2f}"
 
-def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, output_path: Path, thumb_path: Path, custom_intro: Path | None = None, custom_bg: Path | None = None, custom_thumb: Path | None = None, raw_thumb_only: bool = False) -> bool:
+def render_faceless_bible_video(
+    script: BibleShortScript,
+    voice_path: Path,
+    output_path: Path,
+    thumb_path: Path,
+    custom_intro: Path | None = None,
+    custom_bg: Path | None = None,
+    custom_thumb: Path | None = None,
+    raw_thumb_only: bool = False,
+    palette_name: str = "Gold Classic",
+    custom_bgm: Path | None = None,
+    bgm_volume: float = 0.18,
+    **kwargs
+) -> bool:
     w, h = 1080, 1920
     ensure_sacred_assets()
 
@@ -1105,34 +1159,53 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
 
     muted_video = mute_any_video(custom_intro) if (custom_intro and custom_intro.exists()) else prepare_muted_short_main()
     jesus_img = custom_bg if (custom_bg and custom_bg.exists()) else get_jesus_image()
-    bgm_audio = get_worship_bgm()
+    bgm_audio = custom_bgm if (custom_bgm and custom_bgm.exists()) else get_worship_bgm()
 
     raw_citation = re.sub(r"[^a-zA-Z0-9\s:\-]", "", script.verse_citation).upper().strip()[:28]
     ff_citation = raw_citation.replace(":", r"\:")
-    clean_topic = re.sub(r"\s+", " ", re.sub(r"[^a-zA-Z0-9\s&\-]", "", script.topic)).upper().strip()
+    clean_topic = re.sub(r"\s+", " ", re.sub(r"[^a-zA-Z0-9\u0900-\u097F\s&\-]", "", script.topic)).upper().strip() or "PAVITRA BAIBIL"
     topic_fsize = 36 if len(clean_topic) <= 22 else max(24, int(820 / max(1, len(clean_topic) * 0.62)))
 
-    intro_dur = min(10.0, max(5.0, duration * 0.35))
-    image_dur = max(1.0, duration - intro_dur)
+        # SMART ADAPTIVE VIDEO ENGINE:
+    # 1. If video is long enough -> Use the WHOLE video for the full Short!
+    # 2. If video is short -> Play the full video, THEN transition to wallpaper.
+    # 3. If no video -> Use wallpaper.
+    vid_dur = get_video_duration(muted_video) if (muted_video and muted_video.exists()) else 0.0
 
-    print("  ⚡ Fast-Rendering 1080p Video (SAR-Normalized + Single-Pass 102pt Subtitles)...")
+    print(f"  ⚡ Pacing: Total Voiceover = {duration:.1f}s | Intro Video Available = {vid_dur:.1f}s")
 
     inputs = []
-    if muted_video and muted_video.exists():
+    if vid_dur >= (duration - 0.5):
+        # CASE 1: Video is long enough for the WHOLE Short -> NO wallpaper needed!
+        print("  🎬 Using FULL custom video for entire duration!")
         inputs = [
-            "-stream_loop", "-1", "-t", f"{intro_dur:.2f}", "-i", str(muted_video.absolute()),
-            "-loop", "1", "-t", f"{image_dur:.2f}", "-i", str(jesus_img.absolute()),
+            "-t", f"{duration:.2f}", "-i", str(muted_video.absolute()),
             "-i", str(voice_path.absolute()),
             "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
         ]
-        # Force format=yuv420p,setsar=1,fps=24 on BOTH streams so concat never throws -22
+        bg_filter = (
+            f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps=24,format=yuv420p,setsar=1,setpts=PTS-STARTPTS,"
+            f"eq=brightness=-0.06:contrast=1.16:saturation=1.12[bg];"
+        )
+        voice_idx, bgm_idx = "1:a", "2:a"
+    elif vid_dur > 1.5:
+        # CASE 2: Video is shorter than audio -> Play full video, then wallpaper for the rest
+        img_dur = max(1.0, duration - vid_dur)
+        print(f"  🎬 Playing full video ({vid_dur:.1f}s), then wallpaper for remaining ({img_dur:.1f}s)...")
+        inputs = [
+            "-t", f"{vid_dur:.2f}", "-i", str(muted_video.absolute()),
+            "-loop", "1", "-t", f"{img_dur:.2f}", "-i", str(jesus_img.absolute()),
+            "-i", str(voice_path.absolute()),
+            "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
+        ]
         bg_filter = (
             f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps=24,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[v_intro];"
-            f"[1:v]scale=1240:2204:force_original_aspect_ratio=increase,crop={w}:{h}:(in_w-out_w)/2:'(in_h-out_h)*(0.15+0.75*t/{image_dur:.2f})',fps=24,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[v_jesus];"
+            f"[1:v]scale=1240:2204:force_original_aspect_ratio=increase,crop={w}:{h}:(in_w-out_w)/2:'(in_h-out_h)*(0.15+0.75*t/{img_dur:.2f})',fps=24,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[v_jesus];"
             f"[v_intro][v_jesus]concat=n=2:v=1:a=0,eq=brightness=-0.06:contrast=1.16:saturation=1.12[bg];"
         )
         voice_idx, bgm_idx = "2:a", "3:a"
     else:
+        # CASE 3: No video -> Full wallpaper
         inputs = [
             "-loop", "1", "-t", f"{duration:.2f}", "-i", str(jesus_img.absolute()),
             "-i", str(voice_path.absolute()),
@@ -1154,7 +1227,8 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
             timings = []
 
     if not timings:
-        full_spoken = f"If you are struggling with {script.topic}, hold onto this verse. {script.verse_citation}. {script.verse_text}. {script.meaning}. Let us pray. {script.prayer} Type Amen in the comments to receive this blessing."
+        from voice_studio import build_spoken_voice_script
+        full_spoken = build_spoken_voice_script(script)
         words = full_spoken.split()
         weights = [max(2, len(w_s)) + (4 if re.search(r"[.,;!?]", w_s) else 0) for w_s in words]
         total_w = sum(weights) or 1
@@ -1177,7 +1251,7 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
         next_len = len(text_str) + (len(timings[i + 1]["text"]) + 1 if i + 1 < len(timings) else 0)
         if next_len > 10 or len(current) >= 2 or re.search(r"[.,;!?]", w_obj["text"]) or i == len(timings) - 1:
             c_end = timings[i + 1]["start"] if i + 1 < len(timings) else (w_obj["end"] + 0.12)
-            safe_text = re.sub(r"[^a-zA-Z0-9\u0900-\u097F\s:\-]", "", text_str).strip()
+            safe_text = re.sub(r"[^a-zA-Z0-9\u0900-\u097F\s:\-']", "", text_str).strip()
             if safe_text:
                 phrases.append({"text": safe_text, "start": round(c_start, 3), "end": round(c_end, 3)})
             current = []
@@ -1216,7 +1290,7 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
         f"[hdr2]subtitles='temp_fast_subs.ass'[sub_out];"
         f"[sub_out]drawtext=fontfile='{font_bold}':text='Type AMEN to receive this blessing':fontcolor=0xFFD700@0.85:fontsize=38:shadowcolor=black@0.7:shadowx=3:shadowy=3:x=(w-text_w)/2:y=1700[vout];"
         f"[{voice_idx}]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=1.0[voice];"
-        f"[{bgm_idx}]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=0.20[bgm];"
+        f"[{bgm_idx}]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume={bgm_volume:.2f}[bgm];"
         f"[voice][bgm]amix=inputs=2:duration=first:normalize=0,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[aout]"
     )
 
@@ -1250,7 +1324,7 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
             im.save(str(thumb_path), "JPEG", quality=95)
         else:
             print("  • Designing graphical thumbnail (glows, glass badges, 3D strokes)...")
-            create_designer_thumbnail(thumb_bg, script, local_font, thumb_path)
+            create_designer_thumbnail(thumb_bg, script, local_font, thumb_path, palette_name=palette_name)
     except Exception as e:
         print(f"  ⚠️ Thumbnail fallback: {e}")
     return True

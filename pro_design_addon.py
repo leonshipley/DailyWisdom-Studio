@@ -113,7 +113,7 @@ def render_pro_thumbnails(bg_image_path: Path, script: Any, thumb_path: Path, pa
         draw.rounded_rectangle([ins + 10, ins + 10, w - ins - 10, h - ins - 10], radius=26 if is_vertical else 16, outline=(acc_c[0], acc_c[1], acc_c[2], 120), width=2)
 
         # Top Badge Pill (Measured from text bbox)
-        badge_str = clean_ascii(getattr(script, "topic", "DAILY DEVOTIONAL")).upper()
+        badge_str = clean_ascii(getattr(script, "topic", "DAILY DEVOTIONAL")).upper() or "PAVITRA BAIBIL VACHAN"
         f_badge_sz = (40 if len(badge_str) <= 22 else max(26, int(760 / max(1, len(badge_str) * 0.62)))) if is_vertical else 28
         f_badge = get_font("bold", f_badge_sz)
         bb = draw.textbbox((0, 0), badge_str, font=f_badge)

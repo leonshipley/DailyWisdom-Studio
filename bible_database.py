@@ -531,7 +531,7 @@ Respond ONLY in valid JSON with exact keys:
 - "thumbnail_hook": 3-4 words ALL CAPS bold hook
 - "title": Under 55 chars catchy YouTube Short title ending with #shorts"""
 
-        for m_name in ["gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-3.6-flash"]:
+        for m_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.5-flash-lite"]:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={key_to_use}"
                 payload = {
