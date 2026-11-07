@@ -1,0 +1,11 @@
+streamlit
+yt-dlp
+youtube-transcript-api
+edge-tts
+google-genai
+pydantic
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+python-dotenv
+Pillow

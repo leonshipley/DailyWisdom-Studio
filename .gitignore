@@ -1,0 +1,15 @@
+# Secrets & YouTube OAuth Tokens (NEVER push to public GitHub)
+.env
+client_secret*.json
+youtube_token.pickle
+channels/*.pickle
+
+# Generated Media & Cache
+__pycache__/
+clips/
+downloads/
+old files/
+temp_*
+*.mp4
+*.mp3
+*.srt
