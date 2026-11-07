@@ -1413,20 +1413,97 @@ def _next_pin_seq(folder: Path) -> int:
     return (max(nums) + 1) if nums else 1
 
 def download_pinterest_media(url: str, sync_to_studio: bool = True) -> Path | None:
-    """Downloads any Pinterest Video or High-Res Image into sorted Pinterest/Videos or Pinterest/Images folders."""
+    """Reliably downloads any Pinterest Video (.mp4/.m3u8) or HD Image from pin.it / in.pinterest.com / pinterest.com."""
     url = url.strip()
     if not url:
         return None
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
     }
 
-    print(f"\n📌 [Pinterest] Inspecting Pin link: {url}...")
+    print(f"\n📌 [Pinterest] Resolving link: {url}...")
 
-    # 1. Try Video Download first via yt-dlp
+    # 1. Resolve short links (pin.it) & regional domains (in.pinterest.com) to canonical Pin URL
+    final_url = url
+    html = ""
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            final_url = resp.geturl()
+            html = resp.read().decode("utf-8", errors="ignore")
+    except Exception as e:
+        print(f"⚠️ Initial fetch note: {e}")
+
+    pin_id_match = re.search(r"/pin/(?:[^/]+--)?(\d+)", final_url) or re.search(r"/pin/(?:[^/]+--)?(\d+)", url)
+    if pin_id_match:
+        pin_id = pin_id_match.group(1)
+        canonical_url = f"https://www.pinterest.com/pin/{pin_id}/"
+        if canonical_url != final_url or not html:
+            try:
+                req2 = urllib.request.Request(canonical_url, headers=headers)
+                with urllib.request.urlopen(req2, timeout=12) as resp2:
+                    html = resp2.read().decode("utf-8", errors="ignore")
+                final_url = canonical_url
+            except Exception:
+                pass
+    else:
+        pin_id = str(int(time.time()))
+
+    # Unescape Pinterest's JSON slashes (\u002F and \/) so all hidden video & image URLs are exposed
+    html_clean = html.replace("\\u002F", "/").replace("\\/", "/").replace("&amp;", "&")
+
+    title_m = re.search(r"<title>([^<]+)</title>", html_clean)
+    raw_title = title_m.group(1).replace("Pinterest", "").replace("|", "").strip() if title_m else f"Pin_{pin_id}"
+    pin_title = clean_filename(raw_title) or f"Pin_{pin_id}"
+
+    # 2. Check for Direct Pinterest Video Streams (.mp4 or .m3u8) inside the Pin's JSON data
+    mp4_urls = re.findall(r"https://v\d*\.pinimg\.com/videos/[^\"'\s\\<>]+\.mp4", html_clean)
+    m3u8_urls = re.findall(r"https://v\d*\.pinimg\.com/videos/[^\"'\s\\<>]+\.m3u8", html_clean)
+
+    if mp4_urls or m3u8_urls:
+        vid_seq = _next_pin_seq(PIN_VID_DIR)
+        final_vid = PIN_VID_DIR / f"{vid_seq:03d}_{pin_title}.mp4"
+
+        # Prefer 720p / expmp4 direct MP4 if available
+        if mp4_urls:
+            best_mp4 = mp4_urls[0]
+            for u in mp4_urls:
+                if "720p" in u or "expmp4" in u:
+                    best_mp4 = u
+                    break
+            print(f"🎬 Found Pinterest HD MP4 Video Stream! Downloading...")
+            try:
+                v_req = urllib.request.Request(best_mp4, headers=headers)
+                with urllib.request.urlopen(v_req, timeout=20) as v_resp:
+                    final_vid.write_bytes(v_resp.read())
+            except Exception as e:
+                print(f"⚠️ Direct MP4 download note: {e}")
+
+        # If direct MP4 wasn't saved, convert HLS .m3u8 stream via FFmpeg
+        if (not final_vid.exists() or final_vid.stat().st_size < 5000) and m3u8_urls:
+            print("🎬 Downloading Pinterest HLS Video Stream via FFmpeg...")
+            cmd_hls = [
+                "ffmpeg", "-y", "-i", m3u8_urls[0],
+                "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+                "-an", str(final_vid)
+            ]
+            subprocess.run(cmd_hls, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        if final_vid.exists() and final_vid.stat().st_size > 5000:
+            print(f"✅ [Pinterest Video] Saved to: Pinterest/Videos/{final_vid.name}")
+            if sync_to_studio:
+                studio_copy = INTRO_DIR / final_vid.name
+                shutil.copy(final_vid, studio_copy)
+                mute_any_video(studio_copy)
+                print(f"🔇 Auto-muted & added to Studio Intro Videos: {studio_copy.name}")
+            return final_vid
+
+    # 3. Try yt-dlp on the canonical URL if regex didn't catch a video
     vid_seq = _next_pin_seq(PIN_VID_DIR)
-    temp_pin = PINTEREST_DIR / f"temp_pin_{int(time.time())}"
+    temp_pin = PINTEREST_DIR / f"temp_pin_{pin_id}"
     ydl_opts = {
         "outtmpl": str(temp_pin) + ".%(ext)s",
         "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
@@ -1436,14 +1513,12 @@ def download_pinterest_media(url: str, sync_to_studio: bool = True) -> Path | No
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            title = clean_filename(info.get("title") or "Pinterest_Video")
+            ydl.extract_info(final_url, download=True)
             downloaded_files = list(PINTEREST_DIR.glob(f"{temp_pin.name}*"))
-            if downloaded_files:
-                raw_f = downloaded_files[0]
-                final_vid = PIN_VID_DIR / f"{vid_seq:03d}_{title}.mp4"
-                shutil.move(str(raw_f), str(final_vid))
-                print(f"✅ [Pinterest Video] Saved as: Pinterest/Videos/{final_vid.name}")
+            if downloaded_files and downloaded_files[0].stat().st_size > 5000:
+                final_vid = PIN_VID_DIR / f"{vid_seq:03d}_{pin_title}.mp4"
+                shutil.move(str(downloaded_files[0]), str(final_vid))
+                print(f"✅ [Pinterest Video] Saved to: Pinterest/Videos/{final_vid.name}")
                 if sync_to_studio:
                     studio_copy = INTRO_DIR / final_vid.name
                     shutil.copy(final_vid, studio_copy)
@@ -1454,54 +1529,54 @@ def download_pinterest_media(url: str, sync_to_studio: bool = True) -> Path | No
         for leftover in PINTEREST_DIR.glob(f"{temp_pin.name}*"):
             leftover.unlink(missing_ok=True)
 
-    # 2. Fallback: Extract High-Res Image from Pinterest HTML
-    print("🖼️ Detected Pinterest Image Pin -> Extracting highest-resolution image...")
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
+    # 4. Extract Exact Pin High-Res Image (og:image & orig JSON field)
+    print("🖼️ Extracting High-Res Pinterest Image...")
+    img_candidates = []
 
-        # Look for originals first, then 736x / og:image
-        img_urls = re.findall(r"https://i\.pinimg\.com/originals/[a-zA-Z0-9/_.-]+\.(?:jpg|jpeg|png|webp)", html)
-        if not img_urls:
-            og_match = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', html)
-            if og_match:
-                og_url = og_match.group(1)
-                orig_try = re.sub(r"/\d+x/", "/originals/", og_url)
-                img_urls = [orig_try, og_url]
-        if not img_urls:
-            img_urls = re.findall(r"https://i\.pinimg\.com/\d+x/[a-zA-Z0-9/_.-]+\.(?:jpg|jpeg|png|webp)", html)
+    # Check og:image meta tag first (always points to the exact Pin's main image, never sidebar ads)
+    og_m = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](https://i\.pinimg\.com/[^"\']+)["\']', html_clean)
+    if not og_m:
+        og_m = re.search(r'<meta[^>]+content=["\'](https://i\.pinimg\.com/[^"\']+)["\'][^>]+property=["\']og:image["\']', html_clean)
+    if og_m:
+        og_url = og_m.group(1)
+        orig_upgrade = re.sub(r"/\d+x/", "/originals/", og_url)
+        img_candidates.extend([orig_upgrade, og_url])
 
-        if not img_urls:
-            print("❌ Could not find image or video stream on this Pinterest link.")
-            return None
+    # Also check "orig":{"width":...,"url":"https://i.pinimg.com/originals/..."}
+    orig_matches = re.findall(r'"orig"\s*:\s*\{[^{}]*"url"\s*:\s*"(https://i\.pinimg\.com/originals/[^"]+)"', html_clean)
+    img_candidates.extend(orig_matches)
 
-        img_seq = _next_pin_seq(PIN_IMG_DIR)
-        title_m = re.search(r"<title>([^<]+)</title>", html)
-        pin_title = clean_filename(title_m.group(1).replace("Pinterest", "").strip() if title_m else "Pinterest_Art") or "Pinterest_Art"
+    # Fallback to 736x images
+    if not img_candidates:
+        img_candidates.extend(re.findall(r"https://i\.pinimg\.com/(?:originals|736x|564x)/[a-zA-Z0-9/_.-]+\.(?:jpg|jpeg|png|webp)", html_clean))
 
-        final_img = PIN_IMG_DIR / f"{img_seq:03d}_{pin_title}.jpg"
-        for candidate_u in img_urls:
-            try:
-                img_req = urllib.request.Request(candidate_u, headers=headers)
-                with urllib.request.urlopen(img_req, timeout=10) as i_resp:
-                    data = i_resp.read()
-                    if len(data) > 5000:
-                        final_img.write_bytes(data)
-                        break
-            except Exception:
-                continue
+    if not img_candidates:
+        print("❌ Could not find a valid image or video stream on this Pinterest link.")
+        return None
 
-        if final_img.exists() and final_img.stat().st_size > 5000:
-            print(f"✅ [Pinterest Image] Saved as: Pinterest/Images/{final_img.name}")
-            if sync_to_studio:
-                shutil.copy(final_img, BG_DIR / final_img.name)
-                shutil.copy(final_img, THUMB_DIR / final_img.name)
-                print(f"🎨 Added to Studio Backgrounds & Thumbnails: {final_img.name}")
-            return final_img
-    except Exception as e:
-        print(f"❌ Pinterest download error: {e}")
+    img_seq = _next_pin_seq(PIN_IMG_DIR)
+    final_img = PIN_IMG_DIR / f"{img_seq:03d}_{pin_title}.jpg"
 
+    for candidate_u in dict.fromkeys(img_candidates):
+        try:
+            img_req = urllib.request.Request(candidate_u, headers=headers)
+            with urllib.request.urlopen(img_req, timeout=12) as i_resp:
+                data = i_resp.read()
+                if len(data) > 5000:
+                    final_img.write_bytes(data)
+                    break
+        except Exception:
+            continue
+
+    if final_img.exists() and final_img.stat().st_size > 5000:
+        print(f"✅ [Pinterest Image] Saved to: Pinterest/Images/{final_img.name}")
+        if sync_to_studio:
+            shutil.copy(final_img, BG_DIR / final_img.name)
+            shutil.copy(final_img, THUMB_DIR / final_img.name)
+            print(f"🎨 Added to Studio Backgrounds & Thumbnails: {final_img.name}")
+        return final_img
+
+    print("❌ Failed to download image bytes from Pinterest.")
     return None
 
 def run_cli_pinterest_downloader():
@@ -1874,10 +1949,13 @@ def main():
         print("  [6] 🧹 Clear Cache & Redownload Master Assets")
         print("  [7] 🎵 Download Audio (MP3) from YouTube URL")
         print("  [8] 📹 Download Video (1080p MP4) from YouTube URL")
+        print("  [9] 🔥 Virality Engine (Spy on Competitors & My Top Shorts)")
+        print("  [10] 📌 Download Pinterest Image or Video (Auto-Sorted in Pinterest/)")
+        print("  [11] ☁️ Save & Push Everything to GitHub")
         print("  [0] ❌ Exit")
         print("=" * 65)
 
-        opt = input("Select an option (0-8): ").strip()
+        opt = input("Select an option (0-11): ").strip()
 
         if opt == "1":
             run_cli_podcast_scout(active_channel)
@@ -1898,11 +1976,17 @@ def main():
             download_audio_from_url()
         elif opt == "8":
             download_video_from_url()
+        elif opt == "9":
+            run_cli_virality_engine(active_channel)
+        elif opt == "10":
+            run_cli_pinterest_downloader()
+        elif opt == "11":
+            save_everything_to_git()
         elif opt == "0":
             print("\n👋 Exiting DailyWisdom Engine. God bless!")
             break
         else:
-            print("⚠️ Invalid choice. Enter 0 to 8.")
+            print("⚠️ Invalid choice. Enter 0 to 11.")
 
 if __name__ == "__main__":
     main()
