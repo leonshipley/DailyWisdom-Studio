@@ -1,11 +1,11 @@
 {
-  "id": "hi_raghav",
-  "name": "Raghav \u2014 Uplifting & Clear (Male)",
+  "id": "us_christopher",
+  "name": "Madhur \u2014 Native Hindi Accent (Male)",
   "gender": "Male",
   "voice": "hi-IN-MadhurNeural",
-  "rate": "+0%",
-  "pitch": "+2Hz",
-  "style": "Clear, energetic Indian accent for youth & encouragement",
+  "rate": "-2%",
+  "pitch": "+0Hz",
+  "style": "Authoritative, warm & reverent",
   "accent": "\ud83c\uddee\ud83c\uddf3 Hindi / Indian Accent (hi-IN)",
-  "script_mode": "Hindi / Hinglish Verses (Pavitra Baibil Vachan & Prarthana)"
+  "script_mode": "Hindi Only (Pavitra Baibil Vachan & Prarthana)"
 }

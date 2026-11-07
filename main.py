@@ -748,7 +748,7 @@ def generate_bible_content(topic_query: str) -> BibleShortScript:
 
     from voice_studio import load_active_voice, HINDI_BIBLE_VAULT
     active_v_cfg = load_active_voice()
-    is_hindi_script = "Hindi / Hinglish" in active_v_cfg.get("script_mode", "")
+    is_hindi_script = ("Hindi" in active_v_cfg.get("script_mode", "") or "hi-IN" in active_v_cfg.get("voice", ""))
     if is_hindi_script:
         for hk, hval in HINDI_BIBLE_VAULT.items():
             if hk.lower() in topic_query.lower():
@@ -865,6 +865,15 @@ Select a unique, powerful Bible verse specifically about '{topic_query}'. Provid
         script_data = random.choice(available) if available else random.choice(matching)
 
     script = BibleShortScript(**script_data)
+    if is_hindi_script:
+        from bible_database import lookup_reference_bilingual, translate_any_text_to_hindi
+        _, _, dev_v, _ = lookup_reference_bilingual(script.verse_citation)
+        if dev_v:
+            script.verse_text = dev_v
+        else:
+            script.verse_text = translate_any_text_to_hindi(script.verse_text)
+        script.meaning = translate_any_text_to_hindi(script.meaning)
+        script.prayer = translate_any_text_to_hindi(script.prayer)
     if script.verse_citation not in used_verses:
         used_verses.append(script.verse_citation)
         used_verses_file.write_text(json.dumps(used_verses, indent=2), encoding="utf-8")
@@ -957,6 +966,11 @@ def generate_voiceover(text: str, output_voice_path: Path):
     v_pitch = active_v.get("pitch", "+0Hz")
     print(f"   🎙️ Speaking with Voice: {active_v.get('name')} [{v_name} | Rate: {v_rate} | Pitch: {v_pitch}]")
 
+    # Ensure no raw number:number colons reach TTS as clock time
+    if "hi-IN" in v_name and "Hindi" in active_v.get("script_mode", ""):
+        text = re.sub(r"(\d+):(\d+)", r"अध्याय \1 वचन \2", text)
+    else:
+        text = re.sub(r"(\d+):(\d+)", r"chapter \1 verse \2", text)
     json_path = Path(str(output_voice_path).replace(".mp3", ".json"))
 
     async def _make():
@@ -1073,13 +1087,21 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
     except Exception:
         pass
 
-    local_font = BASE_DIR / "bold_font.ttf"
+    from voice_studio import load_active_voice
+    _cur_v = load_active_voice()
+    _is_hi = ("Hindi" in _cur_v.get("script_mode", "") or "hi-IN" in _cur_v.get("voice", ""))
+    local_font = BASE_DIR / ("hindi_bold_font.ttf" if _is_hi else "bold_font.ttf")
+    if _is_hi and not local_font.exists():
+        for hf in ["C:/Windows/Fonts/NirmalaB.ttf", "C:/Windows/Fonts/Nirmala.ttf", "C:/Windows/Fonts/mangal.ttf"]:
+            if Path(hf).exists():
+                shutil.copy(hf, local_font)
+                break
     if not local_font.exists():
         for f in ["C:/Windows/Fonts/segoeuib.ttf", "C:/Windows/Fonts/georgiab.ttf", "C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf"]:
             if Path(f).exists():
                 shutil.copy(f, local_font)
                 break
-    font_bold = "bold_font.ttf"
+    font_bold = local_font.name
 
     muted_video = mute_any_video(custom_intro) if (custom_intro and custom_intro.exists()) else prepare_muted_short_main()
     jesus_img = custom_bg if (custom_bg and custom_bg.exists()) else get_jesus_image()
@@ -1155,7 +1177,7 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
         next_len = len(text_str) + (len(timings[i + 1]["text"]) + 1 if i + 1 < len(timings) else 0)
         if next_len > 10 or len(current) >= 2 or re.search(r"[.,;!?]", w_obj["text"]) or i == len(timings) - 1:
             c_end = timings[i + 1]["start"] if i + 1 < len(timings) else (w_obj["end"] + 0.12)
-            safe_text = re.sub(r"[^a-zA-Z0-9\s:\-]", "", text_str).strip()
+            safe_text = re.sub(r"[^a-zA-Z0-9\u0900-\u097F\s:\-]", "", text_str).strip()
             if safe_text:
                 phrases.append({"text": safe_text, "start": round(c_start, 3), "end": round(c_end, 3)})
             current = []
@@ -1171,7 +1193,7 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
         # &H59FFFFFF = 65% opaque white (35% transparent), &H70000000 = soft shadow
-        "Style: SubPop,Arial,102,&H59FFFFFF,&H0000FFFF,&H70000000,&H70000000,-1,0,0,0,100,100,0,0,1,3,4,5,60,60,0,1",
+        "Style: SubPop,Nirmala UI,96,&H45FFFFFF,&H0000FFFF,&H80000000,&H80000000,-1,0,0,0,100,100,0,0,1,4,4,5,60,60,0,1",
         "",
         "[Events]",
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",

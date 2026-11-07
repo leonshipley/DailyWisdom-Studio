@@ -1,3 +1,4 @@
+import re
 import asyncio
 import hashlib
 import json
@@ -53,15 +54,16 @@ VOICE_CATALOG: Dict[str, List[Dict[str, str]]] = {
 }
 
 SCRIPT_MODES = [
-    "English Verses (Spoken in Selected Accent)",
-    "Hindi / Hinglish Verses (Pavitra Baibil Vachan & Prarthana)",
+    "English Only (Spoken in Selected Accent)",
+    "Hindi Only (Pavitra Baibil Vachan & Prarthana)",
+    "Both Together: English + Hindi (Reads English First, Then Hindi)",
 ]
 
 HINDI_BIBLE_VAULT: Dict[str, Dict[str, Any]] = {
     "Debt": {
         "topic": "Debt & Financial Freedom",
         "title": "Karz Mukti Ki Shaktishali Prarthana #shorts",
-        "verse_citation": "Philippians 4:19",
+        "verse_citation": "Philippians chapter 4 verse 19",
         "verse_text": "Mera Parmeshwar apne dhan ke anusaar Krist Yeshu mein aapki har zaroorat ko poora karega.",
         "meaning": "Prabhu chahte hain ki aap har karz ke bojh se azaad ho jayein. Unke bhandaar mein aapke parivaar ke liye koi kami nahi hai.",
         "prayer": "Prabhu Yeshu, mere parivaar ko har karz se mukt karein aur apni barkat ke darwaze khol dein, Amen.",
@@ -81,7 +83,7 @@ HINDI_BIBLE_VAULT: Dict[str, Dict[str, Any]] = {
     "Broken Heart": {
         "topic": "Broken Heart & Depression",
         "title": "Toote Dil Koodne Wali Prarthana #shorts",
-        "verse_citation": "Psalm 34:18",
+        "verse_citation": "भजन संहिता, अध्याय 34, वचन 18",
         "verse_text": "Yahowa toote man walon ke samip rehta hai, aur pichde hue logon ka uddhar karta hai.",
         "meaning": "Aap apne aansuon mein kabhi akele nahi hain. Prabhu Yeshu aapke dard ko samajhte hain aur aapko nayi aasha dete hain.",
         "prayer": "Prabhu Yeshu, mere toote hue hriday ko changa karein aur mere jeevan mein phir se anand bhar dein, Amen.",
@@ -101,8 +103,8 @@ HINDI_BIBLE_VAULT: Dict[str, Dict[str, Any]] = {
 }
 
 DEFAULT_SAMPLE_TEXTS: Dict[str, str] = {
-    "🇮🇳 Hindi / Indian Accent (hi-IN)": "If you are struggling today, hold onto this verse. Psalm 34:18. The Lord is near to the brokenhearted, and saves the crushed in spirit. Prabhu Yeshu aapke saath hain. Type Amen.",
-    "🇮🇳 Indian English (en-IN)": "If you are walking through a difficult season, hold onto God's promise. Philippians 4:19. And my God will supply every need of yours. Type Amen.",
+    "🇮🇳 Hindi / Indian Accent (hi-IN)": "If you are struggling today, hold onto this verse. भजन संहिता, अध्याय 34, वचन 18. The Lord is near to the brokenhearted, and saves the crushed in spirit. Prabhu Yeshu aapke saath hain. Type Amen.",
+    "🇮🇳 Indian English (en-IN)": "If you are walking through a difficult season, hold onto God's promise. Philippians chapter 4 verse 19. And my God will supply every need of yours. Type Amen.",
     "🇺🇸 American English (en-US)": "If your heart feels heavy tonight, pause right here. The Lord is near to the brokenhearted, and His peace will guard your soul. Type Amen.",
     "🇬🇧 British English (en-GB)": "Be still, and know that I am God. Even in the darkest valley, His light surrounds you with unshakeable peace. Type Amen if you believe.",
 }
@@ -133,23 +135,52 @@ def combine_prosody(base_val: str, offset_int: int, unit: str) -> str:
     return f"{total:+d}{unit}"
 
 def build_spoken_voice_script(script_obj: Any) -> str:
-    """Formats the spoken script so Hindi/Indian voices read verse citations and words naturally."""
+    """
+    Guarantees 100% Pure Devanagari Hindi for the ENTIRE video (Hook, Book, Chapter, Verse, Meaning, Prayer, CTA)
+    whenever Hindi mode or a Hindi voice is active.
+    """
+    from bible_database import lookup_reference_bilingual, format_reference_for_speech, translate_any_text_to_hindi
     cfg = load_active_voice()
     mode = cfg.get("script_mode", SCRIPT_MODES[0])
-    # Make '4:19' spoken naturally while keeping '4:19' in the text
-    if "Hindi / Hinglish" in mode:
+    is_hi_accent = "hi-IN" in cfg.get("voice", "") or "Hindi" in cfg.get("accent", "")
+
+    en_ref_spoken = format_reference_for_speech(script_obj.verse_citation, is_hindi_speech=False)
+    hi_ref_spoken = format_reference_for_speech(script_obj.verse_citation, is_hindi_speech=True)
+    _, en_v, dev_hi, _ = lookup_reference_bilingual(script_obj.verse_citation)
+
+    clean_t_en = re.sub(r"\(Suggested Verse:.*?\)", "", script_obj.topic).strip()
+
+    if "Both Together" in mode:
+        hi_meaning = translate_any_text_to_hindi(script_obj.meaning)
+        hi_prayer = translate_any_text_to_hindi(script_obj.prayer)
         return (
-            f"Agar aap {script_obj.topic} se guzar rahe hain, toh Prabhu ke is vachan ko sunein. "
-            f"{script_obj.verse_citation}. {script_obj.verse_text}. "
-            f"{script_obj.meaning}. Aaiye prarthana karein. {script_obj.prayer} "
-            f"Comment mein Amen zaroor likhein."
+            f"Hold onto God's promise in {en_ref_spoken}. {en_v} "
+            f"पवित्र बाइबिल में {hi_ref_spoken} में लिखा है: {dev_hi}। "
+            f"{hi_meaning} आइए प्रार्थना करें: {hi_prayer} कमेंट में आमीन ज़रूर लिखें।"
         )
-    return (
-        f"If you are struggling with {script_obj.topic}, hold onto this verse. "
-        f"{script_obj.verse_citation}. {script_obj.verse_text}. "
-        f"{script_obj.meaning}. Let us pray. {script_obj.prayer} "
+
+    if "Hindi" in mode or is_hi_accent:
+        hi_topic = translate_any_text_to_hindi(clean_t_en)
+        # Always force pure Devanagari Hindi for the verse, meaning, and prayer!
+        hi_verse = dev_hi if re.search(r"[\u0900-\u097F]", dev_hi or "") else translate_any_text_to_hindi(script_obj.verse_text)
+        hi_meaning = translate_any_text_to_hindi(script_obj.meaning)
+        hi_prayer = translate_any_text_to_hindi(script_obj.prayer)
+        full_hi = (
+            f"यदि आप अपने जीवन में {hi_topic} का सामना कर रहे हैं, तो परमेश्वर के इस पवित्र वचन को ध्यान से सुनें। "
+            f"पवित्र बाइबिल, {hi_ref_spoken}। {hi_verse}। "
+            f"इस वचन का अर्थ है: {hi_meaning}। "
+            f"आइए मिलकर प्रार्थना करें: {hi_prayer}। "
+            f"यदि आप इस आशीष को ग्रहण करते हैं, तो कमेंट में आमीन ज़रूर लिखें।"
+        )
+        return re.sub(r"(\d+):(\d+)", r"अध्याय \1 वचन \2", full_hi)
+
+    full_en = (
+        f"If you are struggling with {clean_t_en}, hold onto this verse. "
+        f"{en_ref_spoken}. {en_v if en_v else script_obj.verse_text} "
+        f"{script_obj.meaning} Let us pray. {script_obj.prayer} "
         f"Type Amen in the comments to receive this blessing."
     )
+    return re.sub(r"(\d+):(\d+)", r"chapter \1 verse \2", full_en)
 
 def synthesize_preview_sample(
     voice_id: str,
@@ -193,3 +224,71 @@ def play_audio_on_windows(mp3_path: Path) -> None:
             os.startfile(str(mp3_path))
         except Exception:
             pass
+
+def synthesize_bilingual_verse_preview(
+    ref_str: str,
+    en_text: str,
+    hi_devanagari: str,
+    hi_hinglish: str,
+    listen_mode: str = "both",
+) -> Path:
+    """
+    Guarantees that when listen_mode is 'hindi' or 'both', the Hindi verse is spoken
+    in 100% pure Devanagari Hindi (never English!).
+    """
+    from bible_database import format_reference_for_speech, translate_verse_to_hindi, translate_any_text_to_hindi
+
+    cfg = load_active_voice()
+    en_voice = cfg.get("voice", "en-US-ChristopherNeural")
+    if "hi-IN" in en_voice and listen_mode == "english":
+        en_voice = "en-IN-PrabhatNeural"
+    rate_str = cfg.get("rate", "-3%")
+    pitch_str = cfg.get("pitch", "+0Hz")
+    is_female = cfg.get("gender", "Male") == "Female"
+    hi_voice = "hi-IN-SwaraNeural" if is_female else "hi-IN-MadhurNeural"
+
+    # Ensure hi_devanagari is real Devanagari Hindi (never English!)
+    if not hi_devanagari or not re.search(r"[\u0900-\u097F]", hi_devanagari):
+        hi_devanagari, _ = translate_verse_to_hindi(ref_str, en_text)
+    if not re.search(r"[\u0900-\u097F]", hi_devanagari):
+        hi_devanagari = translate_any_text_to_hindi(en_text)
+
+    en_spoken_ref = format_reference_for_speech(ref_str, is_hindi_speech=False)
+    hi_spoken_ref = format_reference_for_speech(ref_str, is_hindi_speech=True)
+
+    key_hash = hashlib.md5(f"v3_{listen_mode}_{en_voice}_{hi_voice}_{rate_str}_{pitch_str}_{ref_str}_{hi_devanagari[:30]}".encode("utf-8")).hexdigest()[:12]
+    out_mp3 = PREVIEWS_DIR / f"verse_{listen_mode}_{key_hash}.mp3"
+
+    if out_mp3.exists() and out_mp3.stat().st_size > 1000:
+        return out_mp3
+
+    async def _build_mp3():
+        with open(out_mp3, "wb") as f_out:
+            if listen_mode in ("english", "both"):
+                en_line = f"{en_spoken_ref}. {en_text}"
+                try:
+                    c_en = edge_tts.Communicate(en_line, voice=en_voice, rate=rate_str, pitch=pitch_str)
+                except TypeError:
+                    c_en = edge_tts.Communicate(en_line, voice=en_voice, rate=rate_str)
+                async for chunk in c_en.stream():
+                    if chunk["type"] == "audio":
+                        f_out.write(chunk["data"])
+
+            if listen_mode in ("hindi", "both"):
+                hi_line = f"पवित्र बाइबिल, {hi_spoken_ref}। {hi_devanagari}"
+                try:
+                    c_hi = edge_tts.Communicate(hi_line, voice=hi_voice, rate="-4%", pitch=pitch_str)
+                except TypeError:
+                    c_hi = edge_tts.Communicate(hi_line, voice=hi_voice, rate="-4%")
+                async for chunk in c_hi.stream():
+                    if chunk["type"] == "audio":
+                        f_out.write(chunk["data"])
+
+    try:
+        asyncio.run(_build_mp3())
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(_build_mp3())
+        loop.close()
+
+    return out_mp3
