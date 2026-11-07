@@ -120,6 +120,24 @@ st.markdown("""
 def get_all_sequence_videos():
     return sorted(list(backend.CLIPS_DIR.rglob("*.mp4")), key=lambda p: p.parent.name, reverse=True)
 
+
+def get_available_bgm_tracks():
+    """Scans project presets and downloads/ folder for all available BGM audio files."""
+    tracks = {
+        "Default Worship Piano": backend.get_worship_bgm(),
+        "Ambient Pad": backend.BGM_PODCAST_FILE
+    }
+    if backend.DOWNLOADS_DIR.exists():
+        dl_files = sorted(
+            [f for f in backend.DOWNLOADS_DIR.glob("*.*") if f.suffix.lower() in (".mp3", ".wav", ".m4a", ".aac")],
+            key=lambda x: x.stat().st_mtime,
+            reverse=True
+        )
+        for f in dl_files:
+            clean_label = f"📥 Downloaded: {f.name[:40]}"
+            tracks[clean_label] = f
+    return tracks
+
 def get_media_files(folder: Path, exts: tuple):
     if not folder.exists():
         return []
@@ -399,9 +417,15 @@ def render_maker_workspace(lang_code: str):
     with col_mid:
         with st.container(border=True):
             st.markdown("#### 🎨 Step 2: Visuals, BGM & Thumbnail")
-            # BGM & Volume Controls
-            bgm_options = ["Default Worship Piano", "Ambient Pad"]
-            sel_bgm_preset = st.selectbox("🎵 Worship BGM:", bgm_options, key=f"{pfx}_bgm_preset")
+            # BGM & Volume Controls (Presets + Auto-Scanned Downloads)
+            available_bgms = get_available_bgm_tracks()
+            sel_bgm_label = st.selectbox("🎵 Worship BGM:", list(available_bgms.keys()), index=0, key=f"{pfx}_bgm_preset")
+            chosen_bgm_file = available_bgms[sel_bgm_label]
+
+            # Mini Audio Preview
+            if chosen_bgm_file and Path(chosen_bgm_file).exists():
+                st.audio(str(chosen_bgm_file), format="audio/mp3")
+
             bgm_vol = st.slider("🔊 BGM Music Volume:", min_value=0.05, max_value=0.45, value=0.18, step=0.01, format="%.2f", key=f"{pfx}_bgm_vol")
             palette_style = st.selectbox("Thumbnail Palette:", ["Gold Classic", "Midnight Blue", "Sunrise", "Crimson Glory"], key=f"{pfx}_pal")
             raw_thumb_toggle = st.checkbox("Use uploaded thumbnail raw (No 3D text)", value=False, key=f"{pfx}_raw_th")
@@ -488,7 +512,7 @@ def render_maker_workspace(lang_code: str):
             ok = backend.render_faceless_bible_video(
                 script, temp_voice, out_video, out_thumb,
                 custom_intro=c_intro_path, custom_bg=c_bg_path,
-                custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle, palette_name=palette_style, bgm_volume=bgm_vol
+                custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle, palette_name=palette_style, custom_bgm=chosen_bgm_file, bgm_volume=bgm_vol
             )
             if temp_voice.exists():
                 temp_voice.unlink(missing_ok=True)

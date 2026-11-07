@@ -38,7 +38,7 @@ def get_video_duration(video_path: Path) -> float:
     """Returns exact float duration in seconds using ffprobe."""
     try:
         cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(video_path.absolute())]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=8)
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=8, encoding="utf-8", errors="replace")
         return round(float(res.stdout.strip()), 1)
     except Exception:
         return 0.0
@@ -95,6 +95,7 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=API_KEY) if API_KEY else None
 
 YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube",
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly"
 ]
@@ -409,7 +410,7 @@ def connect_new_channel():
 
     print("\n🌐 Opening Google login in your web browser...")
     flow = InstalledAppFlow.from_client_secrets_file(str(CLIENT_SECRET_FILE), YOUTUBE_SCOPES)
-    credentials = flow.run_local_server(port=0, prompt="select_account")
+    credentials = flow.run_local_server(port=0, prompt="consent")
     youtube = build("youtube", "v3", credentials=credentials)
     res = youtube.channels().list(mine=True, part="snippet").execute()
 
@@ -474,10 +475,284 @@ def get_next_sequence_folder(label: str) -> Path:
     return folder
 
 # --- VIRALITY & COMPETITOR INTELLIGENCE ENGINE ---
+import collections
+import difflib
+from datetime import datetime, timezone, timedelta
+
+# Local storage and persistent caches
+COMPETITOR_CACHE_FILE = BASE_DIR / "competitor_cache.json"
+TITLES_LOG_FILE = BASE_DIR / "titles_log.json"
+PERFORMANCE_LOG_FILE = BASE_DIR / "performance_log.json"
+YT_QUOTA_FILE = BASE_DIR / "yt_api_quota.json"
+
 _CHANNEL_STATS_CACHE = {}
 
+# High-engagement curiosity and emotional hook words
+EMOTIONAL_CURIOSITY_WORDS = {
+    "secret", "warning", "never", "always", "shocking", "truth", "revealed",
+    "stop", "power", "unshakeable", "silent", "broken", "miracle", "overcome",
+    "surrender", "promise", "peace", "storm", "breakthrough", "danger",
+    "hidden", "escape", "urgent", "before", "why", "how", "this", "today",
+    "now", "blessing", "change", "destroy", "win", "fear", "unspoken"
+}
+
+# Strictly prohibited misleading claims (Health, Guaranteed Money & Miracles)
+BANNED_CLAIMS_PATTERN = re.compile(
+    r"\b(guarantee|guaranteed|miracle in 24 hours|cure|cures|get rich|100%|instant wealth|cancer cure)\b",
+    re.IGNORECASE
+)
+
+# Common stopwords to exclude from competitor title keyword frequency
+TITLE_STOPWORDS = {
+    "the", "and", "for", "that", "this", "with", "you", "your", "from", "are",
+    "have", "what", "more", "when", "will", "shorts", "short", "video", "how",
+    "about", "into", "than", "them", "then", "some", "just", "like"
+}
+
+
+# --- A. HELPER UTILITIES ---
+
+def parse_iso_duration(duration_str: str) -> int:
+    """Parses ISO 8601 duration (e.g. PT45S, PT1M02S) into total seconds."""
+    if not duration_str:
+        return 0
+    m = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", duration_str)
+    if not m:
+        return 0
+    h = int(m.group(1) or 0)
+    mins = int(m.group(2) or 0)
+    secs = int(m.group(3) or 0)
+    return h * 3600 + mins * 60 + secs
+
+
+def track_yt_quota(units_spent: int) -> int:
+    """Tracks estimated daily YouTube Data API quota units (10,000 free units/day)."""
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    data = {"date": today_str, "used": 0}
+    if YT_QUOTA_FILE.exists():
+        try:
+            with open(YT_QUOTA_FILE, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+            if saved.get("date") == today_str:
+                data = saved
+        except Exception:
+            pass
+
+    data["used"] += units_spent
+    try:
+        with open(YT_QUOTA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
+
+    remaining = max(0, 10000 - data["used"])
+    print(f"   [API Quota] ~{data['used']:,} used today (~{remaining:,} units remaining)")
+    return remaining
+
+
+def iter_llm_json(prompt: str, system: str = "", temperature: float = 0.7, timeout: int = 8) -> dict | list | None:
+    """Direct REST API caller for Gemini with timeout protection and JSON normalization."""
+    if not API_KEY:
+        return None
+
+    candidate_models = ["gemini-1.5-flash", "gemini-1.5-pro"]
+    payload = {
+        "contents": [{"parts": [{"text": f"{system}\n\n{prompt}".strip()}]}],
+        "generationConfig": {"responseMimeType": "application/json", "temperature": temperature}
+    }
+    encoded_data = json.dumps(payload).encode("utf-8")
+
+    for model_name in candidate_models:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={API_KEY}"
+            req = urllib.request.Request(
+                url,
+                headers={"Content-Type": "application/json", "x-goog-api-key": API_KEY},
+                data=encoded_data
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                resp_json = json.loads(resp.read().decode("utf-8"))
+                raw_text = resp_json["candidates"][0]["content"]["parts"][0]["text"]
+                m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw_text)
+                if m:
+                    return json.loads(m.group(0))
+        except urllib.error.HTTPError as e:
+            print(f"   [LLM Note] {model_name} HTTP {e.code}: {e.reason}")
+            continue
+        except Exception as e:
+            print(f"   [LLM Note] {model_name} connection error: {e}")
+            continue
+
+    # Fallback to OpenRouter if configured
+    or_key = os.getenv("OPENROUTER_API_KEY")
+    if or_key:
+        try:
+            req = urllib.request.Request(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {or_key}", "Content-Type": "application/json"},
+                data=json.dumps({
+                    "model": "google/gemma-2-9b-it:free",
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": prompt}
+                    ]
+                }).encode("utf-8")
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                raw_text = data["choices"][0]["message"]["content"]
+                m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", raw_text)
+                if m:
+                    return json.loads(m.group(0))
+        except Exception as e:
+            print(f"   [LLM Note] OpenRouter fallback error: {e}")
+
+    return None
+
+
+def get_recent_titles(limit: int = 50) -> list[str]:
+    """Retrieves past generated/uploaded titles to eliminate near-duplicate suggestions."""
+    if TITLES_LOG_FILE.exists():
+        try:
+            with open(TITLES_LOG_FILE, "r", encoding="utf-8") as f:
+                titles = json.load(f)
+                if isinstance(titles, list):
+                    return titles[-limit:]
+        except Exception:
+            pass
+    return []
+
+
+def record_recent_title(title: str):
+    """Caches winning titles locally to maintain variety across videos."""
+    titles = get_recent_titles(limit=100)
+    if title not in titles:
+        titles.append(title)
+    try:
+        with open(TITLES_LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(titles[-50:], f, indent=2)
+    except Exception:
+        pass
+
+
+def title_score(title: str, recent_titles: list[str], hook: str = "", verbose: bool = False) -> tuple[int, dict]:
+    """
+    Computes a transparent mathematical score (0-100) based on 5 strict criteria:
+    1. Length (25-55 chars) [20 pts]
+    2. Emotional or curiosity trigger word [20 pts]
+    3. Low similarity to past 50 titles (<0.75 difflib ratio) [20 pts]
+    4. Free of banned/unrealistic claims [20 pts]
+    5. Alignment with thumbnail hook [20 pts]
+    """
+    clean_t = title.strip()
+    checks = {}
+    total = 0
+
+    # 1. Length check
+    t_len = len(clean_t)
+    if 25 <= t_len <= 55:
+        checks["Length (25-55 chars)"] = (True, f"{t_len} chars (+20)")
+        total += 20
+    elif 20 <= t_len < 25 or 55 < t_len <= 65:
+        checks["Length (25-55 chars)"] = (False, f"{t_len} chars (suboptimal, +10)")
+        total += 10
+    else:
+        checks["Length (25-55 chars)"] = (False, f"{t_len} chars (too short/long, +0)")
+
+    # 2. Emotional/Curiosity keyword check
+    t_words = set(re.findall(r"\b[a-zA-Z]+\b", clean_t.lower()))
+    found_emo = t_words.intersection(EMOTIONAL_CURIOSITY_WORDS)
+    if found_emo:
+        checks["Curiosity/Emotion Hook"] = (True, f"Matched: {', '.join(list(found_emo)[:2])} (+20)")
+        total += 20
+    else:
+        checks["Curiosity/Emotion Hook"] = (False, "No power/curiosity word detected (+0)")
+
+    # 3. Near-duplicate check against recent titles
+    max_sim = 0.0
+    matched_prior = ""
+    for past_t in recent_titles:
+        sim = difflib.SequenceMatcher(None, clean_t.lower(), past_t.lower()).ratio()
+        if sim > max_sim:
+            max_sim = sim
+            matched_prior = past_t
+
+    if max_sim < 0.75 or not recent_titles:
+        checks["Title Uniqueness"] = (True, f"Max similarity {max_sim:.2f} (<0.75) (+20)")
+        total += 20
+    else:
+        checks["Title Uniqueness"] = (False, f"Too similar ({max_sim:.2f}) to: '{matched_prior[:32]}...' (+0)")
+
+    # 4. Prohibited/Banned claims check
+    banned_m = BANNED_CLAIMS_PATTERN.search(clean_t)
+    if not banned_m:
+        checks["Safety & Truthfulness"] = (True, "Zero prohibited claims detected (+20)")
+        total += 20
+    else:
+        checks["Safety & Truthfulness"] = (False, f"Banned claim detected: '{banned_m.group(0)}' (0 pts)")
+        total = max(0, total - 25)
+
+    # 5. Thumbnail Hook Match
+    if hook:
+        hook_tokens = set(re.findall(r"\b[a-zA-Z]{3,}\b", hook.lower()))
+        hook_matches = t_words.intersection(hook_tokens)
+        if hook_matches:
+            checks["Thumbnail Hook Sync"] = (True, f"Aligned on: {', '.join(hook_matches)} (+20)")
+            total += 20
+        else:
+            checks["Thumbnail Hook Sync"] = (False, "Does not align with thumbnail hook words (+5)")
+            total += 5
+    else:
+        checks["Thumbnail Hook Sync"] = (True, "No hook constraints provided (+20)")
+        total += 20
+
+    final_score = max(0, min(100, total))
+
+    if verbose:
+        print(f"\n   --- Audit for: \"{clean_t}\" (Score: {final_score}/100) ---")
+        for k, (ok, note) in checks.items():
+            mark = "✓" if ok else "✗"
+            print(f"      [{mark}] {k:26}: {note}")
+
+    return final_score, checks
+
+
+def log_upload_performance(video_id: str, title: str, hook: str, palette: str, layout: str, topic: str):
+    """Logs uploaded Short parameters into performance_log.json for pattern learning."""
+    record = {
+        "video_id": video_id,
+        "title": title,
+        "hook": hook,
+        "palette": palette or "Gold Classic",
+        "layout": layout or "Adaptive",
+        "post_time": datetime.now(timezone.utc).isoformat(),
+        "post_hour_utc": datetime.now(timezone.utc).hour,
+        "topic": topic or "General"
+    }
+    history = []
+    if PERFORMANCE_LOG_FILE.exists():
+        try:
+            with open(PERFORMANCE_LOG_FILE, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except Exception:
+            history = []
+
+    history = [h for h in history if h.get("video_id") != video_id]
+    history.append(record)
+    try:
+        with open(PERFORMANCE_LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, indent=2)
+    except Exception as e:
+        print(f"   [Log Note] Could not write performance_log: {e}")
+
+
+# --- B. CORE VIRALITY FUNCTIONS ---
+
 def get_my_top_shorts(channel_name: str, max_results: int = 8) -> list[dict]:
-    """Fetches the user's own uploaded videos from YouTube API and sorts by most viewed."""
+    """
+    Fetches user's last 30 uploads, filters for true Shorts (<=60s),
+    calculates age in days, and ranks by views per day.
+    """
     if channel_name in _CHANNEL_STATS_CACHE:
         return _CHANNEL_STATS_CACHE[channel_name]
 
@@ -487,220 +762,386 @@ def get_my_top_shorts(channel_name: str, max_results: int = 8) -> list[dict]:
 
     try:
         ch_res = youtube.channels().list(mine=True, part="contentDetails").execute()
+        track_yt_quota(1)
         if not ch_res.get("items"):
             return []
         uploads_id = ch_res["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
         pl_res = youtube.playlistItems().list(
-            playlistId=uploads_id, part="contentDetails", maxResults=max_results
+            playlistId=uploads_id, part="contentDetails", maxResults=30
         ).execute()
+        track_yt_quota(1)
+
         vid_ids = [item["contentDetails"]["videoId"] for item in pl_res.get("items", [])]
         if not vid_ids:
             return []
 
         v_res = youtube.videos().list(
-            id=",".join(vid_ids), part="snippet,statistics"
+            id=",".join(vid_ids),
+            part="snippet,statistics,contentDetails"
         ).execute()
+        track_yt_quota(1)
 
-        my_videos = []
+        now = datetime.now(timezone.utc)
+        shorts_list = []
+
         for v in v_res.get("items", []):
-            stats = v.get("statistics", {})
+            duration_sec = parse_iso_duration(v.get("contentDetails", {}).get("duration", ""))
+            if duration_sec <= 0 or duration_sec > 60:
+                continue
+
             snip = v.get("snippet", {})
-            my_videos.append({
+            stats = v.get("statistics", {})
+
+            pub_str = snip.get("publishedAt", "")
+            try:
+                pub_dt = datetime.fromisoformat(pub_str.replace("Z", "+00:00"))
+            except Exception:
+                pub_dt = now
+
+            age_days = max(0.1, (now - pub_dt).total_seconds() / 86400.0)
+            views = int(stats.get("viewCount", 0))
+            vpd = views / age_days
+
+            shorts_list.append({
                 "id": v["id"],
                 "title": snip.get("title", ""),
-                "views": int(stats.get("viewCount", 0)),
+                "views": views,
+                "views_per_day": round(vpd, 1),
+                "age_days": round(age_days, 1),
                 "likes": int(stats.get("likeCount", 0)),
                 "comments": int(stats.get("commentCount", 0)),
-                "tags": snip.get("tags", [])
+                "tags": snip.get("tags", []),
+                "published_at": pub_str
             })
 
-        my_videos.sort(key=lambda x: x["views"], reverse=True)
-        _CHANNEL_STATS_CACHE[channel_name] = my_videos
-        return my_videos
-    except Exception:
+        shorts_list.sort(key=lambda x: x["views_per_day"], reverse=True)
+        _CHANNEL_STATS_CACHE[channel_name] = shorts_list[:max_results]
+        return _CHANNEL_STATS_CACHE[channel_name]
+    except Exception as e:
+        if "insufficientPermissions" in str(e):
+            print("   ⚠️ [YouTube API] Existing token lacks read permissions. Click '+ Add Channel' in the sidebar to re-authenticate.")
+        else:
+            print(f"   [YouTube API] Note: {e}")
         return []
 
 
-def scan_competitor_shorts(topic: str, limit: int = 6) -> list[dict]:
-    """Scans YouTube for top-viewed competitor Shorts on this exact topic."""
-    ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True}
+def scan_competitor_shorts(topic: str, limit: int = 6, channel_name: str = "") -> list[dict]:
+    """
+    Searches for competitor Shorts published in the last 45 days.
+    Ranks by views-per-day velocity. Caches results locally for 12 hours.
+    Falls back to yt-dlp if unauthenticated or quota is low.
+    """
+    clean_topic = topic.strip().lower()
+    now_ts = datetime.now(timezone.utc).timestamp()
+
+    # 1. Check 12-hour cache
+    cache = {}
+    if COMPETITOR_CACHE_FILE.exists():
+        try:
+            with open(COMPETITOR_CACHE_FILE, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+            if clean_topic in cache:
+                cached_entry = cache[clean_topic]
+                if (now_ts - cached_entry.get("timestamp", 0)) < 43200:
+                    return cached_entry.get("items", [])[:limit]
+        except Exception:
+            cache = {}
+
     competitors = []
-    query = f"ytsearch10:{topic} #shorts"
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            res = ydl.extract_info(query, download=False)
-            for entry in res.get("entries", []):
-                if not entry:
-                    continue
-                views = entry.get("view_count") or 0
-                title = entry.get("title") or ""
-                if title:
+    youtube = get_authenticated_youtube(channel_name) if channel_name else None
+
+    # 2. Query YouTube Data API
+    if youtube:
+        try:
+            published_after = (datetime.now(timezone.utc) - timedelta(days=45)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            search_res = youtube.search().list(
+                q=f"{topic} #shorts",
+                type="video",
+                videoDuration="short",
+                order="viewCount",
+                publishedAfter=published_after,
+                maxResults=15,
+                part="snippet"
+            ).execute()
+            track_yt_quota(100)
+
+            found_ids = [item["id"]["videoId"] for item in search_res.get("items", []) if "videoId" in item.get("id", {})]
+
+            if found_ids:
+                v_res = youtube.videos().list(
+                    id=",".join(found_ids),
+                    part="snippet,statistics,contentDetails"
+                ).execute()
+                track_yt_quota(1)
+
+                now_dt = datetime.now(timezone.utc)
+                for v in v_res.get("items", []):
+                    dur_sec = parse_iso_duration(v.get("contentDetails", {}).get("duration", ""))
+                    if dur_sec <= 0 or dur_sec > 60:
+                        continue
+
+                    stats = v.get("statistics", {})
+                    snip = v.get("snippet", {})
+                    pub_str = snip.get("publishedAt", "")
+                    try:
+                        pub_dt = datetime.fromisoformat(pub_str.replace("Z", "+00:00"))
+                    except Exception:
+                        pub_dt = now_dt
+
+                    age_days = max(0.1, (now_dt - pub_dt).total_seconds() / 86400.0)
+                    views = int(stats.get("viewCount", 0))
+                    vpd = views / age_days
+
                     competitors.append({
-                        "title": title,
-                        "views": int(views),
-                        "url": f"https://www.youtube.com/watch?v={entry.get('id', '')}"
+                        "title": snip.get("title", ""),
+                        "views": views,
+                        "views_per_day": round(vpd, 1),
+                        "age_days": round(age_days, 1),
+                        "url": f"https://www.youtube.com/watch?v={v['id']}"
                     })
-    except Exception:
-        pass
+        except Exception as e:
+            print(f"   [API Competitor Scan] Note ({e}). Falling back to yt-dlp...")
 
-    competitors.sort(key=lambda x: x["views"], reverse=True)
-    return competitors[:limit]
+    # 3. Fallback to yt-dlp
+    if not competitors:
+        try:
+            ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True}
+            query = f"ytsearch10:{topic} #shorts"
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                res = ydl.extract_info(query, download=False)
+                for entry in res.get("entries", []):
+                    if not entry:
+                        continue
+                    dur = entry.get("duration") or 0
+                    if 0 < dur <= 60:
+                        v_count = int(entry.get("view_count") or 0)
+                        competitors.append({
+                            "title": entry.get("title", ""),
+                            "views": v_count,
+                            "views_per_day": float(v_count),
+                            "age_days": 1.0,
+                            "url": f"https://www.youtube.com/watch?v={entry.get('id', '')}"
+                        })
+        except Exception as e:
+            print(f"   [yt-dlp Competitor Scan] Note: {e}")
+
+    competitors.sort(key=lambda x: x.get("views_per_day", 0), reverse=True)
+    clean_results = competitors[:limit]
+
+    # Cache for 12 hours
+    if clean_results:
+        cache[clean_topic] = {"timestamp": now_ts, "items": clean_results}
+        try:
+            with open(COMPETITOR_CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(cache, f, indent=2)
+        except Exception:
+            pass
+
+    return clean_results
 
 
-def optimize_with_virality_engine(topic: str, draft_title: str, draft_desc: str, draft_tags: list[str], channel_name: str) -> tuple[str, str, list[str]]:
-    """Compares draft with user's #1 most-viewed Short and top competitors, then upgrades title, desc & tags."""
-    print("\n" + "-" * 62)
-    print(f"\U0001f525 [VIRALITY ENGINE] Analyzing Title & Tag Competition for: '{topic}'...")
+def optimize_with_virality_engine(
+    topic: str,
+    draft_title: str,
+    draft_desc: str,
+    draft_tags: list[str],
+    channel_name: str,
+    hook: str = "",
+    video_dir: Path | None = None
+) -> tuple[str, str, list[str]]:
+    """
+    Orchestrates the metadata optimization:
+    1. Audits own top shorts and competitor titles ranked by velocity.
+    2. Requests 5 distinct title candidates from AI with health/wealth safety.
+    3. Scores every candidate using deterministic title_score().
+    4. Extracts high-frequency competitor keywords (occurring in >=2 titles).
+    5. Wraps hashtags between idempotent [HASHTAGS] markers (3-5 total).
+    6. Stores pinned comment idea in pinned_comment.txt instead of polluting description.
+    """
+    print("\n" + "-" * 64)
+    print(f"🔥 [VIRALITY ENGINE] Auditing Competition & Optimizing: '{topic}'...")
 
-    my_top = get_my_top_shorts(channel_name)
-    competitors = scan_competitor_shorts(topic)
+    my_top = get_my_top_shorts(channel_name, max_results=5)
+    competitors = scan_competitor_shorts(topic, limit=5, channel_name=channel_name)
+    recent_titles = get_recent_titles(limit=50)
 
-    my_best_summary = "No previous uploads yet (New Channel)"
+    my_best_summary = "No previous Short data available (New Channel)"
     if my_top:
         best = my_top[0]
-        my_best_summary = f"'{best['title']}' ({best['views']:,} views, {best['likes']} likes)"
-        print(f"   \U0001f3c6 Your #1 Most Viewed Short: {my_best_summary}")
-    else:
-        print("   \U0001f4ca Channel Status: Building baseline data from initial uploads")
+        my_best_summary = f"\"{best['title']}\" ({best['views_per_day']:.0f} views/day, {best['age_days']:.0f}d old)"
+        print(f"   🏆 Your #1 Short (by velocity): {my_best_summary}")
 
     comp_lines = []
+    comp_titles_raw = []
     if competitors:
-        print("   \U0001f50d Top Competitor Titles on YouTube Right Now:")
+        print("   🔍 Top Competitor Velocity on YouTube:")
         for idx, c in enumerate(competitors[:4]):
-            v_str = f"{c['views']:,} views" if c["views"] > 0 else "Trending"
-            print(f"      {idx + 1}. \"{c['title'][:58]}\" ({v_str})")
-            comp_lines.append(f"- {c['title']} ({v_str})")
+            vpd_str = f"{c['views_per_day']:.0f} views/day" if c['views_per_day'] > 0 else "Trending"
+            print(f"      {idx + 1}. \"{c['title'][:55]}\" ({vpd_str})")
+            comp_lines.append(f"- {c['title']} ({vpd_str})")
+            comp_titles_raw.append(c['title'])
 
     comp_block = "\n".join(comp_lines) if comp_lines else "None found"
 
-    prompt = f"""You are a YouTube Shorts Virality & SEO Strategist.
-Topic: {topic}
-My Draft Title: {draft_title}
-My Channel's #1 Most Viewed Short: {my_best_summary}
-Top Competitor Titles on YouTube:
+    sys_prompt = (
+        "You are an elite YouTube Shorts Strategist. "
+        "SAFETY REQUIREMENT: Never suggest titles claiming guaranteed money, 100% cure, or miraculous financial wealth. "
+        "Output ONLY valid JSON."
+    )
+
+    user_prompt = f"""Topic: {topic}
+Current Draft Title: {draft_title}
+Thumbnail Hook: {hook or 'None'}
+My Top Performing Short: {my_best_summary}
+Top Competitor Titles:
 {comp_block}
 
-Respond ONLY in valid JSON with these exact keys:
-- "virality_score": integer (1-100) rating how clickable the new title is
-- "winning_title": string (under 58 chars, high-CTR hook that beats competitors, include 1 power word)
-- "competitor_insight": 1 short sentence on why this title beats the competitors
-- "pinned_comment": 1 engaging question/call-to-action to pin in comments
-- "hashtags": list of 6 viral hashtags starting with #
-- "seo_tags": list of 12 high-search-volume YouTube backend keyword tags (no # symbol)"""
+Instructions:
+1. Provide 5 distinct, high-CTR YouTube Short title candidates under 55 characters. Include a power/curiosity word.
+2. Provide 8 to 12 relevant keyword tags (no # symbol).
+3. Provide 1 high-retention question for a pinned comment.
+4. Provide 4 viral hashtags starting with #.
 
-    ai_result = None
-    if API_KEY:
-        for m_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"]:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={API_KEY}"
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"responseMimeType": "application/json", "temperature": 0.85}
-                }
-                req = urllib.request.Request(url, headers={"Content-Type": "application/json"}, data=json.dumps(payload).encode("utf-8"))
-                with urllib.request.urlopen(req, timeout=7) as resp:
-                    resp_json = json.loads(resp.read().decode("utf-8"))
-                    raw_text = resp_json["candidates"][0]["content"]["parts"][0]["text"]
-                    m = re.search(r"\{.*\}", raw_text, re.DOTALL)
-                    if m:
-                        raw_text = m.group(0)
-                    ai_result = json.loads(raw_text)
-                    break
-            except Exception:
-                continue
+Respond with exact JSON:
+{{
+  "title_candidates": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5"],
+  "tags": ["tag1", "tag2"],
+  "pinned_comment": "Question to pin in comments?",
+  "hashtags": ["#Tag1", "#Tag2", "#Tag3", "#Tag4"]
+}}"""
 
-    or_key = os.getenv("OPENROUTER_API_KEY")
-    if not ai_result and or_key:
-        for model in ["openrouter/free", "google/gemma-4-31b-it:free"]:
-            try:
-                req = urllib.request.Request(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {or_key}", "Content-Type": "application/json"},
-                    data=json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
-                )
-                with urllib.request.urlopen(req, timeout=8) as response:
-                    data = json.loads(response.read().decode("utf-8"))
-                    raw_text = data["choices"][0]["message"]["content"]
-                    m = re.search(r"\{.*\}", raw_text, re.DOTALL)
-                    if m:
-                        raw_text = m.group(0)
-                    ai_result = json.loads(raw_text)
-                    break
-            except Exception:
-                continue
+    ai_data = iter_llm_json(user_prompt, system=sys_prompt, temperature=0.75, timeout=8)
 
-    if ai_result and isinstance(ai_result, dict):
-        new_title = ai_result.get("winning_title") or draft_title
-        score = ai_result.get("virality_score", 92)
-        insight = ai_result.get("competitor_insight", "Optimized for high mobile CTR and retention.")
-        pinned = ai_result.get("pinned_comment", "Type AMEN if you claim this today! \U0001f64f")
-        new_hashtags = [h if h.startswith("#") else f"#{h}" for h in ai_result.get("hashtags", [])][:6]
-        seo_tags = [str(t).replace("#", "").strip() for t in ai_result.get("seo_tags", []) if t]
+    # 1. Title Selection via Mathematical Scoring
+    candidates = []
+    if ai_data and isinstance(ai_data, dict) and "title_candidates" in ai_data:
+        candidates = [t.strip() for t in ai_data["title_candidates"] if t and isinstance(t, str)]
 
-        merged_tags = list(dict.fromkeys(seo_tags + [t.replace("#", "") for t in draft_tags]))[:18]
-        hashtag_line = " ".join(new_hashtags) if new_hashtags else ""
+    if not candidates:
+        candidates = [draft_title]
 
-        upgraded_desc = f"{draft_desc}\n\n{hashtag_line}\n\n\U0001f4cc PINNED COMMENT IDEA:\n{pinned}".strip()
+    scored_candidates = []
+    print("\n   📊 Scoring Title Candidates:")
+    for cand in candidates:
+        score, details = title_score(cand, recent_titles, hook=hook, verbose=False)
+        scored_candidates.append((score, cand))
+        print(f"      • [{score:02d}/100] \"{cand}\"")
 
-        print(f"   \U0001f4c8 Virality Score:     {score}/100")
-        print(f"   \U0001f3af Old Draft Title:    {draft_title}")
-        print(f"   \U0001f680 NEW WINNING TITLE:  {new_title}")
-        print(f"   \U0001f4a1 Strategy Insight:   {insight}")
-        print(f"   \U0001f3f7\ufe0f  Injected SEO Tags:  {', '.join(merged_tags[:8])}...")
-        print("-" * 62)
-        return new_title, upgraded_desc, merged_tags
+    scored_candidates.sort(key=lambda x: x[0], reverse=True)
+    best_score, winning_title = scored_candidates[0]
 
-    print("   \u2705 Applied baseline high-retention tags.")
-    print("-" * 62)
-    return draft_title, draft_desc, draft_tags
+    # Print transparent breakdown for chosen title
+    print(f"\n   🎯 Selected Winning Title: \"{winning_title}\"")
+    title_score(winning_title, recent_titles, hook=hook, verbose=True)
+    record_recent_title(winning_title)
+
+    # 2. Competitor Keyword Extraction (words appearing in >= 2 competitor titles)
+    comp_words = []
+    for ct in comp_titles_raw:
+        clean_words = set(re.findall(r"\b[a-zA-Z]{4,}\b", ct.lower())) - TITLE_STOPWORDS
+        comp_words.extend(clean_words)
+
+    word_counts = collections.Counter(comp_words)
+    frequent_comp_keywords = [w for w, count in word_counts.items() if count >= 2]
+
+    # 3. Tags Assembly (Capped strictly at 400 characters)
+    ai_tags = ai_data.get("tags", []) if isinstance(ai_data, dict) else []
+    raw_tag_pool = frequent_comp_keywords + [t.replace("#", "").strip() for t in ai_tags] + [t.replace("#", "").strip() for t in draft_tags]
+
+    unique_tags = []
+    seen_tags = set()
+    total_tag_len = 0
+    for tag in raw_tag_pool:
+        tag_clean = tag.strip().title()
+        if tag_clean and tag_clean.lower() not in seen_tags:
+            if total_tag_len + len(tag_clean) + 1 <= 400:
+                unique_tags.append(tag_clean)
+                seen_tags.add(tag_clean.lower())
+                total_tag_len += len(tag_clean) + 1
+
+    # 4. Idempotent Hashtags (Strictly 3-5 hashtags)
+    suggested_hts = ai_data.get("hashtags", []) if isinstance(ai_data, dict) else []
+    merged_hts = []
+    seen_hts = set()
+    for h in (suggested_hts + draft_tags + ["#Shorts", "#Faith"]):
+        h_str = h if h.startswith("#") else f"#{h}"
+        h_norm = re.sub(r"[^a-zA-Z0-9#]", "", h_str)
+        if len(h_norm) > 1 and h_norm.lower() not in seen_hts:
+            merged_hts.append(h_norm)
+            seen_hts.add(h_norm.lower())
+        if len(merged_hts) >= 5:
+            break
+
+    if len(merged_hts) < 3:
+        for backup in ["#Shorts", "#DailyWisdom", "#Inspiration"]:
+            if backup.lower() not in seen_hts:
+                merged_hts.append(backup)
+                seen_hts.add(backup.lower())
+            if len(merged_hts) >= 3:
+                break
+
+    ht_block = f"[HASHTAGS]\n{' '.join(merged_hts)}\n[/HASHTAGS]"
+
+    # Clean description: strip existing [HASHTAGS] block or legacy pinned comment prompts
+    clean_desc = re.sub(r"[HASHTAGS][\s\S]*?[/HASHTAGS]", "", draft_desc).strip()
+    clean_desc = re.sub(r"📌 PINNED COMMENT IDEA:[\s\S]*$", "", clean_desc).strip()
+    upgraded_desc = f"{clean_desc}\n\n{ht_block}".strip()
+
+    # 5. Pinned Comment: Isolated to pinned_comment.txt
+    pinned_comment = ""
+    if isinstance(ai_data, dict) and ai_data.get("pinned_comment"):
+        pinned_comment = ai_data["pinned_comment"].strip()
+    else:
+        pinned_comment = "Type AMEN if you received this message today! 🙏"
+
+    if video_dir and isinstance(video_dir, Path) and video_dir.exists():
+        try:
+            (video_dir / "pinned_comment.txt").write_text(pinned_comment, encoding="utf-8")
+        except Exception:
+            pass
+
+    print(f"\n   💬 Suggested Pinned Comment: \"{pinned_comment}\"")
+    print(f"   🏷️  Final Tags ({len(unique_tags)} items, {total_tag_len} chars): {', '.join(unique_tags[:6])}...")
+    print("-" * 64)
+
+    return winning_title, upgraded_desc, unique_tags
 
 
-def run_cli_virality_engine(active_channel: str):
-    """Interactive Menu [9] to audit channel performance, spy on competitors, or upgrade saved Shorts."""
-    print("\n" + "=" * 62)
-    print(f"\U0001f525 VIRALITY ENGINE & COMPETITOR SPY (Channel: {active_channel})")
-    print("=" * 62)
-    print("  [1] \U0001f3c6 View My Channel's Most Viewed Shorts & Performance")
-    print("  [2] \U0001f50d Spy on Competitor Titles & Tags for Any Topic")
-    print("  [3] \u26a1 Upgrade & Re-Optimize All Unuploaded Shorts in clips/")
-    print("  [b] Back")
-
-    choice = input("\nChoose option (1-3 or b): ").strip().lower()
-    if choice == "1":
-        _CHANNEL_STATS_CACHE.pop(active_channel, None)
-        my_vids = get_my_top_shorts(active_channel, max_results=12)
-        if not my_vids:
-            print("\n\u26a0\ufe0f No public videos found or channel stats are still processing.")
-            return
-        print(f"\n\U0001f4ca TOP PERFORMING SHORTS ON [{active_channel}]:")
-        for i, v in enumerate(my_vids):
-            print(f"  #{i + 1}: \"{v['title']}\" \u2014 \U0001f441\ufe0f {v['views']:,} views | \U0001f44d {v['likes']} likes | \U0001f4ac {v['comments']} comments")
-    elif choice == "2":
-        topic = input("\nEnter Topic / Niche to Spy On (e.g. 'Bible Verse for Debt' or 'Stoicism'): ").strip()
-        if topic:
-            optimize_with_virality_engine(topic, f"Powerful Lesson on {topic}", "Sample description", ["Shorts"], active_channel)
-    elif choice == "3":
-        mp4s = sorted(list(CLIPS_DIR.rglob("*.mp4")), key=os.path.getmtime, reverse=True)
-        unuploaded = [v for v in mp4s if not load_clip_metadata(v).get("youtube_id")]
-        if not unuploaded:
-            print("\n\U0001f389 All videos in clips/ are already uploaded!")
-            return
-        for v in unuploaded:
-            meta = load_clip_metadata(v)
-            new_t, new_d, new_tags = optimize_with_virality_engine(meta["title"], meta["title"], meta["description"], meta["tags"], active_channel)
-            save_clip_metadata(v, new_t, new_d, new_tags)
-            print(f"\u2705 Upgraded metadata for: {v.parent.name}/{v.name}")
-
-
-def save_clip_metadata(video_path: Path, title: str, description: str, tags: list[str]):
+def save_clip_metadata(video_path: Path, title: str, description: str, tags: list[str], topic: str = ""):
+    """Saves metadata safely and idempotently with persistent topic tracking."""
     meta_path = video_path.with_suffix(".json")
-    with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump({"title": title, "description": description, "tags": tags, "youtube_id": None}, f, indent=2)
-    txt_path = video_path.parent / "youtube_details.txt"
-    txt_path.write_text(f"TITLE:\n{title}\n\nDESCRIPTION:\n{description}\n", encoding="utf-8")
+    existing_meta = {}
+    if meta_path.exists():
+        try:
+            with open(meta_path, "r", encoding="utf-8") as f:
+                existing_meta = json.load(f)
+        except Exception:
+            existing_meta = {}
+
+    data = {
+        "title": title,
+        "description": description,
+        "tags": tags,
+        "topic": topic or existing_meta.get("topic") or title,
+        "youtube_id": existing_meta.get("youtube_id", None)
+    }
+
+    try:
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"   [Metadata Save] Failed to write {meta_path.name}: {e}")
+
+    try:
+        txt_path = video_path.parent / "youtube_details.txt"
+        txt_path.write_text(f"TITLE:\n{title}\n\nDESCRIPTION:\n{description}\n\nTAGS:\n{', '.join(tags)}\n", encoding="utf-8")
+    except Exception as e:
+        print(f"   [Metadata Save] Failed to write details txt: {e}")
+
 
 def load_clip_metadata(video_path: Path) -> dict:
+    """Loads metadata cleanly with safe fallback."""
     meta_path = video_path.with_suffix(".json")
     if meta_path.exists():
         try:
@@ -708,7 +1149,169 @@ def load_clip_metadata(video_path: Path) -> dict:
                 return json.load(f)
         except Exception:
             pass
-    return {"title": video_path.stem.replace("_", " "), "description": "Watch this message.\n\n#Shorts #Faith", "tags": ["Shorts", "Faith"], "youtube_id": None}
+    return {
+        "title": video_path.stem.replace("_", " "),
+        "description": "Watch this message.\n\n[HASHTAGS]\n#Shorts #Faith #Prayer\n[/HASHTAGS]",
+        "tags": ["Shorts", "Faith", "Prayer"],
+        "topic": video_path.stem.replace("_", " "),
+        "youtube_id": None
+    }
+
+
+def analyze_performance_patterns(channel_name: str):
+    """
+    Learning Loop: Audits uploaded videos older than 48 hours in performance_log.json,
+    fetches views and likes from YouTube, and displays aggregations across
+    palettes, layouts, hook styles, and posting hours.
+    """
+    if not PERFORMANCE_LOG_FILE.exists():
+        print("\n⚠️ No performance logs recorded yet. Videos will be logged automatically after uploads.")
+        return
+
+    try:
+        with open(PERFORMANCE_LOG_FILE, "r", encoding="utf-8") as f:
+            records = json.load(f)
+    except Exception:
+        records = []
+
+    if not records:
+        print("\n⚠️ No recorded uploads found in performance_log.json.")
+        return
+
+    youtube = get_authenticated_youtube(channel_name)
+    now = datetime.now(timezone.utc)
+    eligible = []
+
+    for r in records:
+        p_time = r.get("post_time")
+        if p_time:
+            try:
+                dt = datetime.fromisoformat(p_time.replace("Z", "+00:00"))
+                if (now - dt) >= timedelta(hours=48):
+                    eligible.append(r)
+            except Exception:
+                continue
+
+    if not eligible:
+        print(f"\n⏳ Found {len(records)} logged video(s), but none are >48 hours old yet. Check back soon!")
+        return
+
+    stats_map = {}
+    if youtube:
+        try:
+            v_ids = [r["video_id"] for r in eligible if r.get("video_id")]
+            if v_ids:
+                res = youtube.videos().list(id=",".join(v_ids), part="statistics").execute()
+                track_yt_quota(1)
+                for item in res.get("items", []):
+                    st = item.get("statistics", {})
+                    stats_map[item["id"]] = {
+                        "views": int(st.get("viewCount", 0)),
+                        "likes": int(st.get("likeCount", 0))
+                    }
+        except Exception as e:
+            print(f"   [API Performance Update] Note: {e}")
+
+    palettes = collections.defaultdict(list)
+    layouts = collections.defaultdict(list)
+    hours = collections.defaultdict(list)
+    hook_styles = collections.defaultdict(list)
+
+    for r in eligible:
+        v_id = r.get("video_id")
+        views = stats_map.get(v_id, {}).get("views", 0)
+
+        palettes[r.get("palette", "Gold Classic")].append(views)
+        layouts[r.get("layout", "Adaptive")].append(views)
+        hours[r.get("post_hour_utc", 0)].append(views)
+
+        hk = r.get("hook", "").strip()
+        if "?" in hk:
+            h_style = "Question Hook"
+        elif any(w in hk.lower() for w in ["stop", "never", "warning", "danger"]):
+            h_style = "Negative/Warning"
+        elif any(w in hk.lower() for w in ["how", "why"]):
+            h_style = "Curiosity/How-To"
+        else:
+            h_style = "Bold Statement"
+        hook_styles[h_style].append(views)
+
+    print("\n" + "=" * 66)
+    print(f"📊 HISTORICAL PATTERN ANALYSIS (>48h Old Videos: {len(eligible)} analyzed)")
+    print("=" * 66)
+
+    def _print_table(title: str, grouped: dict, col_name: str):
+        print(f"\n🔹 {title}:")
+        print(f"   {'Index':<4} {col_name:<26} {'Count':<8} {'Avg Views':<12}")
+        print("   " + "-" * 52)
+        sorted_rows = sorted(grouped.items(), key=lambda x: (sum(x[1]) / max(1, len(x[1]))), reverse=True)
+        for i, (k, v_list) in enumerate(sorted_rows, start=1):
+            avg_v = sum(v_list) / max(1, len(v_list))
+            print(f"   #{i:<3} {str(k):<26} {len(v_list):<8} {avg_v:,.0f}")
+
+    _print_table("Performance by Color Palette", palettes, "Palette Name")
+    _print_table("Performance by Video Layout", layouts, "Layout Mode")
+    _print_table("Performance by Hook Style", hook_styles, "Hook Pattern")
+    _print_table("Performance by Post Hour (UTC)", hours, "Hour (0-23 UTC)")
+    print("=" * 66)
+
+
+def run_cli_virality_engine(active_channel: str):
+    """Interactive Menu [9] for channel auditing, competitor spying, and performance pattern learning."""
+    while True:
+        print("\n" + "=" * 64)
+        print(f"🔥 VIRALITY & COMPETITOR INTELLIGENCE ENGINE (Channel: {active_channel})")
+        print("=" * 64)
+        print("  [1] 🏆 View My Top Performing Shorts (Ranked by Velocity)")
+        print("  [2] 🔍 Spy on Competitors & Title Opportunities for Any Topic")
+        print("  [3] ⚡ Re-Optimize Unuploaded Shorts in clips/ (Idempotent)")
+        print("  [4] 📈 Audit Learning Loop: Patterns by Palette, Layout & Hour")
+        print("  [b] Back to Main Menu")
+
+        choice = input("\nChoose option (1-4 or b): ").strip().lower()
+
+        if choice == "1":
+            _CHANNEL_STATS_CACHE.pop(active_channel, None)
+            my_vids = get_my_top_shorts(active_channel, max_results=10)
+            if not my_vids:
+                print("\n⚠️ No public Shorts found or channel uploads list is still processing.")
+                continue
+            print(f"\n📊 TOP SHORTS ON [{active_channel}] (Ranked by Daily Velocity):")
+            for i, v in enumerate(my_vids, start=1):
+                print(f"  #{i}: \"{v['title'][:48]}\"")
+                print(f"      🚀 {v['views_per_day']:,.0f} views/day | 👁️ {v['views']:,} total | ⏳ {v['age_days']} days old")
+        elif choice == "2":
+            topic = input("\nEnter Topic to Spy On (e.g. 'Breaking Debt' or 'Morning Peace'): ").strip()
+            if topic:
+                optimize_with_virality_engine(topic, f"God's Plan for {topic}", "Watch this powerful message.", ["Shorts"], active_channel)
+        elif choice == "3":
+            mp4s = sorted(list(CLIPS_DIR.rglob("*.mp4")), key=os.path.getmtime, reverse=True)
+            unuploaded = [v for v in mp4s if not load_clip_metadata(v).get("youtube_id")]
+            if not unuploaded:
+                print("\n🎉 All videos in clips/ have already been uploaded!")
+                continue
+
+            print(f"\n⚡ Found {len(unuploaded)} unuploaded Short(s). Upgrading titles & tags...")
+            for v in unuploaded:
+                meta = load_clip_metadata(v)
+                orig_topic = meta.get("topic") or meta.get("title")
+                new_t, new_d, new_tags = optimize_with_virality_engine(
+                    orig_topic,
+                    meta["title"],
+                    meta["description"],
+                    meta["tags"],
+                    active_channel,
+                    video_dir=v.parent
+                )
+                save_clip_metadata(v, new_t, new_d, new_tags, topic=orig_topic)
+                print(f"✅ Upgraded metadata for: {v.parent.name}/{v.name}")
+        elif choice == "4":
+            analyze_performance_patterns(active_channel)
+        elif choice in ("b", "back", "0", ""):
+            break
+        else:
+            print("⚠️ Invalid selection. Choose 1 to 4 or 'b'.")
+
 
 def choose_upload_channel(default_channel: str) -> str | None:
     channels = list(load_channels().keys())
@@ -737,8 +1340,20 @@ def upload_video_to_youtube(channel_name: str, video_path: Path) -> str | None:
     meta = load_clip_metadata(video_path)
     print(f"\n🚀 [YouTube] Publishing '{meta['title']}' to '{channel_name}'...")
 
+    # Strict YouTube API sanitization (Never send < or > characters to YouTube)
+    safe_title = re.sub(r"[<>]", "", str(meta.get("title", ""))).strip()[:100]
+    raw_desc = str(meta.get("description", ""))
+    safe_desc = re.sub(r"<!--[\s\S]*?-->", "", raw_desc)
+    safe_desc = safe_desc.replace("<", "").replace(">", "").strip()
+    safe_tags = [re.sub(r"[<>]", "", str(t)).strip() for t in meta.get("tags", []) if t][:15]
+
     body = {
-        "snippet": {"title": meta["title"][:100], "description": meta["description"], "tags": meta["tags"], "categoryId": "27"},
+        "snippet": {
+            "title": safe_title,
+            "description": safe_desc,
+            "tags": safe_tags,
+            "categoryId": "27"
+        },
         "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}
     }
     media = MediaFileUpload(str(video_path), chunksize=-1, resumable=True, mimetype="video/mp4")
@@ -758,6 +1373,17 @@ def upload_video_to_youtube(channel_name: str, video_path: Path) -> str | None:
             json.dump(meta, f, indent=2)
 
         print(f"🎉 Live on YouTube! https://youtube.com/shorts/{yt_id}")
+        try:
+            log_upload_performance(
+                video_id=yt_id,
+                title=meta.get("title", ""),
+                hook=meta.get("thumbnail_hook", "") or meta.get("hook", ""),
+                palette=meta.get("palette", "Gold Classic"),
+                layout=meta.get("layout", "Adaptive"),
+                topic=meta.get("topic", "")
+            )
+        except Exception:
+            pass
         return yt_id
     except Exception as e:
         if "uploadLimitExceeded" in str(e):
@@ -953,7 +1579,7 @@ topic, title, verse_citation, verse_text, meaning, prayer, thumbnail_hook, hasht
 IMPORTANT: Keep verse_citation as '{ref_str}' and verse_text as '{v_text_final}'."""
 
     if API_KEY:
-        for m_name in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.5-flash-lite"]:
+        for m_name in ["gemini-1.5-flash", "gemini-1.5-flash", "gemini-3.5-flash-lite"]:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={API_KEY}"
                 payload = {
@@ -1306,7 +1932,7 @@ def render_faceless_bible_video(
     ]
 
     try:
-        subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=60, check=True)
+        subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=60, check=True, encoding="utf-8", errors="replace")
     except subprocess.CalledProcessError as e:
         print(" ❌ FFMPEG ERROR DETAILS:")
         print(e.stderr[-600:])
@@ -1511,7 +2137,7 @@ def render_podcast_short(raw_slice: Path, clip: BookClip, output_path: Path, bad
         "-c:a", "aac", "-b:a", "192k",
         str(output_path)
     ]
-    return subprocess.run(cmd, capture_output=True, text=True).returncode == 0
+    return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace").returncode == 0
 
 # --- 7. STANDALONE DOWNLOADERS ---
 # --- PINTEREST IMAGE & VIDEO DOWNLOADER (AUTO-SORTED & AUTO-MUTED) ---
