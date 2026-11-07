@@ -746,8 +746,20 @@ def generate_bible_content(topic_query: str) -> BibleShortScript:
     avoid_list = ", ".join(used_verses[-50:]) if used_verses else "None"
     seed = random.randint(100000, 9999999)
 
+    from voice_studio import load_active_voice, HINDI_BIBLE_VAULT
+    active_v_cfg = load_active_voice()
+    is_hindi_script = "Hindi / Hinglish" in active_v_cfg.get("script_mode", "")
+    if is_hindi_script:
+        for hk, hval in HINDI_BIBLE_VAULT.items():
+            if hk.lower() in topic_query.lower():
+                return BibleShortScript(**hval)
+    lang_rule = (
+        "Write verse_text, meaning, prayer, and thumbnail_hook in Romanized Hindi (Hinglish using English alphabet, e.g. 'Mera Parmeshwar aapki har zaroorat poora karega') so Indian viewers understand easily."
+        if is_hindi_script else
+        "Write in clear, comforting English."
+    )
     sys_prompt = (
-        "You are a Christian content creator. Respond ONLY in valid JSON with exact keys: "
+        f"You are a Christian content creator. {lang_rule} Respond ONLY in valid JSON with exact keys: "
         "topic, title, verse_citation, verse_text, meaning, prayer, thumbnail_hook, hashtags (list of strings)."
     )
     user_prompt = f"""Seed: {seed}
@@ -860,15 +872,101 @@ Select a unique, powerful Bible verse specifically about '{topic_query}'. Provid
     return script
 
 
+def generate_bible_content_from_exact_verse(book_name: str, chapter: int, verse_num: int, custom_topic: str = "") -> BibleShortScript:
+    """Generates a complete devotional Short script around an exact user-selected Book, Chapter, and Verse."""
+    from bible_database import get_verses_for_chapter, translate_verse_to_hindi
+    from voice_studio import load_active_voice
+
+    verses_map = get_verses_for_chapter(book_name, chapter)
+    en_text = verses_map.get(verse_num, "The Lord is near to all who call upon Him.")
+    ref_str = f"{book_name.strip()} {chapter}:{verse_num}"
+    topic_label = custom_topic.strip() or f"{book_name.strip()} {chapter}:{verse_num} Promise"
+
+    active_v = load_active_voice()
+    is_hindi_mode = "Hindi / Hinglish" in active_v.get("script_mode", "")
+
+    if is_hindi_mode:
+        _, hinglish_v = translate_verse_to_hindi(ref_str, en_text)
+        v_text_final = hinglish_v if hinglish_v else en_text
+    else:
+        v_text_final = en_text
+
+    # Ask Gemini to craft the reflection, prayer, and hook specifically for this exact verse
+    prompt = f"""Create a Christian YouTube Short script for this EXACT Bible verse:
+Reference: {ref_str}
+Verse Text: {v_text_final}
+Topic: {topic_label}
+Language Mode: {'Romanized Hindi (Hinglish)' if is_hindi_mode else 'English'}
+
+Respond ONLY in valid JSON with exact keys:
+topic, title, verse_citation, verse_text, meaning, prayer, thumbnail_hook, hashtags (list of strings).
+IMPORTANT: Keep verse_citation as '{ref_str}' and verse_text as '{v_text_final}'."""
+
+    if API_KEY:
+        for m_name in ["gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-3.6-flash"]:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m_name}:generateContent?key={API_KEY}"
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"responseMimeType": "application/json", "temperature": 0.7}
+                }
+                req = urllib.request.Request(url, headers={"Content-Type": "application/json"}, data=json.dumps(payload).encode("utf-8"))
+                with urllib.request.urlopen(req, timeout=7) as resp:
+                    resp_json = json.loads(resp.read().decode("utf-8"))
+                    raw_t = resp_json["candidates"][0]["content"]["parts"][0]["text"]
+                    m = re.search(r"\{.*\}", raw_t, re.DOTALL)
+                    if m:
+                        raw_t = m.group(0)
+                    parsed = json.loads(raw_t)
+                    parsed["verse_citation"] = ref_str
+                    parsed["verse_text"] = v_text_final
+                    return BibleShortScript(**parsed)
+            except Exception:
+                continue
+
+    if is_hindi_mode:
+        return BibleShortScript(
+            topic=topic_label,
+            title=f"{ref_str} Parmeshwar Ka Vachan #shorts",
+            verse_citation=ref_str,
+            verse_text=v_text_final,
+            meaning="Prabhu ka yeh pavitra vachan aapke jeevan mein nayi shanti aur aasha lata hai. Unpar poora bharosa rakhein.",
+            prayer="Prabhu Yeshu, is vachan ko mere jeevan mein poora karein aur mujhe apni shanti dein, Amen.",
+            thumbnail_hook=f"{ref_str.upper()} PROMISE",
+            hashtags=["#HindiBible", "#YeshuMasih", "#BibleVerse", "#Shorts"]
+        )
+
+    return BibleShortScript(
+        topic=topic_label,
+        title=f"God's Promise in {ref_str} #shorts",
+        verse_citation=ref_str,
+        verse_text=v_text_final,
+        meaning="Let this timeless promise anchor your soul today. God's word never returns void and His grace surrounds you right now.",
+        prayer="Lord, thank You for the promise of Your Word; let its truth bring peace and strength to my heart today, Amen.",
+        thumbnail_hook=f"{ref_str.upper()} PROMISE",
+        hashtags=["#BibleVerse", "#DailyPrayer", "#Faith", "#Shorts"]
+    )
+
+
 def generate_voiceover(text: str, output_voice_path: Path):
-    """Generates audio AND millisecond-synced word timings while preserving chapter:verse colons."""
+    """Generates audio AND millisecond-synced word timings using the selected Voice Studio profile (Hindi/Indian/UK/US)."""
+    from voice_studio import load_active_voice
+    active_v = load_active_voice()
+    v_name = active_v.get("voice", "hi-IN-MadhurNeural")
+    v_rate = active_v.get("rate", "-4%")
+    v_pitch = active_v.get("pitch", "+0Hz")
+    print(f"   🎙️ Speaking with Voice: {active_v.get('name')} [{v_name} | Rate: {v_rate} | Pitch: {v_pitch}]")
+
     json_path = Path(str(output_voice_path).replace(".mp3", ".json"))
 
     async def _make():
         try:
-            communicate = edge_tts.Communicate(text, voice="en-US-ChristopherNeural", rate="-2%", boundary="WordBoundary")
+            communicate = edge_tts.Communicate(text, voice=v_name, rate=v_rate, pitch=v_pitch, boundary="WordBoundary")
         except TypeError:
-            communicate = edge_tts.Communicate(text, voice="en-US-ChristopherNeural", rate="-2%")
+            try:
+                communicate = edge_tts.Communicate(text, voice=v_name, rate=v_rate, boundary="WordBoundary")
+            except TypeError:
+                communicate = edge_tts.Communicate(text, voice=v_name, rate=v_rate)
 
         raw_events = []
         with open(output_voice_path, "wb") as f_voice:
@@ -915,7 +1013,6 @@ def generate_voiceover(text: str, output_voice_path: Path):
                     })
                     cur_t += w_dur
 
-        # Re-join consecutive chapter & verse numbers with ':' (e.g. '4' + '19' -> '4:19')
         merged_timings = []
         i = 0
         while i < len(word_timings):
@@ -945,6 +1042,7 @@ def generate_voiceover(text: str, output_voice_path: Path):
         asyncio.set_event_loop(loop)
         loop.run_until_complete(_make())
         loop.close()
+
 
 
 def create_designer_thumbnail(bg_image_path: Path, script: BibleShortScript, font_path: Path, thumb_path: Path, palette_name: str = "Gold Classic"):
@@ -1585,7 +1683,8 @@ def run_cli_bible(active_channel: str):
     print(f"   🙏 Prayer: \"{script.prayer}\"")
 
     print("\n🎙️ [2/3] Generating solemn voiceover & word timings...")
-    voice_script = f"If you are struggling with {script.topic}, hold onto this verse. {script.verse_citation}. {script.verse_text}. {script.meaning}. Let us pray. {script.prayer} Type Amen in the comments to receive this blessing."
+    from voice_studio import build_spoken_voice_script
+    voice_script = build_spoken_voice_script(script)
     temp_voice = BASE_DIR / "temp_voice.mp3"
     generate_voiceover(voice_script, temp_voice)
 
@@ -1852,6 +1951,65 @@ def save_everything_to_git() -> tuple[bool, str]:
 
 
 # --- 9. MAIN INTERACTIVE BACKEND MENU ---
+def run_cli_voice_studio():
+    """Interactive Terminal Voice Studio: Browse 4 accents, listen to any voice sample, and select."""
+    from voice_studio import VOICE_CATALOG, DEFAULT_SAMPLE_TEXTS, load_active_voice, save_active_voice, synthesize_preview_sample, play_audio_on_windows
+    cur = load_active_voice()
+    accents = list(VOICE_CATALOG.keys())
+
+    while True:
+        print("\n" + "=" * 68)
+        print("🎙️ PROFESSIONAL VOICE & ACCENT STUDIO (28 NEURAL VOICES)")
+        print(f"🔊 Currently Active Voice: {cur.get('name')} ({cur.get('accent')})")
+        print("=" * 68)
+        for idx, acc in enumerate(accents, start=1):
+            print(f"  [{idx}] {acc} ({len(VOICE_CATALOG[acc])} Voices)")
+        print("  [b] Back to Main Menu")
+        print("=" * 68)
+
+        c_acc = input("Select Accent Category (1-4 or b): ").strip().lower()
+        if c_acc in ("b", "back", "0", ""):
+            break
+        if not (c_acc.isdigit() and 1 <= int(c_acc) <= len(accents)):
+            continue
+
+        chosen_accent = accents[int(c_acc) - 1]
+        v_list = VOICE_CATALOG[chosen_accent]
+        sample_txt = DEFAULT_SAMPLE_TEXTS[chosen_accent]
+
+        while True:
+            print("\n" + "-" * 68)
+            print(f"🎧 VOICES IN: {chosen_accent}")
+            print("-" * 68)
+            for v_i, v_obj in enumerate(v_list, start=1):
+                mark = " ⭐ [ACTIVE]" if v_obj["id"] == cur.get("id") else ""
+                print(f"  [{v_i}] {v_obj['name']} ({v_obj['gender']}){mark}")
+                print(f"      Style: {v_obj['style']} | Rate: {v_obj['rate']} | Pitch: {v_obj['pitch']}")
+            print("-" * 68)
+            print("💡 Commands:")
+            print(f"  • Type a number (1-{len(v_list)}) to SELECT that voice as Active")
+            print(f"  • Type 'p1', 'p2', etc. to LISTEN / AUDITION that voice right now!")
+            print("  • Type 'b' to go back to Accent Categories")
+
+            cmd_in = input("\nYour choice (e.g. 'p1' to listen, '1' to select, 'b' back): ").strip().lower()
+            if cmd_in in ("b", "back", ""):
+                break
+            if cmd_in.startswith("p") and cmd_in[1:].isdigit():
+                p_idx = int(cmd_in[1:]) - 1
+                if 0 <= p_idx < len(v_list):
+                    target_v = v_list[p_idx]
+                    print(f"🎧 Generating & playing sample for: {target_v['name']}...")
+                    mp3_f = synthesize_preview_sample(target_v["voice"], target_v["rate"], target_v["pitch"], sample_txt)
+                    play_audio_on_windows(mp3_f)
+            elif cmd_in.isdigit() and 1 <= int(cmd_in) <= len(v_list):
+                sel_v = dict(v_list[int(cmd_in) - 1])
+                sel_v["accent"] = chosen_accent
+                save_active_voice(sel_v)
+                cur = sel_v
+                print(f"\n✅ LOCKED IN ACTIVE VOICE: {sel_v['name']} ({chosen_accent})!")
+                break
+
+
 def main():
     channels = load_channels()
     if not channels:
@@ -1875,10 +2033,11 @@ def main():
         print("  [9] 🔥 Virality Engine (Spy on Competitors & My Top Shorts)")
         print("  [10] 📌 Download Pinterest Image or Video (Auto-Sorted in Pinterest/)")
         print("  [11] ☁️ Save & Push Everything to GitHub")
+        print("  [12] 🎙️ Voice & Accent Studio (Listen & Choose from 28 Voices)")
         print("  [0] ❌ Exit")
         print("=" * 65)
 
-        opt = input("Select an option (0-11): ").strip()
+        opt = input("Select an option (0-12): ").strip()
 
         if opt == "1":
             run_cli_podcast_scout(active_channel)
@@ -1905,11 +2064,13 @@ def main():
             run_cli_pinterest_downloader()
         elif opt == "11":
             save_everything_to_git()
+        elif opt == "12":
+            run_cli_voice_studio()
         elif opt == "0":
             print("\n👋 Exiting DailyWisdom Engine. God bless!")
             break
         else:
-            print("⚠️ Invalid choice. Enter 0 to 11.")
+            print("⚠️ Invalid choice. Enter 0 to 12.")
 
 if __name__ == "__main__":
     main()
