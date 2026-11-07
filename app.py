@@ -36,7 +36,7 @@ st.markdown('<div class="sub-header">Connected directly to main.py • 102pt Syn
 channels = backend.load_channels()
 channel_names = list(channels.keys())
 
-col_ch1, col_ch2, col_ch3 = st.columns([2, 2, 1])
+col_ch1, col_ch2, col_ch3, col_ch4 = st.columns([2, 1.5, 1, 1.2])
 with col_ch1:
     if channel_names:
         active_channel = st.selectbox("📺 Default Target YouTube Channel:", channel_names)
@@ -55,6 +55,17 @@ with col_ch3:
         if new_ch:
             st.success(f"Connected {new_ch}!")
             st.rerun()
+
+with col_ch4:
+    st.write("")
+    if st.button("☁️ Save to GitHub", width="stretch"):
+        with st.spinner("Saving & pushing to GitHub..."):
+            ok, msg = backend.save_everything_to_git()
+            if ok:
+                st.toast("Saved to GitHub!", icon="✅")
+                st.success(msg)
+            else:
+                st.warning(msg)
 
 st.divider()
 
@@ -81,6 +92,42 @@ with tab_bible:
 
     final_topic = custom_t.strip() if custom_t.strip() else picked
 
+    st.markdown("#### 📌 Download from Pinterest (Auto-Sorted into `Pinterest/Images` & `Pinterest/Videos` + Auto-Muted)")
+    p_col1, p_col2 = st.columns([3, 1])
+    with p_col1:
+        pin_url_input = st.text_input("Paste Pinterest Link (Image or Video Pin):", placeholder="https://pin.it/... or https://www.pinterest.com/pin/...", key="pin_url_box")
+    with p_col2:
+        st.write("")
+        if st.button("📌 Download Pin & Add to Studio", width="stretch"):
+            if pin_url_input.strip():
+                with st.spinner("Downloading from Pinterest, sorting & auto-muting..."):
+                    saved_pin = backend.download_pinterest_media(pin_url_input.strip(), sync_to_studio=True)
+                    if saved_pin:
+                        st.success(f"✅ Saved `{saved_pin.name}` in `Pinterest/{saved_pin.parent.name}/` & added to dropdowns below!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("Could not extract media from that Pinterest link.")
+
+    st.markdown("#### 🎨 Custom Background & Thumbnail (Just Upload — Everything Else Is Automatic!)")
+    up_col1, up_col2, up_col3 = st.columns(3)
+
+    with up_col1:
+        up_intro = st.file_uploader("📹 1. Upload Intro Video (0-10s, Auto-Muted)", type=["mp4", "mov", "webm", "mkv"], key="up_intro")
+        saved_intros = ["Auto / Default"] + [f.name for f in sorted(backend.INTRO_DIR.glob("*.*"), key=lambda x: x.stat().st_mtime, reverse=True) if f.is_file()]
+        pick_intro_name = st.selectbox("Or pick saved Intro Video:", saved_intros)
+
+    with up_col2:
+        up_bg = st.file_uploader("🖼️ 2. Upload Main Background Image (10s-End)", type=["jpg", "jpeg", "png", "webp"], key="up_bg")
+        saved_bgs = ["Auto / Default"] + [f.name for f in sorted(backend.BG_DIR.glob("*.*"), key=lambda x: x.stat().st_mtime, reverse=True) if f.is_file()]
+        pick_bg_name = st.selectbox("Or pick saved Background Image:", saved_bgs)
+
+    with up_col3:
+        up_thumb = st.file_uploader("🔥 3. Upload Thumbnail Image", type=["jpg", "jpeg", "png", "webp"], key="up_thumb")
+        saved_thumbs = ["Same as Background Image"] + [f.name for f in sorted(backend.THUMB_DIR.glob("*.*"), key=lambda x: x.stat().st_mtime, reverse=True) if f.is_file()]
+        pick_thumb_name = st.selectbox("Or pick saved Thumbnail:", saved_thumbs)
+        raw_thumb_toggle = st.checkbox("Use uploaded thumbnail as-is (Don't add 3D text)", value=False)
+
     if st.button(f"✨ Generate Bible Short for '{final_topic}'", width="stretch"):
         status = st.empty()
         prog = st.progress(0)
@@ -102,7 +149,37 @@ with tab_bible:
         out_video = seq_dir / f"{clean_name}.mp4"
         out_thumb = seq_dir / f"{clean_name}_thumb.jpg"
 
-        ok = backend.render_faceless_bible_video(script, temp_voice, out_video, out_thumb)
+        # Automatically save & process any uploaded files
+        c_intro_path = None
+        if up_intro is not None:
+            c_intro_path = backend.INTRO_DIR / backend.clean_filename(Path(up_intro.name).stem)
+            c_intro_path = c_intro_path.with_suffix(Path(up_intro.name).suffix)
+            c_intro_path.write_bytes(up_intro.getvalue())
+            c_intro_path = backend.mute_any_video(c_intro_path)
+        elif pick_intro_name != "Auto / Default":
+            c_intro_path = backend.mute_any_video(backend.INTRO_DIR / pick_intro_name)
+
+        c_bg_path = None
+        if up_bg is not None:
+            c_bg_path = backend.BG_DIR / f"{backend.clean_filename(Path(up_bg.name).stem)}{Path(up_bg.name).suffix}"
+            c_bg_path.write_bytes(up_bg.getvalue())
+        elif pick_bg_name != "Auto / Default":
+            c_bg_path = backend.BG_DIR / pick_bg_name
+
+        c_thumb_path = None
+        if up_thumb is not None:
+            c_thumb_path = backend.THUMB_DIR / f"{backend.clean_filename(Path(up_thumb.name).stem)}{Path(up_thumb.name).suffix}"
+            c_thumb_path.write_bytes(up_thumb.getvalue())
+        elif pick_thumb_name != "Same as Background Image":
+            c_thumb_path = backend.THUMB_DIR / pick_thumb_name
+        else:
+            c_thumb_path = c_bg_path
+
+        ok = backend.render_faceless_bible_video(
+            script, temp_voice, out_video, out_thumb,
+            custom_intro=c_intro_path, custom_bg=c_bg_path,
+            custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle
+        )
         if temp_voice.exists():
             temp_voice.unlink()
 

@@ -49,6 +49,92 @@ YOUTUBE_SCOPES = [
     "https://www.googleapis.com/auth/youtube.readonly"
 ]
 
+# --- CUSTOM MEDIA FOLDERS & AUTO-MUTER ---
+MEDIA_DIR = BASE_DIR / "custom_media"
+INTRO_DIR = MEDIA_DIR / "intro_videos"
+BG_DIR = MEDIA_DIR / "backgrounds"
+THUMB_DIR = MEDIA_DIR / "thumbnails"
+for _d in [INTRO_DIR, BG_DIR, THUMB_DIR]:
+    _d.mkdir(parents=True, exist_ok=True)
+
+TOPIC_VISUAL_SUGGESTIONS = {
+    "Debt": ("Golden heavenly clouds parting or light rays", "Jesus with outstretched hands offering peace", "Close-up of Jesus with bold 'BREAK EVERY DEBT' hook"),
+    "Anxiety": ("Calm ocean waves at sunset or gentle rain", "Jesus calming the storm on the water", "Radiant white Jesus in storm with 'PEACE BE STILL'"),
+    "Broken Heart": ("Soft glowing candle or warm sunrise through clouds", "Jesus embracing or wiping away tears", "Compassionate face of Christ with golden halo"),
+    "Healing": ("Heavenly golden light beams descending", "Jesus reaching out His healing hand", "Glowing cross and healing hands of Christ"),
+    "Protection": ("Mighty eagles soaring or dramatic sky clouds", "Warrior angels or Jesus standing guard in light", "Glowing shield of faith / Psalm 91 visual"),
+    "Strength": ("Mountain peak above the clouds at dawn", "Jesus walking with footprints in the sand", "Radiant Christ with 'RENEW YOUR STRENGTH'"),
+    "Forgiveness": ("Doves flying into bright golden sky", "The Cross at sunset or Jesus with open arms", "Merciful Christ in white robes")
+}
+
+def mute_any_video(input_vid: Path) -> Path:
+    """Automatically strips audio from any uploaded or saved intro video."""
+    if not input_vid or not input_vid.exists():
+        return input_vid
+    muted_dir = INTRO_DIR / "muted_cache"
+    muted_dir.mkdir(parents=True, exist_ok=True)
+    muted_out = muted_dir / f"muted_{input_vid.stem}.mp4"
+    if not muted_out.exists() or muted_out.stat().st_size < 1000:
+        cmd = ["ffmpeg", "-y", "-i", str(input_vid), "-an", "-c:v", "copy", str(muted_out)]
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return muted_out if muted_out.exists() else input_vid
+
+def choose_media_in_cli(topic: str) -> tuple[Path | None, Path | None, Path | None]:
+    """Shows AI suggestions, exact save/rename instructions, and lets user pick files in CLI."""
+    sug_intro, sug_bg, sug_thumb = ("Heavenly golden clouds moving", "Jesus in white robes with open arms", "High-contrast portrait of Jesus with golden glow")
+    for k, val in TOPIC_VISUAL_SUGGESTIONS.items():
+        if k.lower() in topic.lower():
+            sug_intro, sug_bg, sug_thumb = val
+            break
+
+    safe_tag = re.sub(r"[^a-zA-Z0-9]", "", topic.title())[:12] or "Miracle"
+
+    print("\n" + "=" * 68)
+    print(f"🎨 AI VISUAL SUGGESTIONS & FILE GUIDE FOR: '{topic}'")
+    print("=" * 68)
+    print("💡 WHAT VISUALS TO USE FOR MAXIMUM VIEWS:")
+    print(f"   • 10s Intro Video : {sug_intro}")
+    print(f"   • Main Background : {sug_bg}")
+    print(f"   • Thumbnail Image : {sug_thumb}")
+    print("-" * 68)
+    print("📂 WHERE TO SAVE & WHAT TO RENAME YOUR FILES (CLEAR INSTRUCTIONS):")
+    print(f"   1. INTRO VIDEO (0-10s):")
+    print(f"      👉 Save inside : {INTRO_DIR.resolve()}")
+    print(f"      👉 Rename to   : Intro_{safe_tag}.mp4   (Audio will be muted automatically!)")
+    print(f"   2. MAIN BACKGROUND IMAGE (10s-End):")
+    print(f"      👉 Save inside : {BG_DIR.resolve()}")
+    print(f"      👉 Rename to   : BG_{safe_tag}.jpg")
+    print(f"   3. THUMBNAIL BACKGROUND IMAGE:")
+    print(f"      👉 Save inside : {THUMB_DIR.resolve()}")
+    print(f"      👉 Rename to   : Thumb_{safe_tag}.jpg")
+    print("=" * 68)
+
+    input("👉 (Optional) Drop your files into the folders above now, then press [ENTER] to select...")
+
+    def _pick_from_folder(folder: Path, label: str, exts: tuple, fallback: Path | None) -> Path | None:
+        files = sorted([f for f in folder.iterdir() if f.is_file() and f.suffix.lower() in exts], key=lambda x: x.stat().st_mtime, reverse=True)
+        if not files:
+            print(f"   • No custom {label} in folder yet -> Using default.")
+            return fallback
+        print(f"\n📁 Select {label}:")
+        print(f"   [Enter] Auto-use newest: {files[0].name}")
+        for idx, f in enumerate(files):
+            print(f"   [{idx + 1}] {f.name}")
+        ch = input(f"Choose (1-{len(files)}) or press Enter: ").strip()
+        if ch.isdigit() and 1 <= int(ch) <= len(files):
+            return files[int(ch) - 1]
+        return files[0]
+
+    chosen_intro = _pick_from_folder(INTRO_DIR, "10s Intro Video", (".mp4", ".mov", ".mkv", ".webm"), get_short_main_video())
+    chosen_bg = _pick_from_folder(BG_DIR, "Main Background Image", (".jpg", ".jpeg", ".png", ".webp"), get_jesus_image())
+    chosen_thumb = _pick_from_folder(THUMB_DIR, "Thumbnail Image", (".jpg", ".jpeg", ".png", ".webp"), chosen_bg)
+
+    if chosen_intro:
+        chosen_intro = mute_any_video(chosen_intro)
+
+    return chosen_intro, chosen_bg, chosen_thumb
+
+
 # --- DYNAMIC ASSET LOCATORS ---
 def get_file_by_name(base_name: str, extensions: list[str]) -> Path | None:
     for ext in extensions:
@@ -966,7 +1052,7 @@ def create_designer_thumbnail(bg_image_path: Path, script: BibleShortScript, fon
 
 
 # --- 5. RENDER FACELESS BIBLE VIDEO ---
-def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, output_path: Path, thumb_path: Path) -> bool:
+def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, output_path: Path, thumb_path: Path, custom_intro: Path | None = None, custom_bg: Path | None = None, custom_thumb: Path | None = None, raw_thumb_only: bool = False) -> bool:
     w, h = 1080, 1920
     ensure_sacred_assets()
 
@@ -989,8 +1075,8 @@ def render_faceless_bible_video(script: BibleShortScript, voice_path: Path, outp
                 break
     font_bold = "bold_font.ttf"
 
-    muted_video = prepare_muted_short_main()
-    jesus_img = get_jesus_image()
+    muted_video = mute_any_video(custom_intro) if (custom_intro and custom_intro.exists()) else prepare_muted_short_main()
+    jesus_img = custom_bg if (custom_bg and custom_bg.exists()) else get_jesus_image()
     bgm_audio = get_worship_bgm()
 
     # Preserve ':' in verse citation and escape '\:' for FFmpeg drawtext
@@ -1311,6 +1397,124 @@ def render_podcast_short(raw_slice: Path, clip: BookClip, output_path: Path, bad
     return subprocess.run(cmd, capture_output=True, text=True).returncode == 0
 
 # --- 7. STANDALONE DOWNLOADERS ---
+# --- PINTEREST IMAGE & VIDEO DOWNLOADER (AUTO-SORTED & AUTO-MUTED) ---
+PINTEREST_DIR = BASE_DIR / "Pinterest"
+PIN_IMG_DIR = PINTEREST_DIR / "Images"
+PIN_VID_DIR = PINTEREST_DIR / "Videos"
+for _pd in [PIN_IMG_DIR, PIN_VID_DIR]:
+    _pd.mkdir(parents=True, exist_ok=True)
+
+def _next_pin_seq(folder: Path) -> int:
+    nums = []
+    for f in folder.iterdir():
+        m = re.match(r"^(\d{3})_", f.name)
+        if m:
+            nums.append(int(m.group(1)))
+    return (max(nums) + 1) if nums else 1
+
+def download_pinterest_media(url: str, sync_to_studio: bool = True) -> Path | None:
+    """Downloads any Pinterest Video or High-Res Image into sorted Pinterest/Videos or Pinterest/Images folders."""
+    url = url.strip()
+    if not url:
+        return None
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
+
+    print(f"\n📌 [Pinterest] Inspecting Pin link: {url}...")
+
+    # 1. Try Video Download first via yt-dlp
+    vid_seq = _next_pin_seq(PIN_VID_DIR)
+    temp_pin = PINTEREST_DIR / f"temp_pin_{int(time.time())}"
+    ydl_opts = {
+        "outtmpl": str(temp_pin) + ".%(ext)s",
+        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "merge_output_format": "mp4",
+        "quiet": True,
+        "no_warnings": True
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            title = clean_filename(info.get("title") or "Pinterest_Video")
+            downloaded_files = list(PINTEREST_DIR.glob(f"{temp_pin.name}*"))
+            if downloaded_files:
+                raw_f = downloaded_files[0]
+                final_vid = PIN_VID_DIR / f"{vid_seq:03d}_{title}.mp4"
+                shutil.move(str(raw_f), str(final_vid))
+                print(f"✅ [Pinterest Video] Saved as: Pinterest/Videos/{final_vid.name}")
+                if sync_to_studio:
+                    studio_copy = INTRO_DIR / final_vid.name
+                    shutil.copy(final_vid, studio_copy)
+                    mute_any_video(studio_copy)
+                    print(f"🔇 Auto-muted & added to Studio Intro Videos: {studio_copy.name}")
+                return final_vid
+    except Exception:
+        for leftover in PINTEREST_DIR.glob(f"{temp_pin.name}*"):
+            leftover.unlink(missing_ok=True)
+
+    # 2. Fallback: Extract High-Res Image from Pinterest HTML
+    print("🖼️ Detected Pinterest Image Pin -> Extracting highest-resolution image...")
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+
+        # Look for originals first, then 736x / og:image
+        img_urls = re.findall(r"https://i\.pinimg\.com/originals/[a-zA-Z0-9/_.-]+\.(?:jpg|jpeg|png|webp)", html)
+        if not img_urls:
+            og_match = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', html)
+            if og_match:
+                og_url = og_match.group(1)
+                orig_try = re.sub(r"/\d+x/", "/originals/", og_url)
+                img_urls = [orig_try, og_url]
+        if not img_urls:
+            img_urls = re.findall(r"https://i\.pinimg\.com/\d+x/[a-zA-Z0-9/_.-]+\.(?:jpg|jpeg|png|webp)", html)
+
+        if not img_urls:
+            print("❌ Could not find image or video stream on this Pinterest link.")
+            return None
+
+        img_seq = _next_pin_seq(PIN_IMG_DIR)
+        title_m = re.search(r"<title>([^<]+)</title>", html)
+        pin_title = clean_filename(title_m.group(1).replace("Pinterest", "").strip() if title_m else "Pinterest_Art") or "Pinterest_Art"
+
+        final_img = PIN_IMG_DIR / f"{img_seq:03d}_{pin_title}.jpg"
+        for candidate_u in img_urls:
+            try:
+                img_req = urllib.request.Request(candidate_u, headers=headers)
+                with urllib.request.urlopen(img_req, timeout=10) as i_resp:
+                    data = i_resp.read()
+                    if len(data) > 5000:
+                        final_img.write_bytes(data)
+                        break
+            except Exception:
+                continue
+
+        if final_img.exists() and final_img.stat().st_size > 5000:
+            print(f"✅ [Pinterest Image] Saved as: Pinterest/Images/{final_img.name}")
+            if sync_to_studio:
+                shutil.copy(final_img, BG_DIR / final_img.name)
+                shutil.copy(final_img, THUMB_DIR / final_img.name)
+                print(f"🎨 Added to Studio Backgrounds & Thumbnails: {final_img.name}")
+            return final_img
+    except Exception as e:
+        print(f"❌ Pinterest download error: {e}")
+
+    return None
+
+def run_cli_pinterest_downloader():
+    print("\n" + "=" * 65)
+    print("📌 PINTEREST IMAGE & VIDEO DOWNLOADER (AUTO-SORTED)")
+    print(f"📂 Images Folder: {PIN_IMG_DIR.resolve()}")
+    print(f"📂 Videos Folder: {PIN_VID_DIR.resolve()}")
+    print("=" * 65)
+    pin_url = input("Paste Pinterest Pin URL (pin.it or pinterest.com/pin/...): ").strip()
+    if pin_url:
+        download_pinterest_media(pin_url, sync_to_studio=True)
+
+
 def download_audio_from_url():
     print("\n" + "=" * 60)
     print("🎵 DOWNLOAD HIGH-QUALITY MP3 AUDIO FROM YOUTUBE")
@@ -1393,7 +1597,8 @@ def run_cli_bible(active_channel: str):
     out_video = seq_dir / f"{clean_name}.mp4"
     out_thumb = seq_dir / f"{clean_name}_thumb.jpg"
 
-    success = render_faceless_bible_video(script, temp_voice, out_video, out_thumb)
+    c_intro, c_bg, c_thumb = choose_media_in_cli(script.topic)
+    success = render_faceless_bible_video(script, temp_voice, out_video, out_thumb, custom_intro=c_intro, custom_bg=c_bg, custom_thumb=c_thumb)
     if temp_voice.exists():
         temp_voice.unlink()
 
@@ -1613,6 +1818,40 @@ def run_cli_channel_switcher(current_active: str) -> str:
         return selected
 
     return current_active
+
+# --- 1-CLICK GIT & GITHUB AUTO-BACKUP ---
+def save_everything_to_git() -> tuple[bool, str]:
+    """Stages all safe project files, commits with a timestamp, and pushes to GitHub."""
+    from datetime import datetime
+    print("\n☁️ [Git Backup] Saving & pushing project to GitHub (leonshipley/DailyWisdom-Studio)...")
+    try:
+        # Ensure secrets stay untracked
+        subprocess.run(
+            ["git", "rm", "-r", "--cached", ".env", "client_secret*.json", "youtube_token.pickle", "channels/", "--ignore-unmatch"],
+            cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        subprocess.run(["git", "add", "."], cwd=str(BASE_DIR), check=True)
+
+        status = subprocess.run(["git", "status", "--porcelain"], cwd=str(BASE_DIR), capture_output=True, text=True)
+        if status.stdout.strip():
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            subprocess.run(["git", "commit", "-m", f"Studio Auto-Save: {ts}"], cwd=str(BASE_DIR), check=True)
+
+        push_res = subprocess.run(["git", "push", "-u", "origin", "main"], cwd=str(BASE_DIR), capture_output=True, text=True)
+        if push_res.returncode == 0:
+            msg = "✅ Successfully saved & pushed everything to GitHub (leonshipley/DailyWisdom-Studio)!"
+            print(msg)
+            return True, msg
+        else:
+            err = push_res.stderr.strip() or push_res.stdout.strip()
+            msg = f"⚠️ Committed locally, but push returned: {err}"
+            print(msg)
+            return False, msg
+    except Exception as e:
+        msg = f"❌ Git save error: {e}"
+        print(msg)
+        return False, msg
+
 
 # --- 9. MAIN INTERACTIVE BACKEND MENU ---
 def main():
