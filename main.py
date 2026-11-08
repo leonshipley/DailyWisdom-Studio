@@ -1,3 +1,79 @@
+from viral_researcher import research_viral_scripture_package
+
+
+def build_viral_devotional_description(topic: str, ref_str: str, verse_text: str, reflection: str, prayer: str) -> tuple[str, list[str]]:
+    """
+    Builds a deeply emotional, high-retention long-form devotional description
+    with high-converting calls-to-action and targeted viral hashtags.
+    """
+    topic_clean = clean_ascii(topic).strip()
+    topic_lower = topic_clean.lower()
+
+    # Determine custom topic hashtags
+    matched_tags = []
+    for k, tags in TOPIC_HASHTAG_MAP.items():
+        if k in topic_lower:
+            matched_tags = tags
+            break
+    if not matched_tags:
+        clean_word = re.sub(r'[^a-zA-Z0-9]', '', topic_clean.title())
+        matched_tags = [f"#{clean_word}", "#PrayThisFirst", "#GodHearsYou", "#NeverGiveUp"]
+
+    # Core universal viral Christian hashtags
+    universal_tags = [
+        "#PrayThisFirst", "#PowerfulPrayer", "#JesusChrist", "#DailyPrayer",
+        "#GodIsWithYou", "#FaithOverFear", "#ChristianShorts", "#PrayerWorks",
+        "#HopeInGod", "#YouTubeShorts"
+    ]
+
+    all_hts = []
+    seen = set()
+    for ht in (matched_tags + universal_tags):
+        ht_norm = ht.lower()
+        if ht_norm not in seen:
+            all_hts.append(ht)
+            seen.add(ht_norm)
+        if len(all_hts) >= 13:
+            break
+
+    ht_line = " ".join(all_hts)
+
+    desc = f"""🙏 DON'T GIVE UP! PRAY THIS FIRST! GOD HEARS YOUR CRY! ❤️
+
+WAIT! Before you lose hope or let your struggles overwhelm your heart, take a deep breath and pray with me.
+
+Are you tired of pretending everything is okay? Are you silently fighting battles nobody knows about? Have you been praying for a breakthrough while wondering when things will finally get better?
+
+God sees every tear you hide, hears every prayer you whisper, and knows every burden you carry.
+
+❤️ You don't have to carry this alone. Bring your worries, fears, disappointments, and struggles to Jesus.
+
+📖 Scripture: {ref_str}
+\"{verse_text.strip()}\"
+
+💡 Reflection:
+{reflection.strip()}
+
+🙏 Surrender Prayer:
+{prayer.strip()}
+
+When life feels impossible, remember that nothing is impossible with God. When human strength runs out, His supernatural grace is more than enough!
+
+DON'T GIVE UP JUST YET! YOUR STORY IS NOT OVER, YOUR PRAYERS STILL MATTER, AND GOD HAS NOT FORGOTTEN YOU!
+
+👇 If you are trusting God through this season, comment \"AMEN\"!
+❤️ Share this prayer with someone who is silently struggling and needs a reminder that God is near.
+
+May the Lord bless you, protect your family, strengthen your faith, and fill your heart with everlasting peace.
+IN JESUS' MIGHTY NAME, AMEN! 🙏
+
+[HASHTAGS]
+{ht_line}
+[/HASHTAGS]
+""".strip()
+
+    return desc, all_hts
+
 import random
 import os
 import sys
@@ -33,6 +109,101 @@ CLIPS_DIR = BASE_DIR / "clips"
 CLIPS_DIR.mkdir(exist_ok=True)
 DOWNLOADS_DIR = BASE_DIR / "downloads"
 DOWNLOADS_DIR.mkdir(exist_ok=True)
+
+COUNTRY_FLAGS = {
+    "US": "United States 🇺🇸", "IN": "India 🇮🇳", "GB": "United Kingdom 🇬🇧",
+    "PH": "Philippines 🇵🇭", "CA": "Canada 🇨🇦", "AU": "Australia 🇦🇺",
+    "NG": "Nigeria 🇳🇬", "ZA": "South Africa 🇿🇦", "KE": "Kenya 🇰🇪",
+    "BR": "Brazil 🇧🇷", "DE": "Germany 🇩🇪", "MX": "Mexico 🇲🇽",
+    "GH": "Ghana 🇬🇭", "NZ": "New Zealand 🇳🇿", "SG": "Singapore 🇸🇬",
+    "PK": "Pakistan 🇵🇰", "ID": "Indonesia 🇮🇩", "UG": "Uganda 🇺🇬",
+    "JM": "Jamaica 🇯🇲", "TT": "Trinidad & Tobago 🇹🇹"
+}
+
+def get_channel_overview_stats(channel_name: str) -> dict:
+    """Fetches exact subscriber count, lifetime channel views, and total videos."""
+    youtube = get_authenticated_youtube(channel_name)
+    if not youtube:
+        return {}
+    try:
+        res = youtube.channels().list(mine=True, part="snippet,statistics").execute()
+        track_yt_quota(1)
+        if not res.get("items"):
+            return {}
+        item = res["items"][0]
+        stats = item.get("statistics", {})
+        snip = item.get("snippet", {})
+        return {
+            "title": snip.get("title", channel_name),
+            "subscribers": int(stats.get("subscriberCount", 0)),
+            "total_views": int(stats.get("viewCount", 0)),
+            "video_count": int(stats.get("videoCount", 0)),
+            "hidden_subscribers": stats.get("hiddenSubscriberCount", False)
+        }
+    except Exception as e:
+        print(f"   [Channel Stats Note] {e}")
+        return {}
+
+def get_channel_geo_analytics(channel_name: str) -> tuple[list[dict], str | None]:
+    """Fetches real-time geographical country views via YouTube Analytics API."""
+    channels = load_channels()
+    token_path = channels.get(channel_name)
+    if not token_path or not Path(token_path).exists():
+        return [], "Channel not authenticated"
+
+    try:
+        with open(token_path, "rb") as f:
+            credentials = pickle.load(f)
+
+        if not credentials or not credentials.valid:
+            if credentials and credentials.expired and credentials.refresh_token:
+                credentials.refresh(Request())
+            else:
+                return [], "Credentials expired"
+
+        # Build YouTube Analytics API v2 service
+        yt_analytics = build("youtubeAnalytics", "v2", credentials=credentials)
+        now = datetime.now(timezone.utc)
+        end_date = now.strftime("%Y-%m-%d")
+        start_date = (now - timedelta(days=90)).strftime("%Y-%m-%d")
+
+        # Query top countries by views
+        response = yt_analytics.reports().query(
+            ids="channel==MINE",
+            startDate=start_date,
+            endDate=end_date,
+            metrics="views",
+            dimensions="country",
+            sort="-views",
+            maxResults=10
+        ).execute()
+
+        rows = response.get("rows", [])
+        if not rows:
+            return [], "No geographical data available yet (takes 24-48h for YouTube to process new views)."
+
+        total_geo_views = sum(r[1] for r in rows) or 1
+        geo_list = []
+        for r in rows:
+            country_code = str(r[0]).upper()
+            country_name = COUNTRY_FLAGS.get(country_code, f"{country_code} 🌐")
+            views = int(r[1])
+            pct = round((views / total_geo_views) * 100, 1)
+            geo_list.append({
+                "country_code": country_code,
+                "country": country_name,
+                "views": views,
+                "percentage": pct
+            })
+
+        return geo_list, None
+
+    except Exception as e:
+        err_msg = str(e)
+        if "accessNotConfigured" in err_msg or "disabled" in err_msg or "has not used" in err_msg:
+            return [], "YouTube Analytics API is not enabled in your Google Cloud Project. Enable it at: console.cloud.google.com"
+        return [], f"Analytics Notice: {err_msg[:90]}"
+
 
 def get_video_duration(video_path: Path) -> float:
     """Returns exact float duration in seconds using ffprobe."""
@@ -96,6 +267,7 @@ client = genai.Client(api_key=API_KEY) if API_KEY else None
 
 YOUTUBE_SCOPES = [
     "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly"
 ]
@@ -906,8 +1078,8 @@ def scan_competitor_shorts(topic: str, limit: int = 6, channel_name: str = "") -
     # 3. Fallback to yt-dlp
     if not competitors:
         try:
-            ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True}
-            query = f"ytsearch10:{topic} #shorts"
+            ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True, "socket_timeout": 3, "no_warnings": True}
+            query = f"ytsearch3:{topic} #shorts"
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 res = ydl.extract_info(query, download=False)
                 for entry in res.get("entries", []):
@@ -1106,6 +1278,217 @@ Respond with exact JSON:
     print("-" * 64)
 
     return winning_title, upgraded_desc, unique_tags
+
+
+def clean_ascii(text: str) -> str:
+    if not text:
+        return ""
+    t = (text.replace("’", "'").replace("‘", "'")
+             .replace("“", '"').replace("”", '"')
+             .replace("—", " - ").replace("…", "..."))
+    return re.sub(r"\s+", " ", re.sub(r"[^\x20-\x7E]", "", t)).strip()
+
+HIGH_VOLUME_SEO_POOL = [
+    "Christian Motivation", "Bible Verse Today", "Daily Prayer", "Faith Over Fear",
+    "Jesus Christ", "Powerful Prayer", "Spiritual Breakthrough", "Gods Promise",
+    "Morning Prayer", "Scripture For Sleep", "Holy Spirit", "Christian Faith",
+    "Miracle Prayer", "Word Of God", "Christian Shorts", "Jesus Loves You",
+    "Bible Study", "Biblical Wisdom", "Peace In The Storm", "God Will Provide",
+    "Spiritual Warfare", "Christian Encouragement", "Life Changing Prayer"
+]
+
+def pack_tags_to_limit(topic: str, ai_tags: list, competitor_keywords: list, max_chars: int = 480) -> list[str]:
+    combined = []
+    seen = set()
+    topic_clean = re.sub(r"[^a-zA-Z0-9\s]", "", topic).strip()
+    priority_tags = [
+        topic_clean,
+        f"{topic_clean} Prayer",
+        f"{topic_clean} Bible Verse",
+        f"God on {topic_clean}",
+        f"Overcome {topic_clean}"
+    ] + competitor_keywords + ai_tags + HIGH_VOLUME_SEO_POOL
+
+    total_len = 0
+    final_tags = []
+    for raw_tag in priority_tags:
+        t = str(raw_tag).replace("#", "").strip().title()
+        t_clean = re.sub(r"[<>]", "", t)
+        if len(t_clean) >= 3 and t_clean.lower() not in seen:
+            tag_cost = len(t_clean) + 1
+            if total_len + tag_cost <= max_chars:
+                final_tags.append(t_clean)
+                seen.add(t_clean.lower())
+                total_len += tag_cost
+    return final_tags
+
+TOPIC_HASHTAG_MAP = {
+    "debt": ["#DontGiveUp", "#DebtFree", "#BreakEveryDebt", "#FinancialBreakthrough", "#GodWillProvide", "#MiraclePrayer"],
+    "anxiety": ["#AnxietyRelief", "#PeaceInTheStorm", "#Overthinking", "#CalmYourMind", "#PeaceOfGod", "#StopWorrying"],
+    "broken": ["#HealingHeart", "#DepressionRelief", "#YouAreNotAlone", "#GodHeals", "#HopeInGod", "#ComfortInGrief"],
+    "healing": ["#MiracleHealing", "#DivineHealth", "#HealedByHisStripes", "#JesusHeals", "#HealingPrayer", "#Restoration"],
+    "strength": ["#DontGiveUp", "#PrayerForStrength", "#NeverGiveUp", "#RenewYourStrength", "#Overcome", "#FaithOverFear"],
+    "protection": ["#GodsProtection", "#Psalm91", "#SpiritualWarfare", "#NoWeaponShallProsper", "#JesusProtects", "#ShieldOfFaith"],
+    "forgiveness": ["#FreedomToForgive", "#InnerPeace", "#LetGoLetGod", "#ReleaseBitterness", "#GraceOfGod", "#HealingSoul"]
+}
+
+def build_viral_devotional_description(topic: str, ref_str: str, verse_text: str, reflection: str, prayer: str) -> tuple[str, list[str]]:
+    topic_clean = clean_ascii(topic).strip()
+    topic_lower = topic_clean.lower()
+    matched_tags = []
+    for k, tags in TOPIC_HASHTAG_MAP.items():
+        if k in topic_lower:
+            matched_tags = tags
+            break
+    if not matched_tags:
+        clean_word = re.sub(r'[^a-zA-Z0-9]', '', topic_clean.title())
+        matched_tags = [f"#{clean_word}", "#PrayThisFirst", "#GodHearsYou", "#NeverGiveUp"]
+
+    universal_tags = [
+        "#PrayThisFirst", "#PowerfulPrayer", "#JesusChrist", "#DailyPrayer",
+        "#GodIsWithYou", "#FaithOverFear", "#ChristianShorts", "#PrayerWorks",
+        "#HopeInGod", "#YouTubeShorts"
+    ]
+    all_hts = []
+    seen = set()
+    for ht in (matched_tags + universal_tags):
+        ht_norm = ht.lower()
+        if ht_norm not in seen:
+            all_hts.append(ht)
+            seen.add(ht_norm)
+        if len(all_hts) >= 13:
+            break
+
+    ht_line = " ".join(all_hts)
+    desc = f"""🙏 DON'T GIVE UP! PRAY THIS FIRST! GOD HEARS YOUR CRY! ❤️
+
+WAIT! Before you lose hope or let your struggles overwhelm your heart, take a deep breath and pray with me.
+
+Are you tired of pretending everything is okay? Are you silently fighting battles nobody knows about? Have you been praying for a breakthrough while wondering when things will finally get better?
+
+God sees every tear you hide, hears every prayer you whisper, and knows every burden you carry.
+
+❤️ You don't have to carry this alone. Bring your worries, fears, disappointments, and struggles to Jesus.
+
+📖 Scripture: {ref_str}
+\"{verse_text.strip()}\"
+
+💡 Reflection:
+{reflection.strip()}
+
+🙏 Surrender Prayer:
+{prayer.strip()}
+
+When life feels impossible, remember that nothing is impossible with God. When human strength runs out, His supernatural grace is more than enough!
+
+DON'T GIVE UP JUST YET! YOUR STORY IS NOT OVER, YOUR PRAYERS STILL MATTER, AND GOD HAS NOT FORGOTTEN YOU!
+
+👇 If you are trusting God through this season, comment \"AMEN\"!
+❤️ Share this prayer with someone who is silently struggling and needs a reminder that God is near.
+
+May the Lord bless you, protect your family, strengthen your faith, and fill your heart with everlasting peace.
+IN JESUS' MIGHTY NAME, AMEN! 🙏
+
+[HASHTAGS]
+{ht_line}
+[/HASHTAGS]""".strip()
+    return desc, all_hts
+
+def research_viral_scripture_package(topic: str, channel_name: str = "") -> dict:
+    print(f"\n🔬 [VIRALITY RESEARCH] Analyzing competitor velocity & scripture for: '{topic}'...")
+    competitors = scan_competitor_shorts(topic, limit=5, channel_name=channel_name)
+    comp_lines = [f"- {c['title']} ({c.get('views_per_day', 0):,.0f} views/day)" for c in competitors]
+    comp_block = "\n".join(comp_lines) if comp_lines else "None found - focus on pure emotional breakthrough."
+
+    sys_prompt = (
+        "You are an elite Christian YouTube Shorts Strategist & Theological Researcher. "
+        "Your mission is to research the human struggle behind a topic, examine competitor titles, "
+        "and select the single most spiritually powerful Bible verse and teaching that beats the competition. "
+        "STRICT SAFETY: Never promise guaranteed money, medical cures, or 100% instant wealth. "
+        "Output ONLY valid JSON."
+    )
+
+    user_prompt = f"""Topic / Human Struggle: {topic}
+
+Top Competitor Shorts on YouTube Right Now:
+{comp_block}
+
+RESEARCH OBJECTIVES:
+1. Identify the core unspoken emotional pain (fear, shame, exhaustion, debt, grief).
+2. Select 1 canonical Bible verse that directly answers this pain with unshakeable hope.
+3. Formulate the package with a STRICT 40 to 46 SPOKEN WORD BUDGET (to ensure the video duration stays within 20 to 24 seconds):
+
+JSON REQUIRED KEYS:
+- "verse_citation": Standard Book Chapter:Verse (e.g. "Proverbs 10:22" or "Isaiah 40:31")
+- "verse_text": The single most impactful sentence of the verse (under 20 words)
+- "why_chosen": 1 sentence explaining why this scripture and angle beats the competitors
+- "hook_line1": 1-2 words ALL CAPS for 3D Gold text (e.g. "DON'T", "BREAK", "GOD WILL", "PEACE")
+- "hook_line2": 2-3 words ALL CAPS for White text (e.g. "GIVE UP YET", "EVERY DEBT", "PROVIDE")
+- "meaning": Exactly 1 comforting teaching sentence (max 14 words)
+- "prayer": Exactly 1 breakthrough surrender prayer sentence (max 12 words ending in Amen)
+- "title": High-CTR click-worthy Short title under 50 chars with power word and #shorts
+- "pinned_comment": 1 question to pin in comments that encourages viewers to comment AMEN
+- "hashtags": 12 targeted hashtags starting with #
+- "tags": 18-22 relevant keyword tags (no #)"""
+
+    ai_data = iter_llm_json(user_prompt, system=sys_prompt, temperature=0.75, timeout=10)
+
+    if not ai_data or not isinstance(ai_data, dict) or "verse_citation" not in ai_data:
+        ai_data = {
+            "verse_citation": "Philippians 4:19",
+            "verse_text": "And my God will supply every need of yours according to His riches in glory.",
+            "why_chosen": "Addresses the root anxiety of lack with God's covenant promise of infinite storehouses.",
+            "hook_line1": "GOD WILL",
+            "hook_line2": "PROVIDE TODAY",
+            "meaning": "Trust His storehouses of grace; God never abandons those who call upon Him.",
+            "prayer": "Lord, release supernatural breakthrough over my family today, Amen.",
+            "title": f"God's Plan to Break {clean_ascii(topic)[:25]} #shorts",
+            "pinned_comment": "Type AMEN if you claim this breakthrough today! 🙏",
+            "hashtags": ["#DontGiveUp", "#DailyPrayer", "#FaithOverFear", "#JesusChrist", "#Shorts"],
+            "tags": ["Daily Prayer", "Faith", "Christian Motivation", "Bible Verse"]
+        }
+
+    ref_str = ai_data.get("verse_citation", "Philippians 4:19").strip()
+    v_text = ai_data.get("verse_text", "").strip()
+    meaning = ai_data.get("meaning", "").strip()
+    prayer = ai_data.get("prayer", "").strip()
+    why_chosen = ai_data.get("why_chosen", "Directly targets the root emotional battle with divine authority.")
+
+    h_l1 = ai_data.get("hook_line1", "HOLD ON").strip().upper()
+    h_l2 = ai_data.get("hook_line2", "TO GOD").strip().upper()
+    full_hook = f"{h_l1} {h_l2}".strip()
+
+    desc, dynamic_hts = build_viral_devotional_description(topic, ref_str, v_text, meaning, prayer)
+
+    competitor_words = []
+    for c in competitors:
+        competitor_words.extend(re.findall(r"\b[a-zA-Z]{4,}\b", c["title"].lower()))
+    frequent_comp = [w for w, count in collections.Counter(competitor_words).items() if count >= 2]
+
+    packed_tags = pack_tags_to_limit(topic, ai_data.get("tags", []), frequent_comp, max_chars=480)
+    winning_title = ai_data.get("title", f"God's Promise For {topic[:30]} #shorts")
+
+    score, _ = title_score(winning_title, get_recent_titles(50), hook=full_hook, verbose=False)
+    print(f"   🏆 Researched Winning Scripture: {ref_str} (Hook: '{full_hook}' | Title Score: {score}/100)")
+
+    return {
+        "topic": topic,
+        "verse_citation": ref_str,
+        "verse_text": v_text,
+        "why_chosen": why_chosen,
+        "hook_line1": h_l1,
+        "hook_line2": h_l2,
+        "thumbnail_hook": full_hook,
+        "meaning": meaning,
+        "prayer": prayer,
+        "title": winning_title,
+        "description": desc,
+        "tags": packed_tags,
+        "hashtags": dynamic_hts,
+        "competitors_audited": len(competitors)
+    }
+
+
 
 
 def save_clip_metadata(video_path: Path, title: str, description: str, tags: list[str], topic: str = ""):
@@ -1331,7 +1714,7 @@ def choose_upload_channel(default_channel: str) -> str | None:
         return default_channel
     return None
 
-def upload_video_to_youtube(channel_name: str, video_path: Path) -> str | None:
+def upload_video_to_youtube(channel_name: str, video_path: Path, thumbnail_path: Path | None = None) -> str | None:
     youtube = get_authenticated_youtube(channel_name)
     if not youtube:
         print(f"❌ Could not authenticate channel: {channel_name}")
@@ -1340,22 +1723,24 @@ def upload_video_to_youtube(channel_name: str, video_path: Path) -> str | None:
     meta = load_clip_metadata(video_path)
     print(f"\n🚀 [YouTube] Publishing '{meta['title']}' to '{channel_name}'...")
 
-    # Strict YouTube API sanitization (Never send < or > characters to YouTube)
     safe_title = re.sub(r"[<>]", "", str(meta.get("title", ""))).strip()[:100]
     raw_desc = str(meta.get("description", ""))
     safe_desc = re.sub(r"<!--[\s\S]*?-->", "", raw_desc)
     safe_desc = safe_desc.replace("<", "").replace(">", "").strip()
-    safe_tags = [re.sub(r"[<>]", "", str(t)).strip() for t in meta.get("tags", []) if t][:15]
+    safe_tags = [re.sub(r"[<>]", "", str(t)).strip() for t in meta.get("tags", []) if t][:22]
 
     body = {
         "snippet": {
             "title": safe_title,
             "description": safe_desc,
             "tags": safe_tags,
-            "categoryId": "27"
+            "categoryId": "27",
+            "defaultLanguage": "en",
+            "defaultAudioLanguage": "en"
         },
         "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}
     }
+
     media = MediaFileUpload(str(video_path), chunksize=-1, resumable=True, mimetype="video/mp4")
     req = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
 
@@ -1373,6 +1758,45 @@ def upload_video_to_youtube(channel_name: str, video_path: Path) -> str | None:
             json.dump(meta, f, indent=2)
 
         print(f"🎉 Live on YouTube! https://youtube.com/shorts/{yt_id}")
+
+        # -------------------------------------------------------------
+        # CUSTOM THUMBNAIL UPLOAD (With 2MB Auto-Optimization)
+        # -------------------------------------------------------------
+        chosen_thumb = thumbnail_path
+        if not chosen_thumb or not chosen_thumb.exists():
+            candidates = [
+                video_path.with_name(f"{video_path.stem}_thumb.jpg"),
+                video_path.parent / f"{video_path.stem}_thumb.jpg",
+                video_path.parent / "thumbnail_9x16.png",
+                video_path.with_name("thumbnail_9x16.png")
+            ]
+            chosen_thumb = next((tp for tp in candidates if tp.exists()), None)
+
+        if chosen_thumb and chosen_thumb.exists():
+            print(f"   🖼️ [YouTube] Uploading custom thumbnail: {chosen_thumb.name}...")
+            upload_ready_thumb = chosen_thumb
+
+            try:
+                from PIL import Image
+                if chosen_thumb.suffix.lower() == ".png" or chosen_thumb.stat().st_size > 1900000:
+                    compressed_jpg = chosen_thumb.parent / "yt_upload_ready_thumb.jpg"
+                    im = Image.open(chosen_thumb).convert("RGB")
+                    im.save(str(compressed_jpg), "JPEG", quality=94)
+                    upload_ready_thumb = compressed_jpg
+            except Exception as ec:
+                print(f"   [Thumb Prep Note] {ec}")
+
+            try:
+                media_thumb = MediaFileUpload(str(upload_ready_thumb), mimetype="image/jpeg")
+                youtube.thumbnails().set(videoId=yt_id, media_body=media_thumb).execute()
+                print("   ✅ Custom high-CTR thumbnail successfully published to YouTube!")
+            except Exception as ethumb:
+                err_str = str(ethumb).lower()
+                if "forbidden" in err_str or "not verified" in err_str:
+                    print("   ⚠️ YouTube Notice: Your channel must be phone-verified at https://youtube.com/verify to enable custom thumbnails via API.")
+                else:
+                    print(f"   ⚠️ Thumbnail upload note: {ethumb}")
+
         try:
             log_upload_performance(
                 video_id=yt_id,
@@ -1384,13 +1808,15 @@ def upload_video_to_youtube(channel_name: str, video_path: Path) -> str | None:
             )
         except Exception:
             pass
+
         return yt_id
     except Exception as e:
         if "uploadLimitExceeded" in str(e):
-            print("⚠️ YouTube daily upload limit reached for today. Video is safely stored in 'clips/' folder.")
+            print("⚠️ YouTube daily upload limit reached for today.")
         else:
             print(f"❌ Upload error: {e}")
         return None
+
 
 # --- 4. BIBLE SCRIPT ENGINE (FIXED SYNTAX & VOICEOVER) ---
 class BibleShortScript(BaseModel):
@@ -1978,7 +2404,7 @@ def find_viral_video(min_views: int, queries: list[str]) -> dict | None:
             pass
 
     print(f"  • Scanning influencer channels for {min_views:,}+ view videos...")
-    ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True}
+    ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True, "socket_timeout": 3, "no_warnings": True}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         for q in queries:
             try:

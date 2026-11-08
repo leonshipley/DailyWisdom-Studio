@@ -17,5 +17,57 @@
         "url": "https://www.youtube.com/watch?v=ACbo-5nO9oc"
       }
     ]
+  },
+  "debt & financial freedom": {
+    "timestamp": 1794116525.377426,
+    "items": [
+      {
+        "title": "The Debt Machine Nobody Escapes",
+        "views": 2,
+        "views_per_day": 2.0,
+        "age_days": 1.0,
+        "url": "https://www.youtube.com/watch?v=f324Ci2nSgM"
+      }
+    ]
+  },
+  "strength when you feel like quitting": {
+    "timestamp": 1794067135.975508,
+    "items": [
+      {
+        "title": "Don't Quit  Your Future Self is Watching",
+        "views": 21,
+        "views_per_day": 21.0,
+        "age_days": 1.0,
+        "url": "https://www.youtube.com/watch?v=XPRAxLZyFUc"
+      },
+      {
+        "title": "\ud83d\udd25 Don't Quit \u2014 Your Breakthrough Is NEXT \u26a1 #Shorts",
+        "views": 12,
+        "views_per_day": 12.0,
+        "age_days": 1.0,
+        "url": "https://www.youtube.com/watch?v=Meb6a3TXsIo"
+      },
+      {
+        "title": "You Weren\u2019t Born to Quit \u2013 Watch This When You Feel Like Giving Up \ud83d\udcaa #Motivation",
+        "views": 3,
+        "views_per_day": 3.0,
+        "age_days": 1.0,
+        "url": "https://www.youtube.com/watch?v=5HzQsP5x2EQ"
+      },
+      {
+        "title": "Don't Quit! Your Strength is Your Reason #shorts",
+        "views": 0,
+        "views_per_day": 0.0,
+        "age_days": 1.0,
+        "url": "https://www.youtube.com/watch?v=-IMyGecj-gk"
+      },
+      {
+        "title": "When You Feel Like Quitting \u2014 Watch This. \ud83d\udd25",
+        "views": 0,
+        "views_per_day": 0.0,
+        "age_days": 1.0,
+        "url": "https://www.youtube.com/watch?v=hqRdtEn-nWg"
+      }
+    ]
   }
 }

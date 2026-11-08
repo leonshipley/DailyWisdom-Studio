@@ -1,3 +1,7 @@
+import warnings
+warnings.filterwarnings("ignore")
+import logging
+logging.getLogger("streamlit").setLevel(logging.ERROR)
 import os
 import re
 import time
@@ -5,16 +9,21 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+import pandas as pd
 import streamlit as st
 
 import main as backend
+try:
+    from viral_researcher import research_viral_scripture_package
+    backend.research_viral_scripture_package = research_viral_scripture_package
+except Exception:
+    pass
 from voice_studio import (
     VOICE_CATALOG,
     SCRIPT_MODES,
     DEFAULT_SAMPLE_TEXTS,
     load_active_voice,
     save_active_voice,
-    combine_prosody,
     synthesize_preview_sample,
     synthesize_bilingual_verse_preview,
     build_spoken_voice_script,
@@ -31,98 +40,201 @@ from bible_database import (
 )
 
 st.set_page_config(
-    page_title="DailyWisdom Dual-Channel AI Studio",
+    page_title="DailyWisdom AI Studio",
     page_icon="✝️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
+# --- OBSIDIAN BLACK, ELECTRIC BLUE & CRIMSON RED THEME (NO CROPPING / NO TOP OVERLAP) ---
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
+    
+    /* 1. TOP PADDING FIX: 4.5rem ensures zero overlap from Streamlit's top header */
     .block-container {
-        padding-top: 1.0rem !important;
-        padding-bottom: 1.0rem !important;
-        padding-left: 1.4rem !important;
-        padding-right: 1.4rem !important;
+        padding-top: 4.5rem !important;
+        padding-bottom: 2.5rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
         max-width: 100% !important;
     }
-    section[data-testid="stSidebar"] {
-        background-color: #0B0F19 !important;
-        border-right: 1px solid #1F2937 !important;
+    
+    /* Make Streamlit top header unobtrusive */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        z-index: 10 !important;
     }
+    
+    /* Jet Black Sidebar with Electric Blue Border */
+    section[data-testid="stSidebar"] {
+        background-color: #05070D !important;
+        border-right: 1px solid rgba(37, 99, 235, 0.3) !important;
+    }
+    
+    /* Top Studio Navigation Bar (Black, Blue & Red Accents) */
     .top-nav {
-        background: linear-gradient(90deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%);
-        border: 1px solid #334155;
-        border-left: 5px solid #FFD700;
-        border-radius: 12px;
-        padding: 12px 20px;
-        margin-bottom: 12px;
+        background: linear-gradient(135deg, #070B14 0%, #0D1629 50%, #070B14 100%);
+        border: 1px solid rgba(59, 130, 246, 0.35);
+        border-left: 6px solid #DC2626;
+        border-radius: 14px;
+        padding: 16px 24px;
+        margin-bottom: 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        box-shadow: 0 8px 26px rgba(0, 0, 0, 0.6), 0 0 15px rgba(37, 99, 235, 0.15);
     }
-    .nav-title { font-size: 23px; font-weight: 900; color: #FFD700; margin: 0; }
-    .nav-sub { font-size: 13px; color: #94A3B8; margin-top: 2px; }
+    .nav-title { font-size: 25px; font-weight: 800; color: #60A5FA; margin: 0; letter-spacing: -0.5px; }
+    .nav-sub { font-size: 13.5px; color: #94A3B8; margin-top: 3px; font-weight: 500; }
+    
     .status-pill {
-        background-color: #1E293B;
-        border: 1px solid #475569;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(59, 130, 246, 0.4);
         color: #F8FAFC;
-        padding: 5px 12px;
+        padding: 6px 14px;
         border-radius: 999px;
         font-size: 12px;
         font-weight: 700;
         display: inline-block;
-        margin-left: 8px;
+        margin-left: 6px;
     }
+    .status-pill-red {
+        background: rgba(220, 38, 38, 0.15);
+        border: 1px solid #DC2626;
+        color: #FCA5A5;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-block;
+        margin-left: 6px;
+    }
+    
+    /* Obsidian Black KPI Cards with Blue & Red Highlights */
     .kpi-card {
-        background: linear-gradient(145deg, #111827, #0F172A);
-        border: 1px solid #1F2937;
-        border-top: 3px solid #FFD700;
-        border-radius: 10px;
-        padding: 10px 15px;
+        background: linear-gradient(145deg, #090E1A, #060912);
+        border: 1px solid rgba(37, 99, 235, 0.25);
+        border-top: 3px solid #2563EB;
+        border-radius: 12px;
+        padding: 14px 18px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.4);
     }
-    .kpi-label { font-size: 11px; color: #9CA3AF; text-transform: uppercase; font-weight: 700; }
-    .kpi-val { font-size: 21px; font-weight: 900; color: #FFFFFF; margin-top: 2px; }
-    .kpi-sub { font-size: 11px; color: #FFD700; }
-    .verse-box {
-        background-color: #0F172A;
-        border: 1px solid #FFD700;
-        border-left: 5px solid #FFD700;
-        border-radius: 10px;
-        padding: 12px 14px;
-        margin-top: 6px;
-        margin-bottom: 8px;
+    .kpi-card-red {
+        background: linear-gradient(145deg, #090E1A, #060912);
+        border: 1px solid rgba(220, 38, 38, 0.3);
+        border-top: 3px solid #DC2626;
+        border-radius: 12px;
+        padding: 14px 18px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.4);
     }
-    .explain-box {
-        background-color: #111827;
-        border: 1px solid #374151;
-        border-left: 4px solid #10B981;
+    .kpi-label { font-size: 11px; color: #94A3B8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .kpi-val { font-size: 24px; font-weight: 800; color: #FFFFFF; margin-top: 2px; }
+    .kpi-sub-blue { font-size: 12px; color: #60A5FA; font-weight: 600; }
+    .kpi-sub-red { font-size: 12px; color: #F87171; font-weight: 600; }
+    
+    /* Verse & Reflection Cards */
+    .verse-card {
+        background: #080D1A;
+        border: 1px solid rgba(59, 130, 246, 0.35);
+        border-left: 5px solid #DC2626;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin: 12px 0;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .verse-hdr { font-size: 15.5px; font-weight: 800; color: #60A5FA; margin-bottom: 6px; }
+    .verse-body { font-size: 14.5px; color: #F1F5F9; line-height: 1.5; font-weight: 500; }
+    
+    .budget-badge {
+        background: #0C1527;
+        border: 1px solid #2563EB;
         border-radius: 8px;
-        padding: 10px 14px;
-        margin-top: 6px;
-        margin-bottom: 10px;
-        font-size: 13.5px;
-        color: #E5E7EB;
+        padding: 9px 15px;
+        font-size: 13px;
+        color: #93C5FD;
+        font-weight: 600;
+        margin: 10px 0;
+        display: inline-block;
     }
-    .verse-ref-hdr { font-size: 15px; font-weight: 800; color: #FFD700; margin-bottom: 6px; }
-    .verse-en { font-size: 14px; color: #FFFFFF; margin-bottom: 6px; line-height: 1.45; }
-    .verse-hi { font-size: 15px; color: #FDE047; margin-bottom: 4px; line-height: 1.5; }
+    
+    /* Ensure no video/image clipping */
+    img {
+        max-width: 100% !important;
+        height: auto !important;
+        object-fit: contain !important;
+        border-radius: 10px;
+    }
+    video {
+        width: 100% !important;
+        max-height: 640px !important;
+        border-radius: 12px;
+        background: #000;
+    }
+    
+    /* High-Energy Crimson Red Primary Buttons */
     .stButton>button {
-        background: linear-gradient(90deg, #FFD700 0%, #EAB308 100%);
-        color: #090D16 !important;
+        background: linear-gradient(90deg, #DC2626 0%, #B91C1C 100%) !important;
+        color: #FFFFFF !important;
         font-weight: 800 !important;
-        border-radius: 8px !important;
-        border: none !important;
+        border-radius: 9px !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        padding: 9px 20px !important;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+    }
+    .stButton>button:hover {
+        transform: translateY(-1px);
+        background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%) !important;
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45) !important;
+    }
+    
+    /* Secondary Blue Buttons */
+    div[data-testid="stHorizontalBlock"] .stButton>button {
+        background: linear-gradient(90deg, #1E40AF 0%, #1D4ED8 100%) !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+    }
+    div[data-testid="stHorizontalBlock"] .stButton>button:hover {
+        background: linear-gradient(90deg, #2563EB 0%, #1E40AF 100%) !important;
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4) !important;
+    }
+    
+    /* Clean Tab Headers with Blue & Red Indicator */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #0A0F1D !important;
+        border: 1px solid rgba(59, 130, 246, 0.25) !important;
+        border-radius: 8px 8px 0 0 !important;
+        color: #94A3B8 !important;
+        font-weight: 700 !important;
+        padding: 10px 18px !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #111C33 !important;
+        border-color: #3B82F6 !important;
+        color: #60A5FA !important;
+        border-bottom: 3px solid #DC2626 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# --- BACKEND ASSET SCANNERS ---
 def get_all_sequence_videos():
     return sorted(list(backend.CLIPS_DIR.rglob("*.mp4")), key=lambda p: p.parent.name, reverse=True)
 
+def get_media_files(folder: Path, exts: tuple):
+    if not folder.exists():
+        return []
+    return sorted([f for f in folder.iterdir() if f.is_file() and f.suffix.lower() in exts], key=lambda x: x.stat().st_mtime, reverse=True)
 
 def get_available_bgm_tracks():
-    """Scans project presets and downloads/ folder for all available BGM audio files."""
     tracks = {
         "Default Worship Piano": backend.get_worship_bgm(),
         "Ambient Pad": backend.BGM_PODCAST_FILE
@@ -134,25 +246,21 @@ def get_available_bgm_tracks():
             reverse=True
         )
         for f in dl_files:
-            clean_label = f"📥 Downloaded: {f.name[:40]}"
+            clean_label = f"📥 Downloaded: {f.name[:38]}"
             tracks[clean_label] = f
     return tracks
 
-def get_media_files(folder: Path, exts: tuple):
-    if not folder.exists():
-        return []
-    return sorted([f for f in folder.iterdir() if f.is_file() and f.suffix.lower() in exts], key=lambda x: x.stat().st_mtime, reverse=True)
-
 channels = backend.load_channels()
 channel_names = list(channels.keys()) if channels else ["TheDailyWisdom_Hub"]
-cur_v_cfg = load_active_voice()
 all_videos = get_all_sequence_videos()
 uploaded_count = sum(1 for v in all_videos if backend.load_clip_metadata(v).get("youtube_id"))
 pending_count = len(all_videos) - uploaded_count
 
-# --- LEFT SIDEBAR COMMAND CENTER ---
+# ==============================================================================
+# SIDEBAR COMMAND DECK
+# ==============================================================================
 with st.sidebar:
-    st.markdown("### 🎛️ Global Command Center")
+    st.markdown("### 🎛️ Studio Command Deck")
     sb_c1, sb_c2 = st.columns(2)
     with sb_c1:
         if st.button("➕ Add Channel", width="stretch"):
@@ -160,22 +268,22 @@ with st.sidebar:
             if new_c:
                 st.rerun()
     with sb_c2:
-        if st.button("☁️ Git Save", width="stretch"):
-            with st.spinner("Pushing..."):
+        if st.button("☁️ Git Backup", width="stretch"):
+            with st.spinner("Backing up..."):
                 ok, msg = backend.save_everything_to_git()
                 st.toast("Saved to GitHub!" if ok else msg, icon="✅" if ok else "⚠️")
 
-    if st.button("🛑 Stop / Cancel Active Task", width="stretch"):
+    if st.button("🛑 Stop Active Tasks", width="stretch"):
         subprocess.run(["taskkill", "/F", "/IM", "ffmpeg.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["taskkill", "/F", "/IM", "yt-dlp.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        st.warning("Stopped active tasks.")
+        st.warning("All FFmpeg and download tasks stopped.")
         st.stop()
 
     st.divider()
     st.markdown("### 📌 Pinterest Quick-Grab")
-    pin_in = st.text_input("Paste Pin URL (Video or Image):", placeholder="https://pin.it/...", key="sb_pin_input")
-    if st.button("📥 Download Pin to Studio", width="stretch") and pin_in.strip():
-        with st.spinner("Resolving & Downloading Pin..."):
+    pin_in = st.text_input("Paste Pin URL:", placeholder="https://pin.it/...", key="sb_pin_input")
+    if st.button("📥 Download Pin", width="stretch") and pin_in.strip():
+        with st.spinner("Resolving Pinterest stream..."):
             saved_p = backend.download_pinterest_media(pin_in.strip(), sync_to_studio=True)
             if saved_p and saved_p.exists() and saved_p.stat().st_size > 1000:
                 is_vid = saved_p.suffix.lower() == ".mp4"
@@ -183,125 +291,162 @@ with st.sidebar:
                 time.sleep(1.0)
                 st.rerun()
             else:
-                st.error("❌ FAILED: Could not extract media. Please check URL.")
+                st.error("❌ FAILED: No media stream found on this Pin link.")
 
     st.divider()
     st.markdown("### 🎥 YouTube Media Grabber")
-    yt_in = st.text_input("Paste YouTube Video URL:", placeholder="https://youtube.com/watch?v=...", key="sb_yt_input")
+    yt_in = st.text_input("Paste YouTube URL:", placeholder="https://youtube.com/watch?v=...", key="sb_yt_input")
     c_y1, c_y2 = st.columns(2)
     with c_y1:
         if st.button("🎵 MP3 Audio", width="stretch") and yt_in.strip():
-            with st.spinner("Extracting MP3 (192kbps)..."):
+            with st.spinner("Extracting 192kbps MP3..."):
                 out_a = backend.download_youtube_audio_direct(yt_in.strip())
                 if out_a and out_a.exists():
-                    st.success(f"✅ PASSED: `{out_a.name}`")
+                    st.success(f"✅ PASSED: `{out_a.name[:25]}...`")
                 else:
-                    st.error("❌ FAILED: Could not extract audio.")
+                    st.error("❌ FAILED: Audio rip error.")
     with c_y2:
         if st.button("📹 1080p MP4", width="stretch") and yt_in.strip():
             with st.spinner("Downloading 1080p Video..."):
                 out_v = backend.download_youtube_video_direct(yt_in.strip())
                 if out_v and out_v.exists():
-                    st.success(f"✅ PASSED: `{out_v.name}`")
+                    st.success(f"✅ PASSED: `{out_v.name[:25]}...`")
                 else:
-                    st.error("❌ FAILED: Could not download video.")
+                    st.error("❌ FAILED: Video download error.")
 
-# --- TOP NAVBAR & KPI CARDS ---
+# ==============================================================================
+# TOP NAVBAR & METRIC TILES (NO TOP OVERLAP)
+# ==============================================================================
 st.markdown(f"""
 <div class="top-nav">
     <div>
-        <div class="nav-title">✝️ DailyWisdom Dual-Channel AI Studio</div>
-        <div class="nav-sub">Separated 🇬🇧 English Channel Maker & 🇮🇳 Hindi Channel Maker • AI Random Verse + Explanation Picker • 66 Books</div>
+        <div class="nav-title">✝️ DailyWisdom AI Studio</div>
+        <div class="nav-sub">Obsidian Black • Electric Blue • Crimson Red Theme • 20–25s Retention Tuned</div>
     </div>
     <div>
-        <span class="status-pill">📺 {len(channel_names)} Channels Connected</span>
-        <span class="status-pill">📖 66 Books + 50 Topics</span>
-        <span class="status-pill">🟢 AI Engine Online</span>
+        <span class="status-pill">📺 {len(channel_names)} Channel(s)</span>
+        <span class="status-pill">📖 66 Books Vault</span>
+        <span class="status-pill-red">⚡ Viral Engine Ready</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 k1, k2, k3, k4 = st.columns(4)
 with k1:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Total Sequential Shorts</div><div class="kpi-val">{len(all_videos)}</div><div class="kpi-sub">Sorted in clips/001_...</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Sequential Shorts Vault</div><div class="kpi-val">{len(all_videos)}</div><div class="kpi-sub-blue">Saved in clips/</div></div>', unsafe_allow_html=True)
 with k2:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Ready to Upload</div><div class="kpi-val">{pending_count}</div><div class="kpi-sub">{uploaded_count} Live on YouTube</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-card-red"><div class="kpi-label">Ready To Publish</div><div class="kpi-val">{pending_count}</div><div class="kpi-sub-red">{uploaded_count} Live on YouTube</div></div>', unsafe_allow_html=True)
 with k3:
     pin_v_cnt = len(get_media_files(backend.PIN_VID_DIR, (".mp4",))) if hasattr(backend, "PIN_VID_DIR") else 0
     pin_i_cnt = len(get_media_files(backend.PIN_IMG_DIR, (".jpg", ".png"))) if hasattr(backend, "PIN_IMG_DIR") else 0
-    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Pinterest Media Vault</div><div class="kpi-val">{pin_v_cnt + pin_i_cnt}</div><div class="kpi-sub">{pin_v_cnt} Videos • {pin_i_cnt} HD Images</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Media Vault Assets</div><div class="kpi-val">{pin_v_cnt + pin_i_cnt}</div><div class="kpi-sub-blue">{pin_v_cnt} Videos • {pin_i_cnt} HD Images</div></div>', unsafe_allow_html=True)
 with k4:
-    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Connected Channels</div><div class="kpi-val">{len(channel_names)}</div><div class="kpi-sub">{", ".join(channel_names)[:32]}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="kpi-card-red"><div class="kpi-label">Active Channel</div><div class="kpi-val">{channel_names[0][:16]}</div><div class="kpi-sub-red">{len(channel_names)} Connected</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
 # ==============================================================================
-# REUSABLE MAKER RENDERER FOR TAB 1 (ENGLISH MAKER) & TAB 2 (HINDI MAKER)
+# WORKSPACE MAKER (EXPANSIVE 2-COLUMN UN-CROPPED LAYOUT)
 # ==============================================================================
 def render_maker_workspace(lang_code: str):
-    """
-    Renders a dedicated, self-contained Maker workspace:
-    - lang_code == 'en': 100% English Channel Maker
-    - lang_code == 'hi': 100% Hindi Channel Maker (पवित्र बाइबिल)
-    """
     is_hi = (lang_code == "hi")
     pfx = "hi" if is_hi else "en"
-    maker_title = "🇮🇳 Hindi Channel Maker (पवित्र बाइबिल — 100% Pure Hindi Shorts)" if is_hi else "🇬🇧 English Channel Maker (100% English Devotional Shorts)"
+    maker_heading = "🇮🇳 Hindi Channel Shorts Maker (पवित्र बाइबिल)" if is_hi else "🇬🇧 English Channel Shorts Maker (High-Retention Devotionals)"
 
-    col_left, col_mid, col_right = st.columns([1.35, 1.15, 1.3], gap="medium")
+    col_workflow, col_monitor = st.columns([1.18, 1.0], gap="large")
 
-    with col_left:
+    with col_workflow:
         with st.container(border=True):
-            st.markdown(f"#### {maker_title}")
+            st.markdown(f"### {maker_heading}")
 
-            # 1. Target Channel & Voice Picker for this specific Maker
+            # 1. Channel & Narrator Voice Selector
             c_ch, c_acc = st.columns(2)
             with c_ch:
-                def_ch_idx = (1 if (is_hi and len(channel_names) > 1) else 0)
+                def_ch_idx = 1 if (is_hi and len(channel_names) > 1) else 0
                 target_ch = st.selectbox("📺 Target YouTube Channel:", channel_names, index=def_ch_idx, key=f"{pfx}_target_ch")
             with c_acc:
-                if is_hi:
-                    acc_choices = ["🇮🇳 Hindi / Indian Accent (hi-IN)", "🇮🇳 Indian English (en-IN)"]
-                else:
-                    acc_choices = ["🇺🇸 American English (en-US)", "🇬🇧 British English (en-GB)", "🇮🇳 Indian English (en-IN)"]
-                chosen_acc = st.selectbox("🌍 Voice Accent:", acc_choices, index=0, key=f"{pfx}_acc")
+                acc_choices = ["🇮🇳 Hindi / Indian Accent (hi-IN)", "🇮🇳 Indian English (en-IN)"] if is_hi else ["🇺🇸 American English (en-US)", "🇬🇧 British English (en-GB)", "🇮🇳 Indian English (en-IN)"]
+                chosen_acc = st.selectbox("🌐 Voice Accent Profile:", acc_choices, index=0, key=f"{pfx}_acc")
 
             v_list = VOICE_CATALOG[chosen_acc]
             v_names = [v["name"] for v in v_list]
             sel_v_name = st.selectbox("🎙️ Select Narrator Voice:", v_names, index=0, key=f"{pfx}_voice")
             sel_v_obj = v_list[v_names.index(sel_v_name)]
 
-            # 2. Topic OR Exact Book/Chapter/Verse Selector
+            st.write("")
+            # 2. Scripture Strategy Selection
             sel_mode = st.radio(
-                "How do you want to pick the Bible Verse?",
+                "Pick Scripture By:",
                 [
-                    "🎲 50 Prayer Topics (AI Picks New Relevant Verse + Explanation Every Time)",
+                    "🎲 50 Prayer Topics (AI Selects New Scripture + Explanation Each Time)",
                     "📖 Full 66-Book Bible Browser (Book ➔ Chapter ➔ Verse)",
-                    "✍️ Custom Topic (AI Picks Relevant Verse + Explanation)",
+                    "✍️ Custom Life Situation (AI Tailors Custom Scripture)",
                 ],
-                key=f"{pfx}_sel_mode",
+                key=f"{pfx}_sel_mode"
             )
 
             state_key = f"{pfx}_active_verse_bundle"
 
             if "50 Prayer Topics" in sel_mode:
                 topic_labels = [f"{item['id']}. {item['topic']}" for item in TOP_50_PRAYER_TOPICS]
-                chosen_t_lbl = st.selectbox("Select Prayer Topic (1-50):", topic_labels, key=f"{pfx}_topic_dd")
+                chosen_t_lbl = st.selectbox("Select Topic (1-50):", topic_labels, key=f"{pfx}_topic_dd")
                 chosen_t_obj = TOP_50_PRAYER_TOPICS[topic_labels.index(chosen_t_lbl)]
                 topic_name = chosen_t_obj["topic"]
 
-                # Auto-pick or let user click '🎲 AI Pick Another Relevant Verse'
+                # Automatically run full competitor research & theological selection
                 if st.session_state.get(f"{pfx}_last_topic") != topic_name or state_key not in st.session_state:
                     st.session_state[f"{pfx}_last_topic"] = topic_name
-                    st.session_state[state_key] = ai_pick_relevant_verse_for_topic(topic_name, lang=pfx)
+                    with st.spinner(f"Auditing competitor Shorts & researching best Scripture for '{topic_name}'..."):
+                        pkg = backend.research_viral_scripture_package(topic_name, target_ch)
+                        st.session_state[state_key] = {
+                            "topic_en": topic_name,
+                            "topic_hi": topic_name,
+                            "verse_citation": pkg["verse_citation"],
+                            "en_spoken_ref": pkg["verse_citation"],
+                            "hi_spoken_ref": pkg["verse_citation"],
+                            "en_verse": pkg["verse_text"],
+                            "hi_verse": pkg["verse_text"],
+                            "rom_verse": pkg["verse_text"],
+                            "why_en": pkg["why_chosen"],
+                            "why_hi": pkg["why_chosen"],
+                            "meaning_en": pkg["meaning"],
+                            "meaning_hi": pkg["meaning"],
+                            "prayer_en": pkg["prayer"],
+                            "prayer_hi": pkg["prayer"],
+                            "hook_en": pkg["thumbnail_hook"],
+                            "title_en": pkg["title"],
+                            "title_hi": pkg["title"],
+                            "researched_pkg": pkg
+                        }
 
-                if st.button("🎲 AI Pick Another Relevant Verse & Explanation for This Topic", key=f"{pfx}_reroll_btn", width="stretch"):
-                    with st.spinner(f"AI selecting a new relevant Bible verse for '{topic_name}'..."):
-                        st.session_state[state_key] = ai_pick_relevant_verse_for_topic(topic_name, lang=pfx)
+                if st.button("🔬 Re-Audit Competition & Research Fresh Scripture", key=f"{pfx}_reroll_btn", width="stretch"):
+                    with st.spinner(f"Re-auditing YouTube velocity for '{topic_name}'..."):
+                        pkg = backend.research_viral_scripture_package(topic_name, target_ch)
+                        st.session_state[state_key] = {
+                            "topic_en": topic_name,
+                            "topic_hi": topic_name,
+                            "verse_citation": pkg["verse_citation"],
+                            "en_spoken_ref": pkg["verse_citation"],
+                            "hi_spoken_ref": pkg["verse_citation"],
+                            "en_verse": pkg["verse_text"],
+                            "hi_verse": pkg["verse_text"],
+                            "rom_verse": pkg["verse_text"],
+                            "why_en": pkg["why_chosen"],
+                            "why_hi": pkg["why_chosen"],
+                            "meaning_en": pkg["meaning"],
+                            "meaning_hi": pkg["meaning"],
+                            "prayer_en": pkg["prayer"],
+                            "prayer_hi": pkg["prayer"],
+                            "hook_en": pkg["thumbnail_hook"],
+                            "title_en": pkg["title"],
+                            "title_hi": pkg["title"],
+                            "researched_pkg": pkg
+                        }
+                        st.rerun()
 
             elif "Full 66-Book" in sel_mode:
                 book_labels = [f"{i+1:02d}. {b_en.strip()} — {b_hi}" for i, (b_en, b_hi, _) in enumerate(BIBLE_66_BOOKS)]
-                sel_b_lbl = st.selectbox("1. Select Book (66 Books):", book_labels, index=18, key=f"{pfx}_bk")
+                sel_b_lbl = st.selectbox("1. Book (66 Books):", book_labels, index=18, key=f"{pfx}_bk")
                 b_idx = book_labels.index(sel_b_lbl)
                 exact_book, _, max_ch = BIBLE_66_BOOKS[b_idx]
                 exact_book = exact_book.strip()
@@ -312,15 +457,15 @@ def render_maker_workspace(lang_code: str):
                 verses_dict = get_verses_for_chapter(exact_book, exact_ch)
                 v_nums = list(verses_dict.keys()) if verses_dict else [1]
                 with cc2:
-                    exact_v = st.selectbox("3. Verse:", v_nums, format_func=lambda vn: f"Verse {vn}: {verses_dict.get(vn, '')[:26]}...", key=f"{pfx}_vs")
+                    exact_v = st.selectbox("3. Verse:", v_nums, format_func=lambda vn: f"Verse {vn}: {verses_dict.get(vn, '')[:30]}...", key=f"{pfx}_vs")
 
                 ref_manual = f"{exact_book} {exact_ch}:{exact_v}"
                 if st.session_state.get(f"{pfx}_last_manual_ref") != ref_manual or state_key not in st.session_state:
                     st.session_state[f"{pfx}_last_manual_ref"] = ref_manual
                     _, en_v_txt, hi_v_dev, hi_v_rom = lookup_reference_bilingual(ref_manual)
-                    why_en_m = f"This verse from {ref_manual} reveals God's eternal truth and comfort for your life today."
-                    mean_en_m = f"Let the promise of {ref_manual} anchor your heart. God's word never fails those who trust in Him."
-                    pray_en_m = f"Lord Jesus, let the truth of {ref_manual} come alive in my life and bless my family today, Amen."
+                    why_en_m = f"This promise in {ref_manual} anchors your soul with God's peace today."
+                    mean_en_m = f"Trust God's unchanging faithfulness. His grace surrounds your life right now."
+                    pray_en_m = f"Lord Jesus, let the peace of {ref_manual} guard my family today, Amen."
                     st.session_state[state_key] = {
                         "topic_en": ref_manual,
                         "topic_hi": format_reference_for_speech(ref_manual, is_hindi_speech=True),
@@ -341,9 +486,9 @@ def render_maker_workspace(lang_code: str):
                         "title_hi": f"{format_reference_for_speech(ref_manual, is_hindi_speech=True)} #shorts",
                     }
             else:
-                custom_t_in = st.text_input("Enter Custom Topic:", value="Financial Miracle & Peace", key=f"{pfx}_cust_in")
-                if st.button("🎲 AI Pick Relevant Verse & Explanation", key=f"{pfx}_cust_btn", width="stretch") or state_key not in st.session_state:
-                    with st.spinner("AI finding the best Bible verse & explanation..."):
+                custom_t_in = st.text_input("Describe Situation:", value="Peace in the Storm and Anxiety Relief", key=f"{pfx}_cust_in")
+                if st.button("🎲 AI Find Relevant Scripture", key=f"{pfx}_cust_btn", width="stretch") or state_key not in st.session_state:
+                    with st.spinner("Analyzing spiritual themes..."):
                         st.session_state[state_key] = ai_pick_relevant_verse_for_topic(custom_t_in, lang=pfx)
 
             bundle = st.session_state[state_key]
@@ -351,104 +496,194 @@ def render_maker_workspace(lang_code: str):
             en_preview = bundle["en_verse"]
             dev_hi = bundle["hi_verse"]
             rom_hi = bundle["rom_verse"]
-            en_spoken_name = bundle["en_spoken_ref"]
-            hi_spoken_name = bundle["hi_spoken_ref"]
 
-            # --- TWO SEPARATE VERSE BOXES (BOX 1: ENGLISH | BOX 2: HINDI) ---
-            box_en, box_hi = st.columns(2, gap="small")
-            with box_en:
-                st.markdown(f"""
-                <div class="verse-box" style="border-color: #38BDF8; border-left: 5px solid #38BDF8; min-height: 145px;">
-                    <div class="verse-ref-hdr" style="color: #38BDF8;">🇬🇧 ENGLISH VERSE ({preview_ref})<br><span style="font-size:11px; color:#94A3B8;">{en_spoken_name}</span></div>
-                    <div class="verse-en">"{en_preview}"</div>
-                </div>
-                """, unsafe_allow_html=True)
-                if st.button("🔊 Hear English Verse", key=f"{pfx}_hear_en", width="stretch"):
-                    save_active_voice(dict(sel_v_obj, accent=chosen_acc, script_mode=SCRIPT_MODES[0]))
-                    mp3_f = synthesize_bilingual_verse_preview(preview_ref, en_preview, dev_hi, rom_hi, listen_mode="english")
-                    st.session_state[f"{pfx}_aud_mp3"] = str(mp3_f)
-
-            with box_hi:
-                st.markdown(f"""
-                <div class="verse-box" style="border-color: #FFD700; border-left: 5px solid #FFD700; min-height: 145px;">
-                    <div class="verse-ref-hdr" style="color: #FFD700;">🇮🇳 HINDI VERSE (पवित्र बाइबिल)<br><span style="font-size:11px; color:#FDE047;">{hi_spoken_name}</span></div>
-                    <div class="verse-hi">"{dev_hi}"</div>
-                </div>
-                """, unsafe_allow_html=True)
-                if st.button("🔊 Hear Hindi Verse (हिन्दी)", key=f"{pfx}_hear_hi", width="stretch"):
-                    save_active_voice(dict(sel_v_obj, accent=chosen_acc, script_mode=SCRIPT_MODES[1]))
-                    mp3_f = synthesize_bilingual_verse_preview(preview_ref, en_preview, dev_hi, rom_hi, listen_mode="hindi")
-                    st.session_state[f"{pfx}_aud_mp3"] = str(mp3_f)
-
-            if st.button("🌍 Hear Both Together (English First ➔ Then Hindi)", key=f"{pfx}_hear_both", width="stretch"):
-                mp3_f = synthesize_bilingual_verse_preview(preview_ref, en_preview, dev_hi, rom_hi, listen_mode="both")
-                st.session_state[f"{pfx}_aud_mp3"] = str(mp3_f)
-
-            if st.session_state.get(f"{pfx}_aud_mp3") and Path(st.session_state[f"{pfx}_aud_mp3"]).exists():
-                st.audio(st.session_state[f"{pfx}_aud_mp3"], format="audio/mp3", autoplay=True)
-
-            # --- AI EXPLANATION & MEANING BOX (SHOWN EVERY TIME BEFORE GENERATING) ---
-            why_txt = bundle["why_hi"] if is_hi else bundle["why_en"]
+            # Display Scripture Card & Virality Intelligence Report
+            active_verse_text = dev_hi if is_hi else en_preview
             st.markdown(f"""
-            <div class="explain-box">
-                <b>💡 Why AI Picked `{preview_ref}` for this Topic:</b><br>{why_txt}
+            <div class="verse-card">
+                <div class="verse-hdr">📖 Researched Scripture: {preview_ref}</div>
+                <div class="verse-body">"{active_verse_text}"</div>
             </div>
             """, unsafe_allow_html=True)
 
+            # Virality Intelligence Insight Box
+            if "why_en" in bundle and bundle["why_en"]:
+                st.caption(f"🧠 **Why This Scripture Wins:** {bundle['why_en']}")
+
+            # Audio Audition Preview
+            c_aud1, c_aud2 = st.columns(2)
+            with c_aud1:
+                if st.button(f"🔊 Listen to {'Hindi' if is_hi else 'English'} Preview", key=f"{pfx}_listen_btn", width="stretch"):
+                    save_active_voice(dict(sel_v_obj, accent=chosen_acc, script_mode=SCRIPT_MODES[1] if is_hi else SCRIPT_MODES[0]))
+                    mp3_f = synthesize_bilingual_verse_preview(preview_ref, en_preview, dev_hi, rom_hi, listen_mode="hindi" if is_hi else "english")
+                    st.session_state[f"{pfx}_aud_mp3"] = str(mp3_f)
+            with c_aud2:
+                if st.session_state.get(f"{pfx}_aud_mp3") and Path(st.session_state[f"{pfx}_aud_mp3"]).exists():
+                    st.audio(st.session_state[f"{pfx}_aud_mp3"], format="audio/mp3")
+
+            # Editable Spoken Script Lines
             edit_meaning = st.text_area(
-                "📝 Spiritual Explanation / अर्थ (Spoken in Video — Editable):" if is_hi else "📝 Spiritual Explanation / Meaning (Spoken in Video — Editable):",
+                "💡 Spiritual Reflection (Keep 1 Short Sentence):",
                 value=bundle["meaning_hi"] if is_hi else bundle["meaning_en"],
-                height=78,
-                key=f"{pfx}_mean_{preview_ref}",
+                height=68,
+                key=f"{pfx}_mean_{preview_ref}"
             )
             edit_prayer = st.text_area(
-                "🙏 Breakthrough Prayer / प्रार्थना (Spoken in Video — Editable):" if is_hi else "🙏 Breakthrough Prayer (Spoken in Video — Editable):",
+                "🙏 Breakthrough Prayer (Ends in Amen):",
                 value=bundle["prayer_hi"] if is_hi else bundle["prayer_en"],
-                height=68,
-                key=f"{pfx}_pray_{preview_ref}",
+                height=65,
+                key=f"{pfx}_pray_{preview_ref}"
             )
 
-            gen_btn = st.button(
-                f"✨ GENERATE {'100% HINDI' if is_hi else '100% ENGLISH'} SHORT WITH {preview_ref}",
-                key=f"{pfx}_gen_btn",
-                width="stretch",
-            )
+            # Live Word Budget & Duration Calculator
+            total_words = len((active_verse_text + " " + edit_meaning + " " + edit_prayer).split()) + 12
+            est_dur = round(total_words / 2.35 + 2.5, 1)
+            dur_color = "#34D399" if 20 <= est_dur <= 26 else ("#60A5FA" if est_dur <= 30 else "#F87171")
+            st.markdown(f"""
+            <div class="budget-badge">
+                ⏱️ Word Budget: <b>{total_words} words</b> | Est. Video Duration: <b style="color:{dur_color};">{est_dur}s</b> (Target: 20–25s viral sweet spot)
+            </div>
+            """, unsafe_allow_html=True)
 
-    with col_mid:
+        # Step 2: Visuals, BGM & Thumbnail Controls
         with st.container(border=True):
             st.markdown("#### 🎨 Step 2: Visuals, BGM & Thumbnail")
-            # BGM & Volume Controls (Presets + Auto-Scanned Downloads)
-            available_bgms = get_available_bgm_tracks()
-            sel_bgm_label = st.selectbox("🎵 Worship BGM:", list(available_bgms.keys()), index=0, key=f"{pfx}_bgm_preset")
-            chosen_bgm_file = available_bgms[sel_bgm_label]
 
-            # Mini Audio Preview
-            if chosen_bgm_file and Path(chosen_bgm_file).exists():
-                st.audio(str(chosen_bgm_file), format="audio/mp3")
+            b_c1, b_c2 = st.columns(2)
+            with b_c1:
+                available_bgms = get_available_bgm_tracks()
+                sel_bgm_label = st.selectbox("🎵 Worship BGM Track:", list(available_bgms.keys()), index=0, key=f"{pfx}_bgm_preset")
+                chosen_bgm_file = available_bgms[sel_bgm_label]
+                if chosen_bgm_file and Path(chosen_bgm_file).exists():
+                    st.audio(str(chosen_bgm_file), format="audio/mp3")
+            with b_c2:
+                bgm_vol = st.slider("🔊 BGM Music Volume:", min_value=0.05, max_value=0.45, value=0.18, step=0.01, format="%.2f", key=f"{pfx}_bgm_vol")
+                palette_style = st.selectbox("🎨 Thumbnail Palette:", ["Gold Classic", "Midnight Blue", "Sunrise", "Crimson Glory"], key=f"{pfx}_pal")
 
-            bgm_vol = st.slider("🔊 BGM Music Volume:", min_value=0.05, max_value=0.45, value=0.18, step=0.01, format="%.2f", key=f"{pfx}_bgm_vol")
-            palette_style = st.selectbox("Thumbnail Palette:", ["Gold Classic", "Midnight Blue", "Sunrise", "Crimson Glory"], key=f"{pfx}_pal")
-            raw_thumb_toggle = st.checkbox("Use uploaded thumbnail raw (No 3D text)", value=False, key=f"{pfx}_raw_th")
+            raw_thumb_toggle = st.checkbox("Raw Thumbnail Mode (Keep image without 3D text stamps)", value=False, key=f"{pfx}_raw_th")
 
+            # Visual file pickers
             intro_files = get_media_files(backend.INTRO_DIR, (".mp4", ".mov", ".webm", ".mkv"))
             bg_files = get_media_files(backend.BG_DIR, (".jpg", ".jpeg", ".png", ".webp"))
             thumb_files = get_media_files(backend.THUMB_DIR, (".jpg", ".jpeg", ".png", ".webp"))
 
-            pick_intro_name = st.selectbox("📹 10s Intro Video (Auto-Muted):", ["Auto / Newest"] + [f.name for f in intro_files], key=f"{pfx}_int_dd")
-            up_intro = st.file_uploader("Drop New Intro Video:", type=["mp4", "mov", "webm"], label_visibility="collapsed", key=f"{pfx}_u_int")
+            v_c1, v_c2 = st.columns(2)
+            with v_c1:
+                pick_intro_name = st.selectbox("🎬 Intro/Full Video (Auto-Muted):", ["Auto / Newest"] + [f.name for f in intro_files], key=f"{pfx}_int_dd")
+                up_intro = st.file_uploader("Drop New Video:", type=["mp4", "mov", "webm"], key=f"{pfx}_u_int")
+            with v_c2:
+                pick_bg_name = st.selectbox("🖼️ Main Wallpaper Image:", ["Auto / Newest"] + [f.name for f in bg_files], key=f"{pfx}_bg_dd")
+                up_bg = st.file_uploader("Drop New Wallpaper:", type=["jpg", "jpeg", "png", "webp"], key=f"{pfx}_u_bg")
 
-            pick_bg_name = st.selectbox("🖼️ Main Background Image (10s-End):", ["Auto / Newest"] + [f.name for f in bg_files], key=f"{pfx}_bg_dd")
-            up_bg = st.file_uploader("Drop New Background Image:", type=["jpg", "jpeg", "png", "webp"], label_visibility="collapsed", key=f"{pfx}_u_bg")
+            pick_thumb_name = st.selectbox("🔥 Thumbnail Custom Image:", ["Same as Main Wallpaper"] + [f.name for f in thumb_files], key=f"{pfx}_th_dd")
+            up_thumb = st.file_uploader("Drop Custom Thumbnail Image:", type=["jpg", "jpeg", "png", "webp"], key=f"{pfx}_u_th")
 
-            pick_thumb_name = st.selectbox("🔥 Thumbnail Background:", ["Same as Main Background"] + [f.name for f in thumb_files], key=f"{pfx}_th_dd")
-            up_thumb = st.file_uploader("Drop Custom Thumbnail Image:", type=["jpg", "jpeg", "png", "webp"], label_visibility="collapsed", key=f"{pfx}_u_th")
+            st.write("")
+            gen_btn = st.button(
+                f"⚡ GENERATE 20-25s {'100% HINDI' if is_hi else '100% ENGLISH'} SHORT WITH {preview_ref}",
+                key=f"{pfx}_gen_btn",
+                width="stretch"
+            )
 
+    # ==========================================================================
+    # RIGHT COLUMN: LIVE MONITOR & MULTI-ASPECT THUMBNAIL STUDIO
+    # ==========================================================================
+    with col_monitor:
+        with st.container(border=True):
+            st.markdown("### 🎬 Studio Monitor & Publisher")
+            
+            target_preview = st.session_state.get("last_created_video")
+            if not target_preview or not Path(target_preview).exists():
+                target_preview = str(all_videos[0]) if all_videos else None
+
+            if not target_preview:
+                st.info("💡 Your generated Short, audio waveforms, and 1-Click Publish actions will display here!")
+            else:
+                vp = Path(target_preview)
+                tp_jpg = vp.with_name(f"{vp.stem}_thumb.jpg")
+                tp_16x9 = vp.parent / "thumbnail_16x9.png"
+                meta = backend.load_clip_metadata(vp)
+
+                dur = backend.get_video_duration(vp)
+                dur_badge = "🟢 Viral Sweet Spot (20–25s)" if (20 <= dur <= 26) else ("🔵 Good Pacing (27–32s)" if dur <= 32 else "🔴 Over 32s")
+                st.markdown(f"**⏱️ Final Short Duration:** `{dur:.1f}s` — **{dur_badge}**")
+                st.caption(f"📁 Clip Folder: `{vp.parent.name}`")
+
+                # Video & Thumbnail Tabs (Full Resolution, Zero Cropping)
+                t_vid, t_th_vert, t_th_wide, t_variants = st.tabs([
+                    "🎬 Master Video (9:16)",
+                    "📱 9:16 Thumbnail",
+                    "📺 16:9 Landscape",
+                    "✨ 3 Hook Variants"
+                ])
+
+                with t_vid:
+                    st.video(str(vp))
+                with t_th_vert:
+                    if tp_jpg.exists():
+                        st.image(str(tp_jpg), caption="9:16 High-CTR Cover", width="stretch")
+                    else:
+                        st.info("9:16 thumbnail rendering...")
+                with t_th_wide:
+                    if tp_16x9.exists():
+                        st.image(str(tp_16x9), caption="16:9 Landscape Cover", width="stretch")
+                    else:
+                        st.info("16:9 thumbnail rendering...")
+                with t_variants:
+                    var_cols = st.columns(3)
+                    for v_idx in range(1, 4):
+                        v_file = vp.parent / f"thumbnail_9x16_variant_{v_idx}.png"
+                        with var_cols[v_idx - 1]:
+                            if v_file.exists():
+                                st.image(str(v_file), caption=f"Variant #{v_idx}", width="stretch")
+
+                st.write("")
+                st.markdown(f"**🏆 Winning Title:** `{meta['title']}`")
+
+                with st.expander("📝 View Sanitized Description & Backend Tags"):
+                    st.text_area("Description:", value=meta["description"], height=130, key=f"{pfx}_mon_desc")
+                    st.code(", ".join(meta.get("tags", [])), language="text")
+
+                                # -------------------------------------------------------------
+                # INTERACTIVE THUMBNAIL SELECTOR FOR PUBLISHING
+                # -------------------------------------------------------------
+                st.markdown("#### 🖼️ Select Thumbnail to Publish:")
+                thumb_options = {}
+                if tp_jpg.exists():
+                    thumb_options["⭐ Master 9:16 (3D Gold + Floating Badges)"] = tp_jpg
+                for v_i in range(1, 4):
+                    v_file = vp.parent / f"thumbnail_9x16_variant_{v_i}.png"
+                    if v_file.exists():
+                        thumb_options[f"✨ Variant #{v_i}"] = v_file
+
+                if thumb_options:
+                    chosen_thumb_label = st.radio("Which thumbnail should upload to YouTube?", list(thumb_options.keys()), index=0, key=f"{pfx}_thumb_choice_radio")
+                    chosen_thumb_file = thumb_options[chosen_thumb_label]
+                    st.image(str(chosen_thumb_file), caption=f"Selected Cover: {chosen_thumb_label}", width=220)
+                else:
+                    chosen_thumb_file = tp_jpg if tp_jpg.exists() else None
+
+                # 1-Click Publishing Deck
+                st.write("")
+                if meta.get("youtube_id"):
+                    st.success(f"🎉 LIVE ON YOUTUBE: https://youtube.com/shorts/{meta['youtube_id']}")
+                else:
+                    for ch_n in channel_names:
+                        if st.button(f"🚀 Publish Video + Selected Thumbnail to '{ch_n}'", key=f"{pfx}_mon_up_{ch_n}", width="stretch"):
+                            with st.spinner(f"Publishing to {ch_n} with selected thumbnail..."):
+                                yt_id = backend.upload_video_to_youtube(ch_n, vp, thumbnail_path=chosen_thumb_file)
+                                if yt_id:
+                                    st.success(f"Live on YouTube! https://youtube.com/shorts/{yt_id}")
+                                    time.sleep(1.0)
+                                    st.rerun()
+
+
+    # Generation Trigger Handler
     if gen_btn:
-        with col_left:
+        with col_workflow:
             status = st.empty()
             prog = st.progress(0)
 
-            # Lock in the exact voice & language mode for this Maker
             active_maker_voice = dict(
                 sel_v_obj,
                 accent=chosen_acc,
@@ -467,20 +702,21 @@ def render_maker_workspace(lang_code: str):
                 hashtags=["#HindiBible", "#YeshuMasih", "#Prarthana", "#Shorts"] if is_hi else ["#BibleVerse", "#DailyPrayer", "#Faith", "#Shorts"],
             )
 
-            status.info(f"🎙️ [1/3] Synthesizing {'100% Pure Hindi' if is_hi else '100% English'} Voiceover ({sel_v_obj['name']})...")
-            prog.progress(35)
+            status.info(f"🎙️ [1/3] Synthesizing Voiceover ({sel_v_obj['name']})...")
+            prog.progress(30)
             voice_script = build_spoken_voice_script(script)
             temp_voice = backend.BASE_DIR / "temp_voice.mp3"
             backend.generate_voiceover(voice_script, temp_voice)
 
-            status.info("⚡ [2/3] Fast-Rendering 1080p Video & Graphical Thumbnails...")
-            prog.progress(70)
+            status.info("⚡ [2/3] Rendering 1080p Short (Smart Adaptive Engine)...")
+            prog.progress(65)
             tag_prefix = "Hindi_Bible" if is_hi else "English_Bible"
             clean_name = backend.clean_filename(f"{tag_prefix}_{bundle['topic_en']}_{preview_ref}")
             seq_dir = backend.get_next_sequence_folder(clean_name)
             out_video = seq_dir / f"{clean_name}.mp4"
             out_thumb = seq_dir / f"{clean_name}_thumb.jpg"
 
+            # Resolve Intro Video
             c_intro_path = None
             if up_intro is not None:
                 c_intro_path = backend.INTRO_DIR / f"{backend.clean_filename(Path(up_intro.name).stem)}{Path(up_intro.name).suffix.lower()}"
@@ -491,6 +727,7 @@ def render_maker_workspace(lang_code: str):
             elif intro_files:
                 c_intro_path = backend.mute_any_video(intro_files[0])
 
+            # Resolve Background Image
             c_bg_path = None
             if up_bg is not None:
                 c_bg_path = backend.BG_DIR / f"{backend.clean_filename(Path(up_bg.name).stem)}{Path(up_bg.name).suffix.lower()}"
@@ -500,11 +737,12 @@ def render_maker_workspace(lang_code: str):
             elif bg_files:
                 c_bg_path = bg_files[0]
 
+            # Resolve Thumbnail Image
             c_thumb_path = None
             if up_thumb is not None:
                 c_thumb_path = backend.THUMB_DIR / f"{backend.clean_filename(Path(up_thumb.name).stem)}{Path(up_thumb.name).suffix.lower()}"
                 c_thumb_path.write_bytes(up_thumb.getvalue())
-            elif pick_thumb_name != "Same as Main Background":
+            elif pick_thumb_name != "Same as Main Wallpaper":
                 c_thumb_path = backend.THUMB_DIR / pick_thumb_name
             else:
                 c_thumb_path = c_bg_path
@@ -512,21 +750,22 @@ def render_maker_workspace(lang_code: str):
             ok = backend.render_faceless_bible_video(
                 script, temp_voice, out_video, out_thumb,
                 custom_intro=c_intro_path, custom_bg=c_bg_path,
-                custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle, palette_name=palette_style, custom_bgm=chosen_bgm_file, bgm_volume=bgm_vol
+                custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle,
+                palette_name=palette_style, custom_bgm=chosen_bgm_file, bgm_volume=bgm_vol
             )
             if temp_voice.exists():
                 temp_voice.unlink(missing_ok=True)
 
             if ok:
-                status.info("🔥 [3/3] Running Virality Engine...")
+                status.info("🔥 [3/3] Running Virality Engine & Title Scorer...")
                 prog.progress(90)
                 if is_hi:
                     raw_desc = (
-                        f"📖 पवित्र बाइबिल वचन: {hi_spoken_name} ({preview_ref})\n"
+                        f"📖 पवित्र बाइबिल वचन: {bundle['hi_spoken_ref']} ({preview_ref})\n"
                         f"\"{dev_hi}\"\n\n"
                         f"💡 वचन का अर्थ:\n{edit_meaning}\n\n"
                         f"🙏 प्रार्थना:\n{edit_prayer}\n\n"
-                        f"कमेंट में \"AMEN\" ज़रूर लिखें! 🙏\n\n"
+                        f"कमेंट में AMEN ज़रूर लिखें! 🙏\n\n"
                         f"---\nDisclaimer: As an Amazon Associate, I earn from qualifying purchases."
                     )
                 else:
@@ -535,71 +774,38 @@ def render_maker_workspace(lang_code: str):
                         f"\"{en_preview}\"\n\n"
                         f"💡 Reflection:\n{edit_meaning}\n\n"
                         f"🙏 Prayer:\n{edit_prayer}\n\n"
-                        f"Type \"AMEN\" in the comments if you receive this word today! 🙏\n\n"
+                        f"Type AMEN in the comments to receive this blessing! 🙏\n\n"
                         f"---\nDisclaimer: As an Amazon Associate, I earn from qualifying purchases."
                     )
 
-                opt_title, opt_desc, opt_tags = backend.optimize_with_virality_engine(
-                    bundle["topic_en"], script.title, raw_desc, script.hashtags, target_ch
-                )
-                backend.save_clip_metadata(out_video, opt_title, opt_desc, opt_tags)
+                # Check if we already have the researched package
+                if "researched_pkg" in bundle:
+                    pkg = bundle["researched_pkg"]
+                    opt_title = pkg.get("title", script.title)
+                    opt_desc = pkg.get("description", raw_desc)
+                    opt_tags = pkg.get("tags", script.hashtags)
+                else:
+                    opt_title, opt_desc, opt_tags = backend.optimize_with_virality_engine(
+                        bundle["topic_en"], script.title, raw_desc, script.hashtags, target_ch,
+                        hook=bundle["hook_en"], video_dir=seq_dir
+                    )
+                backend.save_clip_metadata(out_video, opt_title, opt_desc, opt_tags, topic=bundle["topic_en"])
                 prog.progress(100)
                 status.success(f"🎉 Created `{seq_dir.name}`!")
                 st.session_state["last_created_video"] = str(out_video)
                 time.sleep(0.5)
                 st.rerun()
 
-    with col_right:
-        with st.container(border=True):
-            st.markdown("#### 🎬 Step 3: Live Output Monitor & Instant Publish")
-            target_preview = st.session_state.get("last_created_video")
-            if not target_preview or not Path(target_preview).exists():
-                target_preview = str(all_videos[0]) if all_videos else None
-
-            if not target_preview:
-                st.info("Your generated Short and 1-Click Publish buttons will appear here!")
-            else:
-                vp = Path(target_preview)
-                tp_jpg = vp.with_name(f"{vp.stem}_thumb.jpg")
-                tp_16x9 = vp.parent / "thumbnail_16x9.png"
-                meta = backend.load_clip_metadata(vp)
-
-                st.caption(f"📂 Folder: `{vp.parent.name}`")
-                v_sub1, v_sub2 = st.columns([1.15, 1])
-                with v_sub1:
-                    st.video(str(vp))
-                with v_sub2:
-                    if tp_jpg.exists():
-                        st.image(str(tp_jpg), caption="9:16 Thumbnail", width="stretch")
-                    if tp_16x9.exists():
-                        st.image(str(tp_16x9), caption="16:9 Thumbnail", width="stretch")
-
-                st.markdown(f"**Winning Title:** `{meta['title']}`")
-                with st.expander("📝 View Description & SEO Tags"):
-                    st.text_area("Description:", value=meta["description"], height=120, key=f"{pfx}_mon_desc")
-
-                if meta.get("youtube_id"):
-                    st.success(f"✅ Live on YouTube! https://youtube.com/shorts/{meta['youtube_id']}")
-                else:
-                    for ch_n in channel_names:
-                        if st.button(f"🚀 Publish to {ch_n}", key=f"{pfx}_mon_up_{ch_n}", width="stretch"):
-                            with st.spinner(f"Publishing to {ch_n}..."):
-                                yt_id = backend.upload_video_to_youtube(ch_n, vp)
-                                if yt_id:
-                                    st.success(f"Live! https://youtube.com/shorts/{yt_id}")
-                                    time.sleep(1)
-                                    st.rerun()
-
 
 # ==============================================================================
-# 4 MAIN STUDIO TABS (SEPARATED ENGLISH MAKER & HINDI MAKER)
+# MAIN STUDIO TABS
 # ==============================================================================
 tab_en, tab_hi, tab_lib, tab_pod, tab_stats = st.tabs([
     "🇬🇧 1. English Channel Shorts Maker",
     "🇮🇳 2. Hindi Channel Shorts Maker (पवित्र बाइबिल)",
     "📂 3. Sequential Video Library & Publisher",
     "🎙️ 4. Podcast Clipper & Virality Spy",
-    "📊 5. Channel Analytics & Performance",
+    "📊 5. Channel Analytics & Growth",
 ])
 
 with tab_en:
@@ -609,9 +815,9 @@ with tab_hi:
     render_maker_workspace("hi")
 
 with tab_lib:
-    st.markdown("### 📁 Sequential Shorts Vault (`001_`, `002_`, `003_...`)")
+    st.markdown("### 📂 Sequential Shorts Vault (`001_`, `002_`, `003_...`)")
     if not all_videos:
-        st.info("No videos generated yet.")
+        st.info("No videos in `clips/` yet. Generate your first Short!")
     else:
         for i in range(0, len(all_videos), 3):
             cols = st.columns(3, gap="medium")
@@ -622,22 +828,18 @@ with tab_lib:
                     meta = backend.load_clip_metadata(vid)
                     with cols[j]:
                         with st.container(border=True):
-                            badge = "🟢 LIVE" if meta.get("youtube_id") else "🟡 READY"
-                            st.markdown(f"**📂 `{vid.parent.name}`** — `{badge}`")
-                            vc_a, vc_b = st.columns([1.15, 1])
-                            with vc_a:
-                                st.video(str(vid))
-                            with vc_b:
-                                if thumb.exists():
-                                    st.image(str(thumb), width="stretch")
+                            badge = "🟢 LIVE" if meta.get("youtube_id") else "🔵 READY"
+                            st.markdown(f"**`{vid.parent.name}`** — `{badge}`")
+                            if thumb.exists():
+                                st.image(str(thumb), width="stretch")
                             st.caption(f"📌 **{meta['title']}**")
-
+                            
                             if meta.get("youtube_id"):
                                 st.success(f"https://youtube.com/shorts/{meta['youtube_id']}")
                             else:
                                 for ch_name in channel_names:
                                     if st.button(f"🚀 Upload to {ch_name}", key=f"grid_up_{vid.parent.name}_{ch_name}", width="stretch"):
-                                        with st.spinner(f"Uploading to {ch_name}..."):
+                                        with st.spinner(f"Publishing to {ch_name}..."):
                                             yt_id = backend.upload_video_to_youtube(ch_name, vid)
                                             if yt_id:
                                                 st.rerun()
@@ -647,7 +849,7 @@ with tab_lib:
                                 st.rerun()
 
 with tab_pod:
-    p_c1, p_c2 = st.columns(2, gap="medium")
+    p_c1, p_c2 = st.columns(2, gap="large")
     with p_c1:
         with st.container(border=True):
             st.markdown("#### 🎙️ Auto-Scout 1M+ View Podcasts & Clip")
@@ -655,7 +857,7 @@ with tab_pod:
             chosen_cat_name = st.selectbox("Select Niche:", list(cat_map.keys()))
             cat_cfg = backend.CATEGORIES[cat_map[chosen_cat_name]]
             if st.button(f"⚡ Auto-Scout & Clip '{chosen_cat_name}'", width="stretch"):
-                with st.spinner("Hunting 1M+ view videos..."):
+                with st.spinner("Scanning for 1M+ view videos..."):
                     target = backend.find_viral_video(1_000_000, cat_cfg["queries"])
                     if target:
                         tr = backend.get_transcript(target["id"])
@@ -675,58 +877,99 @@ with tab_pod:
                                 tmp.unlink(missing_ok=True)
     with p_c2:
         with st.container(border=True):
-            st.markdown("#### 🔥 Competitor Title Spy & SEO Generator")
-            spy_q = st.text_input("Topic / Keyword to Spy On:", value="Miracle Debt Prayer")
-            if st.button("🔥 Spy on Competitors & Generate Winning Title", width="stretch"):
-                with st.spinner("Analyzing top YouTube Shorts..."):
+            st.markdown("#### 🔥 Competitor Title Velocity & SEO Spy")
+            spy_q = st.text_input("Topic to Spy On:", value="Miracle Debt Prayer")
+            if st.button("🔥 Audit Competition & Generate Winning Title", width="stretch"):
+                with st.spinner("Analyzing top YouTube Shorts velocity..."):
                     comps = backend.scan_competitor_shorts(spy_q)
-                    for c in comps[:5]:
-                        st.caption(f"🔥 **{c['title']}** — `{c['views']:,} views`")
+                    for c in comps[:4]:
+                        st.caption(f"🔥 **{c['title'][:48]}** — `{c.get('views_per_day', 0):,.0f} views/day`")
                     win_t, _, win_tags = backend.optimize_with_virality_engine(spy_q, f"Prayer for {spy_q}", "", ["Shorts"], channel_names[0])
                     st.success(f"🚀 **Winning Title:** `{win_t}`")
                     st.code(", ".join(win_tags), language="text")
 
-
 with tab_stats:
-    st.markdown("### 📊 YouTube Channel Performance & Growth Graphs")
+    st.markdown("### 📊 YouTube Channel Growth, Subscribers & Geography")
     if not channel_names:
         st.warning("No YouTube channels connected yet.")
     else:
         stat_ch = st.selectbox("Select Channel to Audit:", channel_names, key="stats_ch_sel")
-        if st.button("🔄 Refresh Channel Performance Data", key="refresh_stats_btn"):
+        
+        c_ref1, c_ref2 = st.columns([1, 4])
+        with c_ref1:
+            refresh_btn = st.button("🔄 Refresh Data", key="refresh_stats_btn", width="stretch")
+        if refresh_btn:
             backend._CHANNEL_STATS_CACHE.pop(stat_ch, None)
 
-        with st.spinner(f"Pulling live performance metrics for {stat_ch}..."):
+        with st.spinner(f"Pulling real-time subscribers & analytics for {stat_ch}..."):
+            ch_overview = backend.get_channel_overview_stats(stat_ch)
             top_vids = backend.get_my_top_shorts(stat_ch, max_results=12)
+            geo_data, geo_error = backend.get_channel_geo_analytics(stat_ch)
 
-        if not top_vids:
-            st.info(f"No video statistics available yet for [{stat_ch}]. Upload a few Shorts to begin graphing!")
+        # ----------------------------------------------------------------------
+        # 1. CHANNEL OVERVIEW CARDS (SUBSCRIBERS, TOTAL VIEWS, TOTAL VIDEOS)
+        # ----------------------------------------------------------------------
+        subs = ch_overview.get("subscribers", 0)
+        ch_views = ch_overview.get("total_views", 0)
+        v_count = ch_overview.get("video_count", 0)
+
+        tot_views = sum(v["views"] for v in top_vids)
+        tot_likes = sum(v["likes"] for v in top_vids)
+        avg_views = tot_views // max(1, len(top_vids))
+
+        s1, s2, s3, s4 = st.columns(4)
+        with s1:
+            st.metric("Subscribers 👥", f"{subs:,}", help="Total subscribers on your YouTube channel")
+        with s2:
+            st.metric("Total Channel Views 👁️", f"{ch_views:,}", help="Lifetime views across all public uploads")
+        with s3:
+            st.metric("Total Public Videos 📹", f"{v_count:,}", help="Total videos published on this channel")
+        with s4:
+            st.metric("Avg Views / Short 🚀", f"{avg_views:,}", help="Average performance across audited Shorts")
+
+        st.write("")
+        st.divider()
+
+        # ----------------------------------------------------------------------
+        # 2. GEOGRAPHICAL VIEWS BREAKDOWN (AUDIENCE LOCATION BY COUNTRY)
+        # ----------------------------------------------------------------------
+        st.markdown("#### 🌍 Audience Geography (Views by Country)")
+        
+        if geo_data:
+            g_c1, g_c2 = st.columns([1.2, 1.0], gap="large")
+            with g_c1:
+                st.caption("Top countries driving views to your channel:")
+                df_geo = pd.DataFrame([
+                    {"Country": g["country"], "Views": g["views"], "Audience Share": f"{g['percentage']}%"}
+                    for g in geo_data
+                ])
+                st.dataframe(df_geo, hide_index=True, width=500)
+            with g_c2:
+                chart_geo = {g["country"]: g["views"] for g in geo_data}
+                st.bar_chart(chart_geo)
         else:
-            tot_views = sum(v["views"] for v in top_vids)
-            tot_likes = sum(v["likes"] for v in top_vids)
-            tot_comments = sum(v["comments"] for v in top_vids)
-            avg_views = tot_views // max(1, len(top_vids))
+            if geo_error and "console.cloud.google.com" in geo_error:
+                st.info("💡 **To view live Geographical breakdowns:** Enable the free 'YouTube Analytics API' once in your Google Cloud Project at: [console.cloud.google.com/apis/library/youtubeanalytics.googleapis.com](https://console.cloud.google.com/apis/library/youtubeanalytics.googleapis.com)")
+            else:
+                st.info(f"⏳ {geo_error or 'YouTube processes geographic analytics 24–48 hours after views occur. Keep posting!'}")
 
-            m1, m2, m3, m4 = st.columns(4)
-            with m1:
-                st.metric("Total Views Analyzed", f"{tot_views:,}")
-            with m2:
-                st.metric("Average Views / Short", f"{avg_views:,}")
-            with m3:
-                st.metric("Total Likes", f"{tot_likes:,}")
-            with m4:
-                st.metric("Total Comments", f"{tot_comments:,}")
+        st.write("")
+        st.divider()
 
-            st.write("")
-            st.markdown("#### 📈 Views per Short Comparison")
-            chart_data = {v["title"][:28] + "...": v["views"] for v in top_vids}
-            st.bar_chart(chart_data)
-
-            st.write("")
-            st.markdown("#### 💬 Engagement: Likes vs Comments")
-            import pandas as pd
-            df_eng = pd.DataFrame([
-                {"Short Title": v["title"][:26] + "...", "Likes": v["likes"], "Comments": v["comments"]}
-                for v in top_vids
-            ]).set_index("Short Title")
-            st.line_chart(df_eng)
+        # ----------------------------------------------------------------------
+        # 3. RECENT SHORTS PERFORMANCE CHARTS
+        # ----------------------------------------------------------------------
+        if top_vids:
+            st.markdown("#### 📈 Views Velocity & Audience Engagement")
+            v_col1, v_col2 = st.columns(2, gap="medium")
+            with v_col1:
+                st.caption("Views per Short (Ranked by Velocity):")
+                chart_data = {v["title"][:24] + "...": v.get("views_per_day", v["views"]) for v in top_vids}
+                st.bar_chart(chart_data)
+            with v_col2:
+                st.caption("Likes vs Comments Comparison:")
+                df_eng = pd.DataFrame([
+                    {"Short": v["title"][:22] + "...", "Likes": v["likes"], "Comments": v["comments"]}
+                    for v in top_vids
+                ]).set_index("Short")
+                st.line_chart(df_eng)

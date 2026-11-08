@@ -1,0 +1,338 @@
+import re
+import math
+from pathlib import Path
+from typing import List, Dict, Any, Tuple, Optional
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# Color Palette Configs
+PALETTES: Dict[str, Dict[str, Any]] = {
+    "Gold Classic": {
+        "gold_light": (255, 245, 175),
+        "gold_mid": (225, 175, 55),
+        "gold_dark": (155, 105, 15),
+        "border_gold": (218, 175, 60),
+        "card_bg": (11, 15, 26, 235),
+        "text_white": (255, 255, 255),
+        "red_btn": (220, 38, 38),
+    },
+    "Midnight Blue": {
+        "gold_light": (210, 240, 255),
+        "gold_mid": (100, 195, 255),
+        "gold_dark": (20, 95, 185),
+        "border_gold": (96, 165, 250),
+        "card_bg": (7, 11, 28, 235),
+        "text_white": (255, 255, 255),
+        "red_btn": (220, 38, 38),
+    },
+    "Sunrise": {
+        "gold_light": (255, 235, 180),
+        "gold_mid": (255, 155, 75),
+        "gold_dark": (185, 65, 20),
+        "border_gold": (251, 146, 60),
+        "card_bg": (20, 10, 12, 235),
+        "text_white": (255, 255, 255),
+        "red_btn": (220, 38, 38),
+    },
+    "Crimson Glory": {
+        "gold_light": (255, 230, 180),
+        "gold_mid": (235, 170, 60),
+        "gold_dark": (145, 25, 35),
+        "border_gold": (239, 68, 68),
+        "card_bg": (18, 6, 12, 235),
+        "text_white": (255, 255, 255),
+        "red_btn": (220, 38, 38),
+    }
+}
+
+def clean_ascii(text: str) -> str:
+    if not text:
+        return ""
+    t = (text.replace("’", "'").replace("‘", "'")
+             .replace("“", '"').replace("”", '"')
+             .replace("—", " - ").replace("…", "..."))
+    return re.sub(r"\s+", " ", re.sub(r"[^\x20-\x7E]", "", t)).strip()
+
+def get_font(size: int = 60) -> ImageFont.FreeTypeFont:
+    """Finds the boldest available clean font on Windows or project directory."""
+    candidates = [
+        BASE_DIR / "assets" / "fonts" / "Montserrat-Black.ttf",
+        BASE_DIR / "assets" / "fonts" / "Montserrat-ExtraBold.ttf",
+        BASE_DIR / "bold_font.ttf",
+        Path("C:/Windows/Fonts/segoeuib.ttf"),
+        Path("C:/Windows/Fonts/arialbd.ttf"),
+        Path("C:/Windows/Fonts/arial.ttf")
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                return ImageFont.truetype(str(p), max(12, int(size)))
+            except Exception:
+                continue
+    return ImageFont.load_default()
+
+def get_emoji_font(size: int = 24) -> ImageFont.FreeTypeFont:
+    p = Path("C:/Windows/Fonts/seguiemj.ttf")
+    if p.exists():
+        try:
+            return ImageFont.truetype(str(p), int(size))
+        except Exception:
+            pass
+    return get_font(size)
+
+def split_hook_into_two_lines(hook_text: str) -> Tuple[str, str]:
+    """Intelligently splits the viral hook so Line 1 gets the 3D Gold and Line 2 gets White."""
+    raw = clean_ascii(hook_text).upper().strip()
+    words = raw.split()
+    if not words:
+        return ("DON'T", "GIVE UP YET")
+    if len(words) == 1:
+        return (words[0], "")
+    if len(words) == 2:
+        return (words[0], words[1])
+    if len(words) == 3:
+        return (words[0], f"{words[1]} {words[2]}")
+    # 4 or more words: e.g. DON'T GIVE UP YET -> Line 1: DON'T, Line 2: GIVE UP YET
+    if words[0] in ("DON'T", "DONT", "NEVER", "STOP", "GOD", "BREAK", "PRAY", "PEACE", "HEAL", "HOLD"):
+        return (words[0], " ".join(words[1:]))
+    # Otherwise split roughly in half
+    mid = max(1, len(words) // 2)
+    return (" ".join(words[:mid]), " ".join(words[mid:]))
+
+def render_gold_gradient_text(canvas: Image.Image, text: str, font: ImageFont.FreeTypeFont, 
+                              center_x: int, center_y: int, pal: dict, stroke_w: int = 12):
+    """Renders true 3D chiseled metallic gold gradient text with bevel and deep stroke."""
+    draw = ImageDraw.Draw(canvas)
+    bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_w)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    tx = center_x - tw // 2 - bbox[0]
+    ty = center_y - th // 2 - bbox[1]
+
+    # 1. Deep 3D Drop Shadow
+    for off in range(8, 2, -1):
+        draw.text((tx + off, ty + off + 3), text, font=font, 
+                  fill=(0, 0, 0, 180), stroke_width=stroke_w + 4, stroke_fill=(0, 0, 0, 180))
+
+    # 2. Solid Black Outer Outline
+    draw.text((tx, ty), text, font=font, fill=(0, 0, 0, 255), 
+              stroke_width=stroke_w, stroke_fill=(0, 0, 0, 255))
+
+    # 3. Create Metallic Gold Gradient Mask
+    grad_img = Image.new("RGBA", (tw + 40, th + 40), (0, 0, 0, 0))
+    g_draw = ImageDraw.Draw(grad_img)
+    g_top, g_mid, g_bot = pal["gold_light"], pal["gold_mid"], pal["gold_dark"]
+
+    for y_step in range(th + 40):
+        rat = y_step / max(1, th + 40)
+        if rat < 0.5:
+            sub_r = rat / 0.5
+            cr = int(g_top[0] * (1 - sub_r) + g_mid[0] * sub_r)
+            cg = int(g_top[1] * (1 - sub_r) + g_mid[1] * sub_r)
+            cb = int(g_top[2] * (1 - sub_r) + g_mid[2] * sub_r)
+        else:
+            sub_r = (rat - 0.5) / 0.5
+            cr = int(g_mid[0] * (1 - sub_r) + g_bot[0] * sub_r)
+            cg = int(g_mid[1] * (1 - sub_r) + g_bot[1] * sub_r)
+            cb = int(g_mid[2] * (1 - sub_r) + g_bot[2] * sub_r)
+        g_draw.line([(0, y_step), (tw + 40, y_step)], fill=(cr, cg, cb, 255))
+
+    # Mask of the text
+    mask_img = Image.new("L", (tw + 40, th + 40), 0)
+    m_draw = ImageDraw.Draw(mask_img)
+    m_draw.text((20 - bbox[0], 20 - bbox[1]), text, font=font, fill=255)
+
+    canvas.paste(grad_img, (tx - 20, ty - 20), mask=mask_img)
+
+def render_pro_thumbnails(bg_image_path: Path, script: Any, thumb_path: Path, palette_name: str = "Gold Classic") -> Dict[str, Path]:
+    """Generates exact high-converting thumbnail matching the reference visual style."""
+    pal = PALETTES.get(palette_name, PALETTES["Gold Classic"])
+    raw_img = Image.open(bg_image_path).convert("RGB")
+
+    def _build_canvas(w: int, h: int, is_vertical: bool = True) -> Image.Image:
+        # 1. Aspect Fill & Center Crop
+        ir = raw_img.width / raw_img.height
+        tr = w / h
+        nw, nh = (int(h * ir), h) if ir > tr else (w, int(w / ir))
+        im = raw_img.resize((nw, nh), Image.Resampling.LANCZOS)
+        im = im.crop(((nw - w) // 2, (nh - h) // 2, (nw - w) // 2 + w, (nh - h) // 2 + h))
+
+        # 2. Lighting & Clarity Boost
+        luma = float(np.mean(np.asarray(im.convert("L"), dtype=np.float32)))
+        if luma < 45.0:
+            im = ImageEnhance.Brightness(im).enhance(min(1.8, 52.0 / max(1.0, luma)))
+        im = ImageEnhance.Contrast(im).enhance(1.18).convert("RGBA")
+
+        # 3. Cinematic Gradients (Vignette top 20% & bottom 45% for high-contrast typography)
+        ov = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        od = ImageDraw.Draw(ov)
+        top_lim = int(h * (0.22 if is_vertical else 0.28))
+        bot_start = int(h * (0.50 if is_vertical else 0.45))
+        for y in range(h):
+            if y <= top_lim:
+                a = int(220 * ((1.0 - y / max(1, top_lim)) ** 1.3))
+            elif y >= bot_start:
+                a = int(245 * (((y - bot_start) / max(1, h - bot_start)) ** 1.15))
+            else:
+                a = 25
+            od.line([(0, y), (w, y)], fill=(6, 9, 18, min(245, a)))
+        im = Image.alpha_composite(im, ov)
+        draw = ImageDraw.Draw(im)
+
+        # 4. Double Gold Rounded Framing Borders
+        b_col = pal["border_gold"]
+        ins1 = 36 if is_vertical else 20
+        ins2 = ins1 + 14
+        r1 = 40 if is_vertical else 24
+        r2 = r1 - 10
+
+        draw.rounded_rectangle([ins1, ins1, w - ins1, h - ins1], radius=r1, outline=b_col, width=4)
+        draw.rounded_rectangle([ins2, ins2, w - ins2, h - ins2], radius=r2, outline=(b_col[0], b_col[1], b_col[2], 140), width=2)
+
+        # Subtle gold corner diamond accents
+        for cx, cy in [(ins1 + 6, ins1 + 6), (w - ins1 - 6, ins1 + 6), (ins1 + 6, h - ins1 - 6), (w - ins1 - 6, h - ins1 - 6)]:
+            draw.polygon([(cx, cy - 5), (cx + 5, cy), (cx, cy + 5), (cx - 5, cy)], fill=b_col)
+
+        # 5. Top Pill Badge (e.g. STRENGTH WHEN YOU FEEL LIKE QUITTING)
+        raw_badge = clean_ascii(getattr(script, "topic", "DAILY DEVOTIONAL")).upper()
+        f_badge_sz = 34 if len(raw_badge) <= 25 else max(24, int(780 / max(1, len(raw_badge) * 0.62)))
+        f_badge = get_font(f_badge_sz if is_vertical else 24)
+        bb = draw.textbbox((0, 0), raw_badge, font=f_badge)
+        bw, bh = (bb[2] - bb[0]) + 70, (bb[3] - bb[1]) + 32
+        bx = (w - bw) // 2
+        by = 135 if is_vertical else 42
+
+        # Outer dark shadow + pill fill
+        draw.rounded_rectangle([bx + 2, by + 4, bx + bw + 2, by + bh + 4], radius=bh // 2, fill=(0, 0, 0, 160))
+        draw.rounded_rectangle([bx, by, bx + bw, by + bh], radius=bh // 2, fill=pal["card_bg"], outline=b_col, width=3)
+        draw.text(((w - (bb[2] - bb[0])) // 2 - bb[0], by + (bh - (bb[3] - bb[1])) // 2 - bb[1]), 
+                  raw_badge, font=f_badge, fill=pal["gold_light"])
+
+        # 6. Lower-Third Hook (Line 1: 3D Gold Gradient | Line 2: Crisp Bold White)
+        base_hook = getattr(script, "thumbnail_hook", "") or getattr(script, "title", "DON'T GIVE UP YET")
+        line1, line2 = split_hook_into_two_lines(base_hook)
+
+        hook_y_center = int(h * 0.65) if is_vertical else int(h * 0.38)
+        
+        # Calculate optimal font size for Line 1
+        f_sz1 = 150 if len(line1) <= 6 else max(75, int(860 / (len(line1) * 0.60)))
+        if not is_vertical:
+            f_sz1 = int(f_sz1 * 0.62)
+        f_line1 = get_font(f_sz1)
+        render_gold_gradient_text(im, line1, f_line1, w // 2, hook_y_center, pal, stroke_w=14 if is_vertical else 8)
+
+        # Line 2 (White with thick black stroke and drop shadow)
+        if line2:
+            f_sz2 = 108 if len(line2) <= 12 else max(58, int(860 / (len(line2) * 0.58)))
+            if not is_vertical:
+                f_sz2 = int(f_sz2 * 0.60)
+            f_line2 = get_font(f_sz2)
+            draw = ImageDraw.Draw(im)
+            l2_bbox = draw.textbbox((0, 0), line2, font=f_line2, stroke_width=12 if is_vertical else 7)
+            l2_w, l2_h = l2_bbox[2] - l2_bbox[0], l2_bbox[3] - l2_bbox[1]
+            l2_x = (w - l2_w) // 2 - l2_bbox[0]
+            l2_y = hook_y_center + (f_sz1 // 2) + 20 - l2_bbox[1]
+
+            # Deep shadow
+            draw.text((l2_x + 5, l2_y + 6), line2, font=f_line2, fill=(0, 0, 0, 200), stroke_width=14, stroke_fill=(0, 0, 0, 200))
+            # Text + black stroke
+            draw.text((l2_x, l2_y), line2, font=f_line2, fill=pal["text_white"], stroke_width=12 if is_vertical else 7, stroke_fill=(0, 0, 0, 255))
+            cur_bot_y = l2_y + l2_h + 15
+        else:
+            cur_bot_y = hook_y_center + (f_sz1 // 2) + 15
+
+        # 7. Verse Citation (e.g. GALATIANS 6:9) in Gold
+        draw = ImageDraw.Draw(im)
+        v_ref = clean_ascii(getattr(script, "verse_citation", "GALATIANS 6:9")).upper()
+        f_ref_sz = 52 if is_vertical else 34
+        f_ref = get_font(f_ref_sz)
+        rb = draw.textbbox((0, 0), v_ref, font=f_ref, stroke_width=6)
+        rw = rb[2] - rb[0]
+        ry = min(h - (380 if is_vertical else 180), cur_bot_y + 12)
+        draw.text(((w - rw) // 2 - rb[0] + 3, ry - rb[1] + 4), v_ref, font=f_ref, fill=(0, 0, 0, 220), stroke_width=6, stroke_fill=(0, 0, 0, 220))
+        draw.text(((w - rw) // 2 - rb[0], ry - rb[1]), v_ref, font=f_ref, fill=pal["gold_mid"], stroke_width=4, stroke_fill=(0, 0, 0, 255))
+
+        # 8. Glossy Gold "PRAY THIS NOW" Button
+        btn_w, btn_h = (420, 80) if is_vertical else (270, 52)
+        bx1 = (w - btn_w) // 2
+        by1 = min(h - (270 if is_vertical else 115), ry + 75)
+
+        # Drop shadow
+        draw.rounded_rectangle([bx1 + 3, by1 + 6, bx1 + btn_w + 3, by1 + btn_h + 6], radius=btn_h // 2, fill=(0, 0, 0, 180))
+        # Button Gold Gradient
+        btn_img = Image.new("RGBA", (btn_w, btn_h), (0, 0, 0, 0))
+        b_draw = ImageDraw.Draw(btn_img)
+        for y_i in range(btn_h):
+            r_i = y_i / max(1, btn_h - 1)
+            cr = int(pal["gold_light"][0] * (1 - r_i) + pal["gold_mid"][0] * r_i)
+            cg = int(pal["gold_light"][1] * (1 - r_i) + pal["gold_mid"][1] * r_i)
+            cb = int(pal["gold_light"][2] * (1 - r_i) + pal["gold_mid"][2] * r_i)
+            b_draw.line([(0, y_i), (btn_w, y_i)], fill=(cr, cg, cb, 255))
+
+        btn_mask = Image.new("L", (btn_w, btn_h), 0)
+        ImageDraw.Draw(btn_mask).rounded_rectangle([0, 0, btn_w, btn_h], radius=btn_h // 2, fill=255)
+        im.paste(btn_img, (bx1, by1), mask=btn_mask)
+
+        # Border outline + CTA Text
+        draw = ImageDraw.Draw(im)
+        draw.rounded_rectangle([bx1, by1, bx1 + btn_w, by1 + btn_h], radius=btn_h // 2, outline=(255, 255, 255, 200), width=3)
+        cta_txt = "PRAY THIS NOW"
+        f_cta = get_font(42 if is_vertical else 26)
+        cb = draw.textbbox((0, 0), cta_txt, font=f_cta)
+        cw, ch = cb[2] - cb[0], cb[3] - cb[1]
+        draw.text((bx1 + (btn_w - cw) // 2 - cb[0], by1 + (btn_h - ch) // 2 - cb[1]), cta_txt, font=f_cta, fill=(15, 20, 28, 255))
+
+        # 9. Bottom Floating Engagement Dock (3 Stickers: SUBSCRIBE, LIKE, COMMENT AMEN)
+        if is_vertical:
+            dock_y = h - 140
+            f_stk = get_font(21)
+            f_em = get_emoji_font(22)
+
+            # Sticker 1: Red SUBSCRIBE Pill with Bell
+            s1_x, s1_w, s1_h = 75, 230, 48
+            draw.rounded_rectangle([s1_x + 2, dock_y + 4, s1_x + s1_w + 2, dock_y + s1_h + 4], radius=s1_h // 2, fill=(0, 0, 0, 160))
+            draw.rounded_rectangle([s1_x, dock_y, s1_x + s1_w, dock_y + s1_h], radius=s1_h // 2, fill=pal["red_btn"])
+            draw.text((s1_x + 24, dock_y + 12), "SUBSCRIBE", font=f_stk, fill=(255, 255, 255))
+            draw.text((s1_x + 168, dock_y + 11), "🔔", font=f_em, fill=(255, 255, 255))
+
+            # Sticker 2: LIKE IF YOU BELIEVE
+            s2_x = s1_x + s1_w + 35
+            draw.text((s2_x, dock_y + 11), "👍", font=f_em, fill=(255, 215, 0))
+            draw.text((s2_x + 36, dock_y + 12), "LIKE IF YOU BELIEVE", font=f_stk, fill=(248, 250, 252), stroke_width=3, stroke_fill=(0, 0, 0, 220))
+
+            # Sticker 3: COMMENT AMEN Glass Pill
+            s3_w, s3_h = 210, 46
+            s3_x = w - s3_w - 75
+            draw.rounded_rectangle([s3_x + 2, dock_y + 4, s3_x + s3_w + 2, dock_y + s3_h + 4], radius=s3_h // 2, fill=(0, 0, 0, 160))
+            draw.rounded_rectangle([s3_x, dock_y + 1, s3_x + s3_w, dock_y + s3_h + 1], radius=s3_h // 2, fill=(11, 15, 26, 230), outline=b_col, width=2)
+            draw.text((s3_x + 22, dock_y + 12), "COMMENT AMEN", font=get_font(18), fill=pal["gold_light"])
+
+        return im.convert("RGB")
+
+    # Generate 1080x1920 Master Vertical Thumbnail
+    img_9x16 = _build_canvas(1080, 1920, is_vertical=True)
+    img_9x16.save(str(thumb_path), "JPEG", quality=96)
+    
+    out_dir = thumb_path.parent
+    p_png_9x16 = out_dir / "thumbnail_9x16.png"
+    img_9x16.save(str(p_png_9x16), "PNG")
+
+    # Generate 1280x720 Landscape Cover
+    img_16x9 = _build_canvas(1280, 720, is_vertical=False)
+    p_png_16x9 = out_dir / "thumbnail_16x9.png"
+    img_16x9.save(str(p_png_16x9), "PNG")
+
+    # Generate 3 Hook Variant Covers
+    hook_variants = [
+        getattr(script, "thumbnail_hook", "HOLD ONTO GOD'S PROMISE"),
+        f"GOD'S PROMISE FOR {clean_ascii(getattr(script, 'topic', 'YOU')).upper()[:16]}",
+        f"HOLD ONTO {clean_ascii(getattr(script, 'verse_citation', 'THIS VERSE')).upper()}"
+    ]
+    for v_i, v_text in enumerate(hook_variants, start=1):
+        orig_hk = getattr(script, "thumbnail_hook", "")
+        script.thumbnail_hook = v_text
+        var_im = _build_canvas(1080, 1920, is_vertical=True)
+        var_im.save(str(out_dir / f"thumbnail_9x16_variant_{v_i}.png"), "PNG")
+        script.thumbnail_hook = orig_hk
+
+    return {"jpg": thumb_path, "9x16": p_png_9x16, "16x9": p_png_16x9}
