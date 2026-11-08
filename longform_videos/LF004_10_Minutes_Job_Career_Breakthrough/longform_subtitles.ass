@@ -1,0 +1,177 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: LongFormSubs,Segoe UI,54,&H00FFFFFF,&H0000D4FF,&H90000000,&H90000000,-1,0,0,0,100,100,0,0,1,3.5,2,2,140,140,82,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.10,0:00:03.37,LongFormSubs,,0,0,0,,{\fs54}Welcome weary soul\NIf your heart
+Dialogue: 0,0:00:03.37,0:00:04.71,LongFormSubs,,0,0,0,,{\fs54}is heavy today\Nwith the weight
+Dialogue: 0,0:00:04.71,0:00:07.06,LongFormSubs,,0,0,0,,{\fs54}of your career\Nyour finances or
+Dialogue: 0,0:00:07.06,0:00:08.95,LongFormSubs,,0,0,0,,{\fs54}the exhausting silence\Nof waiting for
+Dialogue: 0,0:00:08.95,0:00:10.46,LongFormSubs,,0,0,0,,{\fs54}a breakthrough know\Nthat you have
+Dialogue: 0,0:00:10.46,0:00:13.40,LongFormSubs,,0,0,0,,{\fs54}found a safe\Nsanctuary to rest
+Dialogue: 0,0:00:13.40,0:00:15.33,LongFormSubs,,0,0,0,,{\fs54}Take a slow\Ndeep breath right
+Dialogue: 0,0:00:15.33,0:00:19.30,LongFormSubs,,0,0,0,,{\fs54}now Let your\Nshoulders drop Release
+Dialogue: 0,0:00:19.30,0:00:20.51,LongFormSubs,,0,0,0,,{\fs54}the heavy burden\Nyou have been
+Dialogue: 0,0:00:20.51,0:00:22.51,LongFormSubs,,0,0,0,,{\fs54}carrying for far\Ntoo long and
+Dialogue: 0,0:00:22.51,0:00:23.74,LongFormSubs,,0,0,0,,{\fs54}step out of the storm into
+Dialogue: 0,0:00:23.74,0:00:25.72,LongFormSubs,,0,0,0,,{\fs54}the quiet soothing\Npresence of your
+Dialogue: 0,0:00:25.72,0:00:32.90,LongFormSubs,,0,0,0,,{\fs54}Heavenly Father Our\NLord sees you
+Dialogue: 0,0:00:32.90,0:00:34.47,LongFormSubs,,0,0,0,,{\fs54}He knows the\Nsilent battles you
+Dialogue: 0,0:00:34.47,0:00:35.84,LongFormSubs,,0,0,0,,{\fs54}fight when no one else is
+Dialogue: 0,0:00:35.84,0:00:37.64,LongFormSubs,,0,0,0,,{\fs54}looking and He\Ncounts every hidden
+Dialogue: 0,0:00:37.64,0:00:39.04,LongFormSubs,,0,0,0,,{\fs54}tear you have\Nshed over closed
+Dialogue: 0,0:00:39.04,0:00:42.99,LongFormSubs,,0,0,0,,{\fs54}doors uncertainty\Nand unanswered questions
+Dialogue: 0,0:00:42.99,0:00:44.33,LongFormSubs,,0,0,0,,{\fs54}You do not have to perform
+Dialogue: 0,0:00:44.33,0:00:46.44,LongFormSubs,,0,0,0,,{\fs54}here You do not have to
+Dialogue: 0,0:00:46.44,0:00:49.17,LongFormSubs,,0,0,0,,{\fs54}carry this alone\NHear the gentle
+Dialogue: 0,0:00:49.17,0:00:50.68,LongFormSubs,,0,0,0,,{\fs54}promise of His\NHoly Word from
+Dialogue: 0,0:00:50.68,0:00:53.60,LongFormSubs,,0,0,0,,{\fs54}Philippians chapter four\Nverses six to
+Dialogue: 0,0:00:53.60,0:00:56.05,LongFormSubs,,0,0,0,,{\fs54}seven Be careful\Nfor nothing but
+Dialogue: 0,0:00:56.05,0:00:57.52,LongFormSubs,,0,0,0,,{\fs54}in every thing by prayer and
+Dialogue: 0,0:00:57.52,0:00:59.32,LongFormSubs,,0,0,0,,{\fs54}supplication with\Nthanksgiving let your
+Dialogue: 0,0:00:59.32,0:01:02.26,LongFormSubs,,0,0,0,,{\fs54}requests be made\Nknown unto God
+Dialogue: 0,0:01:02.26,0:01:03.84,LongFormSubs,,0,0,0,,{\fs54}And the peace of God which
+Dialogue: 0,0:01:03.84,0:01:06.24,LongFormSubs,,0,0,0,,{\fs54}passeth all understanding\Nshall keep your
+Dialogue: 0,0:01:06.24,0:01:12.41,LongFormSubs,,0,0,0,,{\fs54}hearts and minds\Nthrough Christ Jesus
+Dialogue: 0,0:01:12.41,0:01:14.12,LongFormSubs,,0,0,0,,{\fs54}Lay down your\Nanxieties at His
+Dialogue: 0,0:01:14.12,0:01:16.69,LongFormSubs,,0,0,0,,{\fs54}feet in this\Nholy moment Your
+Dialogue: 0,0:01:16.69,0:01:18.55,LongFormSubs,,0,0,0,,{\fs54}story is far from over and
+Dialogue: 0,0:01:18.55,0:01:19.75,LongFormSubs,,0,0,0,,{\fs54}your life is held by the
+Dialogue: 0,0:01:19.75,0:01:29.97,LongFormSubs,,0,0,0,,{\fs54}One who loves\Nyou beyond measure
+Dialogue: 0,0:01:29.97,0:01:32.14,LongFormSubs,,0,0,0,,{\fs54}Take a deep\Nbreath my beloved
+Dialogue: 0,0:01:32.14,0:01:33.41,LongFormSubs,,0,0,0,,{\fs54}and let the heavy burdens of
+Dialogue: 0,0:01:33.41,0:01:34.85,LongFormSubs,,0,0,0,,{\fs54}your work and career rest at
+Dialogue: 0,0:01:34.85,0:01:37.28,LongFormSubs,,0,0,0,,{\fs54}the feet of Jesus Hear the
+Dialogue: 0,0:01:37.28,0:01:39.53,LongFormSubs,,0,0,0,,{\fs54}gentle sacred voice\Nof our Master
+Dialogue: 0,0:01:39.53,0:01:41.69,LongFormSubs,,0,0,0,,{\fs54}speaking over your\Nstress and uncertainty
+Dialogue: 0,0:01:41.69,0:01:45.49,LongFormSubs,,0,0,0,,{\fs54}today In John\Nchapter 14 verse
+Dialogue: 0,0:01:45.49,0:01:48.33,LongFormSubs,,0,0,0,,{\fs54}27 He promises Peace I leave
+Dialogue: 0,0:01:48.33,0:01:49.92,LongFormSubs,,0,0,0,,{\fs54}with you my peace I give
+Dialogue: 0,0:01:49.92,0:01:51.57,LongFormSubs,,0,0,0,,{\fs54}unto you not as the world
+Dialogue: 0,0:01:51.57,0:01:54.40,LongFormSubs,,0,0,0,,{\fs54}giveth give I unto you Let
+Dialogue: 0,0:01:54.40,0:01:56.27,LongFormSubs,,0,0,0,,{\fs54}not your heart\Nbe troubled neither
+Dialogue: 0,0:01:56.27,0:02:01.78,LongFormSubs,,0,0,0,,{\fs54}let it be afraid The world
+Dialogue: 0,0:02:01.78,0:02:03.58,LongFormSubs,,0,0,0,,{\fs54}conditions us to\Nbelieve that peace
+Dialogue: 0,0:02:03.58,0:02:05.52,LongFormSubs,,0,0,0,,{\fs54}only comes after\Nthe promotion the
+Dialogue: 0,0:02:05.52,0:02:08.99,LongFormSubs,,0,0,0,,{\fs54}new job offer\Nor financial stability
+Dialogue: 0,0:02:08.99,0:02:11.23,LongFormSubs,,0,0,0,,{\fs54}It demands constant\Nstriving and fills
+Dialogue: 0,0:02:11.23,0:02:13.94,LongFormSubs,,0,0,0,,{\fs54}your nights with\Nsleepless worry But
+Dialogue: 0,0:02:13.94,0:02:16.23,LongFormSubs,,0,0,0,,{\fs54}Jesus offers you\Na supernatural peace
+Dialogue: 0,0:02:16.23,0:02:19.64,LongFormSubs,,0,0,0,,{\fs54}before the breakthrough\Neven manifests His
+Dialogue: 0,0:02:19.64,0:02:20.80,LongFormSubs,,0,0,0,,{\fs54}peace is an anchor in the
+Dialogue: 0,0:02:20.80,0:02:23.75,LongFormSubs,,0,0,0,,{\fs54}storm of unemployment\Nrejection or stagnant
+Dialogue: 0,0:02:23.75,0:02:26.71,LongFormSubs,,0,0,0,,{\fs54}seasons It is\Nthe divine assurance
+Dialogue: 0,0:02:26.71,0:02:28.06,LongFormSubs,,0,0,0,,{\fs54}that your worth is not tied
+Dialogue: 0,0:02:28.06,0:02:29.55,LongFormSubs,,0,0,0,,{\fs54}to a position but to your
+Dialogue: 0,0:02:29.55,0:02:35.59,LongFormSubs,,0,0,0,,{\fs54}Heavenly Father who\Nholds your future
+Dialogue: 0,0:02:35.59,0:02:37.20,LongFormSubs,,0,0,0,,{\fs54}Do not allow fear to dictate
+Dialogue: 0,0:02:37.20,0:02:40.00,LongFormSubs,,0,0,0,,{\fs54}your choices or\Nsteal your rest
+Dialogue: 0,0:02:40.00,0:02:42.01,LongFormSubs,,0,0,0,,{\fs54}The God who\Norchestrates the universe
+Dialogue: 0,0:02:42.01,0:02:44.18,LongFormSubs,,0,0,0,,{\fs54}is aligning your\Nsteps opening doors
+Dialogue: 0,0:02:44.18,0:02:46.20,LongFormSubs,,0,0,0,,{\fs54}no man can\Nshut and preparing
+Dialogue: 0,0:02:46.20,0:02:47.45,LongFormSubs,,0,0,0,,{\fs54}a place for your gifts to
+Dialogue: 0,0:02:47.45,0:02:50.47,LongFormSubs,,0,0,0,,{\fs54}bloom Receive His\Nrestful peace into
+Dialogue: 0,0:02:50.47,0:03:01.12,LongFormSubs,,0,0,0,,{\fs54}your soul right\Nnow Father God
+Dialogue: 0,0:03:01.12,0:03:03.19,LongFormSubs,,0,0,0,,{\fs54}Lord of all\Nprovision and grace
+Dialogue: 0,0:03:03.19,0:03:04.39,LongFormSubs,,0,0,0,,{\fs54}I come to You right now
+Dialogue: 0,0:03:04.39,0:03:06.25,LongFormSubs,,0,0,0,,{\fs54}on behalf of\Nmy precious brother
+Dialogue: 0,0:03:06.25,0:03:09.80,LongFormSubs,,0,0,0,,{\fs54}my precious sister\NHoly Spirit sweep
+Dialogue: 0,0:03:09.80,0:03:10.99,LongFormSubs,,0,0,0,,{\fs54}into the space\Nwhere they are
+Dialogue: 0,0:03:10.99,0:03:13.64,LongFormSubs,,0,0,0,,{\fs54}sitting right now\NFill their room
+Dialogue: 0,0:03:13.64,0:03:16.94,LongFormSubs,,0,0,0,,{\fs54}with Your warm\Ncomforting presence Melt
+Dialogue: 0,0:03:16.94,0:03:18.91,LongFormSubs,,0,0,0,,{\fs54}away every ounce\Nof heaviness and
+Dialogue: 0,0:03:18.91,0:03:20.77,LongFormSubs,,0,0,0,,{\fs54}lift the agonizing\Nweight of waiting
+Dialogue: 0,0:03:20.77,0:03:26.83,LongFormSubs,,0,0,0,,{\fs54}from their heart\NLord we stand
+Dialogue: 0,0:03:26.83,0:03:28.39,LongFormSubs,,0,0,0,,{\fs54}together and break\Nthe spirit of
+Dialogue: 0,0:03:28.39,0:03:31.25,LongFormSubs,,0,0,0,,{\fs54}delay over their\Ncareer and calling
+Dialogue: 0,0:03:31.25,0:03:33.02,LongFormSubs,,0,0,0,,{\fs54}We rebuke the\Ndark shadows of
+Dialogue: 0,0:03:33.02,0:03:35.09,LongFormSubs,,0,0,0,,{\fs54}fear and discouragement\Nthat whisper they
+Dialogue: 0,0:03:35.09,0:03:37.80,LongFormSubs,,0,0,0,,{\fs54}are forgotten They\Nare not forgotten
+Dialogue: 0,0:03:37.80,0:03:41.22,LongFormSubs,,0,0,0,,{\fs54}by You Lord\NEvery closed door
+Dialogue: 0,0:03:41.22,0:03:43.86,LongFormSubs,,0,0,0,,{\fs54}every unanswered application\Nevery moment of
+Dialogue: 0,0:03:43.86,0:03:45.91,LongFormSubs,,0,0,0,,{\fs54}stagnation we lay it all at
+Dialogue: 0,0:03:45.91,0:03:51.29,LongFormSubs,,0,0,0,,{\fs54}the foot of the cross We
+Dialogue: 0,0:03:51.29,0:03:53.11,LongFormSubs,,0,0,0,,{\fs54}cling to Your\Nholy Word today
+Dialogue: 0,0:03:53.11,0:03:54.67,LongFormSubs,,0,0,0,,{\fs54}Lord as You remind us in
+Dialogue: 0,0:03:54.67,0:03:58.04,LongFormSubs,,0,0,0,,{\fs54}Isaiah chapter forty-one\Nverse ten Fear
+Dialogue: 0,0:03:58.04,0:03:59.53,LongFormSubs,,0,0,0,,{\fs54}thou not for I am with
+Dialogue: 0,0:03:59.53,0:04:01.59,LongFormSubs,,0,0,0,,{\fs54}thee be not dismayed for I
+Dialogue: 0,0:04:01.59,0:04:03.40,LongFormSubs,,0,0,0,,{\fs54}am thy God I will strengthen
+Dialogue: 0,0:04:03.40,0:04:05.48,LongFormSubs,,0,0,0,,{\fs54}thee yea I will help thee
+Dialogue: 0,0:04:05.48,0:04:06.91,LongFormSubs,,0,0,0,,{\fs54}yea I will uphold thee with
+Dialogue: 0,0:04:06.91,0:04:12.73,LongFormSubs,,0,0,0,,{\fs54}the right hand\Nof my righteousness
+Dialogue: 0,0:04:12.73,0:04:16.31,LongFormSubs,,0,0,0,,{\fs54}Strengthen them right\Nnow Jesus Uphold
+Dialogue: 0,0:04:16.31,0:04:18.91,LongFormSubs,,0,0,0,,{\fs54}them with Your\Nrighteous right hand
+Dialogue: 0,0:04:18.91,0:04:20.80,LongFormSubs,,0,0,0,,{\fs54}Breathe new life\Ninto their work
+Dialogue: 0,0:04:20.80,0:04:23.05,LongFormSubs,,0,0,0,,{\fs54}open supernatural doors\Nthat no man
+Dialogue: 0,0:04:23.05,0:04:25.06,LongFormSubs,,0,0,0,,{\fs54}can shut and\Nrelease the breakthrough
+Dialogue: 0,0:04:25.06,0:04:26.83,LongFormSubs,,0,0,0,,{\fs54}they have wept\Nfor turning their
+Dialogue: 0,0:04:26.83,0:04:29.90,LongFormSubs,,0,0,0,,{\fs54}anxiety into shouts\Nof praise In
+Dialogue: 0,0:04:29.90,0:04:32.87,LongFormSubs,,0,0,0,,{\fs54}Your mighty loving\Nname we pray
+Dialogue: 0,0:04:32.87,0:04:43.86,LongFormSubs,,0,0,0,,{\fs54}Amen Beloved listen\Nclosely to the
+Dialogue: 0,0:04:43.86,0:04:47.34,LongFormSubs,,0,0,0,,{\fs54}unshakable promises of\Nyour Heavenly Father
+Dialogue: 0,0:04:47.34,0:04:49.34,LongFormSubs,,0,0,0,,{\fs54}He sees the\Nsleepless nights the
+Dialogue: 0,0:04:49.34,0:04:51.09,LongFormSubs,,0,0,0,,{\fs54}worries about your\Ncareer and the
+Dialogue: 0,0:04:51.09,0:04:52.51,LongFormSubs,,0,0,0,,{\fs54}heavy weight you\Nhave carried for
+Dialogue: 0,0:04:52.51,0:04:55.23,LongFormSubs,,0,0,0,,{\fs54}your family Hear\NHis gentle voice
+Dialogue: 0,0:04:55.23,0:04:57.43,LongFormSubs,,0,0,0,,{\fs54}whispering into your\Nheart today God
+Dialogue: 0,0:04:57.43,0:04:59.23,LongFormSubs,,0,0,0,,{\fs54}is our refuge and strength a
+Dialogue: 0,0:04:59.23,0:05:02.01,LongFormSubs,,0,0,0,,{\fs54}very present help\Nin trouble Right
+Dialogue: 0,0:05:02.01,0:05:04.02,LongFormSubs,,0,0,0,,{\fs54}now I speak His divine peace
+Dialogue: 0,0:05:04.02,0:05:05.45,LongFormSubs,,0,0,0,,{\fs54}over your mind\Nand His sacred
+Dialogue: 0,0:05:05.45,0:05:07.98,LongFormSubs,,0,0,0,,{\fs54}protection over your\Nhome You do
+Dialogue: 0,0:05:07.98,0:05:09.41,LongFormSubs,,0,0,0,,{\fs54}not have to\Nfight this battle
+Dialogue: 0,0:05:09.41,0:05:11.40,LongFormSubs,,0,0,0,,{\fs54}alone for the\NLord Almighty is
+Dialogue: 0,0:05:11.40,0:05:13.81,LongFormSubs,,0,0,0,,{\fs54}standing guard over\Nyour destiny breaking
+Dialogue: 0,0:05:13.81,0:05:16.22,LongFormSubs,,0,0,0,,{\fs54}every chain of\Nlack anxiety and
+Dialogue: 0,0:05:16.22,0:05:22.95,LongFormSubs,,0,0,0,,{\fs54}delay Receive His\Ndeep restoring healing
+Dialogue: 0,0:05:22.95,0:05:25.99,LongFormSubs,,0,0,0,,{\fs54}today Jesus softly\Ncalls out to
+Dialogue: 0,0:05:25.99,0:05:28.32,LongFormSubs,,0,0,0,,{\fs54}you in this\Nquiet moment saying
+Dialogue: 0,0:05:28.32,0:05:29.95,LongFormSubs,,0,0,0,,{\fs54}Come unto me all ye that
+Dialogue: 0,0:05:29.95,0:05:31.68,LongFormSubs,,0,0,0,,{\fs54}labour and are\Nheavy laden and
+Dialogue: 0,0:05:31.68,0:05:33.93,LongFormSubs,,0,0,0,,{\fs54}I will give you rest Lay
+Dialogue: 0,0:05:33.93,0:05:35.46,LongFormSubs,,0,0,0,,{\fs54}down your weariness\Nat the foot
+Dialogue: 0,0:05:35.46,0:05:38.13,LongFormSubs,,0,0,0,,{\fs54}of the cross I declare over
+Dialogue: 0,0:05:38.13,0:05:40.24,LongFormSubs,,0,0,0,,{\fs54}your life that\Nsupernatural provision is
+Dialogue: 0,0:05:40.24,0:05:43.24,LongFormSubs,,0,0,0,,{\fs54}breaking forth Open\Ndoors that no
+Dialogue: 0,0:05:43.24,0:05:44.85,LongFormSubs,,0,0,0,,{\fs54}man can shut are opening for
+Dialogue: 0,0:05:44.85,0:05:47.35,LongFormSubs,,0,0,0,,{\fs54}you right now\NVictory is your
+Dialogue: 0,0:05:47.35,0:05:49.90,LongFormSubs,,0,0,0,,{\fs54}covenant inheritance\Nand divine breakthrough
+Dialogue: 0,0:05:49.90,0:05:51.58,LongFormSubs,,0,0,0,,{\fs54}is settling upon\Nyour career and
+Dialogue: 0,0:05:51.58,0:05:54.42,LongFormSubs,,0,0,0,,{\fs54}your home Walk\Nforward in peaceful
+Dialogue: 0,0:05:54.42,0:05:56.77,LongFormSubs,,0,0,0,,{\fs54}confidence for your\Nfuture is secure
+Dialogue: 0,0:05:56.77,0:06:07.31,LongFormSubs,,0,0,0,,{\fs54}in His loving hands And now
+Dialogue: 0,0:06:07.31,0:06:10.52,LongFormSubs,,0,0,0,,{\fs54}dear friend we rest We bring
+Dialogue: 0,0:06:10.52,0:06:13.02,LongFormSubs,,0,0,0,,{\fs54}every anxious thought\Nevery resume sent
+Dialogue: 0,0:06:13.02,0:06:15.20,LongFormSubs,,0,0,0,,{\fs54}into the quiet\Ndigital void every
+Dialogue: 0,0:06:15.20,0:06:18.06,LongFormSubs,,0,0,0,,{\fs54}unreturned call and\Nevery silent prayer
+Dialogue: 0,0:06:18.06,0:06:19.31,LongFormSubs,,0,0,0,,{\fs54}and we lay them gently at
+Dialogue: 0,0:06:19.31,0:06:22.11,LongFormSubs,,0,0,0,,{\fs54}the nail-scarred feet\Nof Jesus You
+Dialogue: 0,0:06:22.11,0:06:24.80,LongFormSubs,,0,0,0,,{\fs54}don't have to\Nstrive anymore tonight
+Dialogue: 0,0:06:24.80,0:06:25.88,LongFormSubs,,0,0,0,,{\fs54}You don't have to carry the
+Dialogue: 0,0:06:25.88,0:06:32.28,LongFormSubs,,0,0,0,,{\fs54}heavy weight of\Ntomorrow's uncertainty Right
+Dialogue: 0,0:06:32.28,0:06:34.46,LongFormSubs,,0,0,0,,{\fs54}now take a deep slow breath
+Dialogue: 0,0:06:34.46,0:06:35.86,LongFormSubs,,0,0,0,,{\fs54}in and let the peace of
+Dialogue: 0,0:06:35.86,0:06:39.03,LongFormSubs,,0,0,0,,{\fs54}God which passes\Nall human understanding
+Dialogue: 0,0:06:39.03,0:06:40.78,LongFormSubs,,0,0,0,,{\fs54}flood every tired\Ncorner of your
+Dialogue: 0,0:06:40.78,0:06:43.63,LongFormSubs,,0,0,0,,{\fs54}heart and mind\NSeal your spirit
+Dialogue: 0,0:06:43.63,0:06:45.83,LongFormSubs,,0,0,0,,{\fs54}in the matchless\Nvictorious name of
+Dialogue: 0,0:06:45.83,0:06:49.24,LongFormSubs,,0,0,0,,{\fs54}Jesus His blood\Ncovers your future
+Dialogue: 0,0:06:49.24,0:06:50.85,LongFormSubs,,0,0,0,,{\fs54}His grace goes\Nbefore you into
+Dialogue: 0,0:06:50.85,0:06:52.56,LongFormSubs,,0,0,0,,{\fs54}rooms you have\Nnot yet entered
+Dialogue: 0,0:06:52.56,0:06:54.04,LongFormSubs,,0,0,0,,{\fs54}and His favor\Nis your permanent
+Dialogue: 0,0:06:54.04,0:07:01.35,LongFormSubs,,0,0,0,,{\fs54}shield Sleep in\Npeace tonight Rest
+Dialogue: 0,0:07:01.35,0:07:04.47,LongFormSubs,,0,0,0,,{\fs54}your weary shoulders\NKnow deep in
+Dialogue: 0,0:07:04.47,0:07:06.57,LongFormSubs,,0,0,0,,{\fs54}your soul that\Nwhile you sleep
+Dialogue: 0,0:07:06.57,0:07:08.29,LongFormSubs,,0,0,0,,{\fs54}the God who\Nfashioned the stars
+Dialogue: 0,0:07:08.29,0:07:10.25,LongFormSubs,,0,0,0,,{\fs54}is moving mountains\Non your behalf
+Dialogue: 0,0:07:10.25,0:07:12.88,LongFormSubs,,0,0,0,,{\fs54}aligning people places\Nand timing for
+Dialogue: 0,0:07:12.88,0:07:15.27,LongFormSubs,,0,0,0,,{\fs54}your good He is a faithful
+Dialogue: 0,0:07:15.27,0:07:17.01,LongFormSubs,,0,0,0,,{\fs54}Father and He will not fail
+Dialogue: 0,0:07:17.01,0:07:23.62,LongFormSubs,,0,0,0,,{\fs54}you In Jesus'\Nmighty name Amen

@@ -1,0 +1,2 @@
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/story_movies/ST050_David_and_Goliath_The_Shepherd_s_De/scenes/sc_01_raw.mp3'
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/story_movies/ST050_David_and_Goliath_The_Shepherd_s_De/scenes/pause_1_2s.mp3'

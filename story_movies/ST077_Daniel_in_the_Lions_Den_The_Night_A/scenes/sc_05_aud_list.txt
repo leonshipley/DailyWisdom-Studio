@@ -1,0 +1,2 @@
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/story_movies/ST077_Daniel_in_the_Lions_Den_The_Night_A/scenes/sc_05_raw.mp3'
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/story_movies/ST077_Daniel_in_the_Lions_Den_The_Night_A/scenes/pause_1_2s.mp3'

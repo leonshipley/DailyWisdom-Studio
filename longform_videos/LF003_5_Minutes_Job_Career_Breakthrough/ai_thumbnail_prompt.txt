@@ -1,0 +1,18 @@
+Create a premium YouTube Shorts thumbnail, vertical 9:16 (1080x1920), for a Christian devotional video. It must look like a top-tier professional Christian channel: photorealistic, cinematic, emotional.
+
+SCENE (photorealistic, NOT cartoon, NOT painting-looking):
+[Jesus in a cream-white robe with a deep red sash standing on a grassy hillside at golden hour sunrise, one hand raised and open with a gentle compassionate expression and volumetric god rays.]
+Cinematic photography look: 85mm lens, shallow depth of field, volumetric god rays, warm golden-hour color grading with teal-navy shadows, soft film grain, subtle lens flare, rich detail, high dynamic range. Realistic skin, hands and fabric. No distorted faces or fingers.
+
+LIGHTING: strong warm rim light on the figure, bright glowing sky, gentle dark vignette at the top 15% and bottom 38% so the text pops with high contrast.
+
+TYPOGRAPHY (spell EXACTLY, ALL CAPS, ultra-heavy bold sans-serif like Montserrat Black):
+- Top badge pill with a thin gold outline and dark navy fill: "JOB & CAREER BREAKTHROUGH"
+- Main headline in the lower third, two lines: "PRAY" in glowing 3D metallic gold gradient (bright yellow to deep amber) with a thick black outline, bevel, inner highlight and soft outer glow, then "THIS OVER JOB & CAREER BREAK" in pure white with a thick black outline and a soft shadow
+- Verse reference under it in gold: "PHILIPPIANS 4:6-7"
+- A glossy gold rounded button: "PRAY THIS NOW"
+- A small row at the bottom: a red "SUBSCRIBE" pill with a bell icon, a thumbs-up icon with "LIKE IF YOU BELIEVE", and "COMMENT AMEN"
+
+LAYOUT: Jesus' face in the upper-middle with nothing covering it. The headline is large enough to read at thumbnail size and sits over a clean darkened area. A thin double gold border with rounded corners around the frame.
+
+RULES: no other text, logos or watermarks. Every letter spelled correctly.

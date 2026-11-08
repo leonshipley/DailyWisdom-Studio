@@ -1,11 +1,11 @@
 {
-  "id": "us_christopher",
-  "name": "Christopher \u2014 Deep Pastoral Baritone (Male)",
-  "gender": "Male",
-  "voice": "en-US-ChristopherNeural",
-  "rate": "-2%",
+  "id": "us_ava",
+  "name": "Ava \u2014 Soulful & Compassionate (Female)",
+  "gender": "Female",
+  "voice": "en-US-AvaNeural",
+  "rate": "-6%",
   "pitch": "+0Hz",
-  "style": "Authoritative, warm & reverent",
+  "style": "Warm, comforting & deeply expressive",
   "accent": "\ud83c\uddfa\ud83c\uddf8 American English (en-US)",
   "script_mode": "English Only (Spoken in Selected Accent)"
 }
