@@ -1,3 +1,7 @@
+import importlib
+import flow_story_engine as fse
+importlib.reload(fse)
+import longform_prayer_engine as lpe
 import sticker_studio
 import warnings
 warnings.filterwarnings("ignore")
@@ -223,8 +227,97 @@ st.markdown("""
         color: #60A5FA !important;
         border-bottom: 3px solid #DC2626 !important;
     }
+
+    /* HIGH-VISIBILITY GLOBAL RUNNING INDICATOR & ANIMATED SPINNER */
+    div[data-testid="stStatusWidget"] {
+        background: linear-gradient(90deg, #DC2626 0%, #1D4ED8 100%) !important;
+        border: 2px solid #60A5FA !important;
+        border-radius: 999px !important;
+        padding: 6px 18px !important;
+        box-shadow: 0 0 20px rgba(220, 38, 38, 0.65) !important;
+        z-index: 999999 !important;
+    }
+    div[data-testid="stStatusWidget"] * {
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+        font-size: 13px !important;
+    }
+
+    @keyframes studio-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    @keyframes studio-pulse {
+        0%, 100% { opacity: 1; box-shadow: 0 0 18px rgba(37, 99, 235, 0.45); }
+        50% { opacity: 0.82; box-shadow: 0 0 28px rgba(220, 38, 38, 0.65); }
+    }
+
+    .live-loader-card {
+        background: linear-gradient(135deg, #090E1A 0%, #111C35 50%, #090E1A 100%);
+        border: 2px solid #3B82F6;
+        border-left: 6px solid #DC2626;
+        border-radius: 12px;
+        padding: 14px 20px;
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        animation: studio-pulse 1.8s infinite ease-in-out;
+    }
+    .live-spinner-ring {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        border: 4px solid rgba(96, 165, 250, 0.2);
+        border-top: 4px solid #EF4444;
+        border-right: 4px solid #3B82F6;
+        border-radius: 50%;
+        animation: studio-spin 0.85s linear infinite;
+    }
+    .live-loader-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #FFFFFF;
+        margin: 0;
+    }
+    .live-loader-sub {
+        font-size: 12.5px;
+        color: #93C5FD;
+        margin-top: 2px;
+        font-weight: 600;
+    }
+
 </style>
 """, unsafe_allow_html=True)
+
+
+class LiveTaskLoader:
+    """Displays an unmistakable animated spinning loader card + progress bar + elapsed timer."""
+    def __init__(self, title: str = "Studio Engine Running..."):
+        self.title = title
+        self.t0 = time.time()
+        self.box = st.empty()
+        self.prog = st.progress(0)
+        self.update(5, "Initializing task...")
+
+    def update(self, pct: int, step_msg: str):
+        elapsed = time.time() - self.t0
+        p_val = min(100, max(0, int(pct)))
+        self.box.markdown(f"""
+        <div class="live-loader-card">
+            <div class="live-spinner-ring"></div>
+            <div style="flex:1;">
+                <div class="live-loader-title">⚡ {self.title} — <span style="color:#F87171;">{p_val}%</span></div>
+                <div class="live-loader-sub">{step_msg} &nbsp;•&nbsp; ⏱️ {elapsed:.1f}s elapsed</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        self.prog.progress(p_val)
+
+    def complete(self, final_msg: str):
+        elapsed = time.time() - self.t0
+        self.prog.progress(100)
+        self.box.success(f"{final_msg} (Completed in {elapsed:.1f}s)")
 
 # --- BACKEND ASSET SCANNERS ---
 def get_all_sequence_videos():
@@ -729,8 +822,9 @@ def render_maker_workspace(lang_code: str):
     # Generation Trigger Handler
     if gen_btn:
         with col_workflow:
+            loader = LiveTaskLoader("Generating Viral Short")
             status = st.empty()
-            prog = st.progress(0)
+            prog = loader.prog
 
             active_maker_voice = dict(
                 sel_v_obj,
@@ -750,14 +844,12 @@ def render_maker_workspace(lang_code: str):
                 hashtags=["#HindiBible", "#YeshuMasih", "#Prarthana", "#Shorts"] if is_hi else ["#BibleVerse", "#DailyPrayer", "#Faith", "#Shorts"],
             )
 
-            status.info(f"🎙️ [1/3] Synthesizing Voiceover ({sel_v_obj['name']})...")
-            prog.progress(30)
+            loader.update(30, f"🎙️ [1/3] Synthesizing Voiceover ({sel_v_obj['name']})...")
             voice_script = build_spoken_voice_script(script)
             temp_voice = backend.BASE_DIR / "temp_voice.mp3"
             backend.generate_voiceover(voice_script, temp_voice)
 
-            status.info("⚡ [2/3] Rendering 1080p Short (Smart Adaptive Engine)...")
-            prog.progress(65)
+            loader.update(65, "⚡ [2/3] Rendering 1080p Short + 3D Gold Thumbnail...")
             tag_prefix = "Hindi_Bible" if is_hi else "English_Bible"
             clean_name = backend.clean_filename(f"{tag_prefix}_{bundle['topic_en']}_{preview_ref}")
             seq_dir = backend.get_next_sequence_folder(clean_name)
@@ -805,8 +897,7 @@ def render_maker_workspace(lang_code: str):
                 temp_voice.unlink(missing_ok=True)
 
             if ok:
-                status.info("🔥 [3/3] Running Virality Engine & Title Scorer...")
-                prog.progress(90)
+                loader.update(90, "🔥 [3/3] Running Virality Engine & Title Scorer...")
                 if is_hi:
                     raw_desc = (
                         f"📖 पवित्र बाइबिल वचन: {bundle['hi_spoken_ref']} ({preview_ref})\n"
@@ -848,12 +939,14 @@ def render_maker_workspace(lang_code: str):
 # ==============================================================================
 # MAIN STUDIO TABS
 # ==============================================================================
-tab_en, tab_hi, tab_lib, tab_pod, tab_stats = st.tabs([
-    "🇬🇧 1. English Channel Shorts Maker",
-    "🇮🇳 2. Hindi Channel Shorts Maker (पवित्र बाइबिल)",
-    "📂 3. Sequential Video Library & Publisher",
-    "🎙️ 4. Podcast Clipper & Virality Spy",
-    "📊 5. Channel Analytics & Growth",
+tab_en, tab_hi, tab_long, tab_story, tab_lib, tab_pod, tab_stats = st.tabs([
+    "🇬🇧 1. English Shorts",
+    "🇮🇳 2. Hindi Shorts",
+    "🕊️ 3. Long-Form Prayers (5m–1Hr)",
+    "🎬 4. 3-Min Flow AI Story Maker",
+    "📂 5. Video Library",
+    "🎙️ 6. Podcast Clipper",
+    "📊 7. Channel Analytics",
 ])
 
 with tab_en:
@@ -861,6 +954,467 @@ with tab_en:
 
 with tab_hi:
     render_maker_workspace("hi")
+
+
+with tab_long:
+    st.markdown("### 🕊️ Long-Form Soul Prayer & Scripture Sanctuary (5 Min • 10 Min • 20 Min • 30 Min • 1 Hour)")
+    lf_left, lf_right = st.columns([1.18, 1.0], gap="large")
+
+    with lf_left:
+        with st.container(border=True):
+            st.markdown("#### 🙏 Step 1: Prayer Duration, Topic & Soul Pacing")
+            lf_c1, lf_c2 = st.columns(2)
+            with lf_c1:
+                lf_ch = st.selectbox("📺 Target YouTube Channel:", channel_names, index=0, key="lf_target_ch")
+                lf_dur = st.selectbox(
+                    "⏱️ Select Long-Form Video Length:",
+                    list(lpe.DURATION_CONFIGS.keys()),
+                    index=1,
+                    key="lf_dur_sel"
+                )
+            with lf_c2:
+                lf_voice_acc = st.selectbox("🌐 Narrator Accent:", ["🇺🇸 American English (en-US)", "🇬🇧 British English (en-GB)", "🇮🇳 Indian English (en-IN)"], key="lf_acc")
+                lf_v_list = VOICE_CATALOG[lf_voice_acc]
+                lf_v_names = [v["name"] for v in lf_v_list]
+                lf_sel_v_name = st.selectbox("🎙️ Pastoral Narrator Voice:", lf_v_names, index=0, key="lf_voice")
+                lf_sel_v_obj = lf_v_list[lf_v_names.index(lf_sel_v_name)]
+
+            lf_rate = st.select_slider(
+                "🐢 Meditative Speaking Cadence (Slower = More Soulful):",
+                options=["-15%", "-12%", "-10%", "-8%", "-5%", "+0%"],
+                value="-10%",
+                key="lf_rate_slider"
+            )
+
+            lf_topic_mode = st.radio(
+                "Choose Prayer Topic Source:",
+                ["📖 50 Deep Prayer Topics", "✍️ Custom Soul-Prayer Topic"],
+                horizontal=True,
+                key="lf_topic_mode"
+            )
+            if "50 Deep" in lf_topic_mode:
+                lf_t_labels = [f"{item['id']}. {item['topic']}" for item in TOP_50_PRAYER_TOPICS]
+                lf_chosen_lbl = st.selectbox("Select Prayer Topic:", lf_t_labels, key="lf_topic_dd")
+                lf_topic = TOP_50_PRAYER_TOPICS[lf_t_labels.index(lf_chosen_lbl)]["topic"]
+            else:
+                lf_topic = st.text_input("Enter Custom Prayer Topic:", value="Deep Peace, Sleep Protection & Freedom from Anxiety", key="lf_cust_topic")
+
+            if st.button("📜 1. Preview / Generate 5-Stage Soul-Prayer Script & Scriptures", key="lf_gen_script_btn", width="stretch") or "lf_active_journey" not in st.session_state:
+                with st.spinner(f"Crafting 5-Stage Soul-Prayer Journey & loading Scriptures for '{lf_topic}' ({lf_dur})..."):
+                    st.session_state["lf_active_journey"] = lpe.generate_soul_prayer_journey(lf_topic, lf_dur)
+
+            lf_journey = st.session_state["lf_active_journey"]
+            vers_list_str = ", ".join([v["ref"] for v in lf_journey["scriptures"]])
+            st.markdown(f"""
+            <div class="verse-card">
+                <div class="verse-hdr">📖 {len(lf_journey['scriptures'])} Anchor Scriptures Loaded for {lf_dur}:</div>
+                <div class="verse-body">{vers_list_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            with st.expander("📝 View / Edit 5-Stage Soul-Prayer Movements Before Rendering"):
+                for stg in lf_journey["stages"]:
+                    st.markdown(f"**Stage {stg['stage_num']}: {stg['chapter_title']}**")
+                    edited_stg = st.text_area(
+                        f"Spoken Prayer (Stage {stg['stage_num']}):",
+                        value=stg["full_text"],
+                        height=110,
+                        key=f"lf_stg_edit_{stg['stage_num']}"
+                    )
+                    stg["full_text"] = edited_stg.strip()
+                    stg["paragraphs"] = [p.strip() for p in re.split(r"\n\s*\n", edited_stg) if p.strip()]
+
+        with st.container(border=True):
+            st.markdown("#### 🎵 Step 2: Soaking Worship Music, Rain Ambience & 16:9 Visuals")
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                lf_bgms = {"🎹 432Hz Cathedral Soaking Pad (Built-in)": lpe.ensure_soaking_worship_pad()}
+                lf_bgms.update(get_available_bgm_tracks())
+                lf_bgm_lbl = st.selectbox("🎵 Worship Music Track (Looped):", list(lf_bgms.keys()), key="lf_bgm_sel")
+                lf_bgm_path = lf_bgms[lf_bgm_lbl]
+                if lf_bgm_path and Path(lf_bgm_path).exists():
+                    st.audio(str(lf_bgm_path), format="audio/mp3")
+            with m_col2:
+                lf_nature = st.selectbox(
+                    "🌧️ Nature Soaking Layer (Underneath Music):",
+                    ["None (Pure Worship Music)", "Gentle Night Rain", "Peaceful Mountain Stream"],
+                    index=1,
+                    key="lf_nat_sel"
+                )
+                lf_bgm_vol = st.slider("🔊 Worship Music Volume:", min_value=0.05, max_value=0.40, value=0.18, step=0.01, key="lf_bgm_vol")
+
+            v_col1, v_col2 = st.columns(2)
+            intro_vids = get_media_files(backend.INTRO_DIR, (".mp4", ".mov", ".webm", ".mkv"))
+            bg_imgs = get_media_files(backend.BG_DIR, (".jpg", ".jpeg", ".png", ".webp"))
+            with v_col1:
+                lf_vis_mode = st.selectbox(
+                    "🎬 16:9 Visual Style:",
+                    ["Looping Video Background (Fastest)", "Cinematic Ken Burns Wallpaper"],
+                    key="lf_vis_mode"
+                )
+                lf_pick_vid = st.selectbox("🎬 Looping Video Source:", ["Auto / Newest"] + [f.name for f in intro_vids], key="lf_vid_dd")
+            with v_col2:
+                lf_pal = st.selectbox("🎨 16:9 Thumbnail Palette:", ["Gold Classic", "Midnight Blue", "Sunrise", "Crimson Glory"], key="lf_pal")
+                lf_pick_img = st.selectbox("🖼️ 16:9 Wallpaper / Thumbnail Image:", ["Auto / Newest"] + [f.name for f in bg_imgs], key="lf_img_dd")
+
+            st.write("")
+            lf_render_btn = st.button(
+                f"🚀 GENERATE {lf_dur.upper()} 16:9 SOUL-PRAYER VIDEO",
+                key="lf_render_btn",
+                width="stretch"
+            )
+
+    if lf_render_btn:
+        with lf_left:
+            lf_loader = LiveTaskLoader(f"Producing {lf_dur} Soul-Prayer Video")
+            lf_status = st.empty()
+            lf_prog = lf_loader.prog
+
+            out_folder = lpe.get_next_longform_folder(f"{lf_dur}_{lf_topic}")
+            voice_raw_mp3 = out_folder / "meditative_voice.mp3"
+            master_mix_mp3 = out_folder / "master_soaking_audio.mp3"
+            final_16x9_mp4 = out_folder / f"{out_folder.name}.mp4"
+            final_16x9_thumb = out_folder / f"{out_folder.name}_thumb.jpg"
+
+            lf_loader.update(25, f"🎙️ [1/3] Synthesizing Slow Soul-Prayer Voiceover ({lf_sel_v_obj['name']} at {lf_rate})...")
+            v_res = lpe.synthesize_meditative_voiceover(
+                lf_journey,
+                voice_raw_mp3,
+                voice_name=lf_sel_v_obj["voice"],
+                rate_str=lf_rate,
+                pitch_str="-2Hz"
+            )
+
+            lf_loader.update(55, f"🎵 [2/3] Mixing {lf_dur} Master Audio (Voice + Worship Music + {lf_nature})...")
+            target_secs = lf_journey["config"]["target_seconds"]
+            lpe.mix_longform_master_audio(
+                voice_raw_mp3,
+                master_mix_mp3,
+                target_duration_sec=target_secs,
+                bgm_file=lf_bgm_path,
+                bgm_volume=lf_bgm_vol,
+                nature_style=lf_nature
+            )
+
+            lf_loader.update(80, "🎬 [3/3] Rendering Full-HD 1920x1080 (16:9) Video & 3D Gold Thumbnail...")
+
+            chosen_v_path = (backend.INTRO_DIR / lf_pick_vid) if (lf_pick_vid != "Auto / Newest") else (intro_vids[0] if intro_vids else backend.prepare_muted_short_main())
+            chosen_i_path = (backend.BG_DIR / lf_pick_img) if (lf_pick_img != "Auto / Newest") else (bg_imgs[0] if bg_imgs else backend.get_jesus_image())
+
+            ok_lf = lpe.render_longform_16x9_video(
+                master_mix_mp3,
+                final_16x9_mp4,
+                final_16x9_thumb,
+                lf_journey,
+                bg_image_path=chosen_i_path,
+                bg_video_path=chosen_v_path,
+                visual_mode=lf_vis_mode,
+                palette_name=lf_pal
+            )
+
+            if ok_lf:
+                lf_title, lf_desc, lf_tags = lpe.build_longform_youtube_metadata(lf_journey, v_res["chapters"])
+                backend.save_clip_metadata(final_16x9_mp4, lf_title, lf_desc, lf_tags, topic=lf_topic)
+                st.session_state["last_longform_video"] = str(final_16x9_mp4)
+                lf_prog.progress(100)
+                lf_status.success(f"🎉 {lf_dur} Long-Form Prayer Video Ready: `{final_16x9_mp4.name}`!")
+                time.sleep(0.5)
+                st.rerun()
+
+    with lf_right:
+        with st.container(border=True):
+            st.markdown("#### 📺 Long-Form 16:9 Studio Monitor & Publisher")
+            lf_existing = sorted(list(lpe.LONGFORM_DIR.rglob("*.mp4")), key=lambda p: p.parent.name, reverse=True)
+            lf_existing = [f for f in lf_existing if "temp_" not in str(f)]
+            lf_preview = st.session_state.get("last_longform_video")
+            if not lf_preview or not Path(lf_preview).exists():
+                lf_preview = str(lf_existing[0]) if lf_existing else None
+
+            if not lf_preview:
+                st.info("🕊️ Generate your first 5m, 10m, 20m, 30m, or 1-Hour Prayer Video on the left to preview & publish here!")
+            else:
+                lf_vp = Path(lf_preview)
+                lf_tp = lf_vp.with_name(f"{lf_vp.stem}_thumb.jpg")
+                lf_meta = backend.load_clip_metadata(lf_vp)
+                lf_actual_dur = backend.get_video_duration(lf_vp)
+
+                st.markdown(f"**⏱️ Final Video Length:** `{lpe.format_mm_ss(lf_actual_dur)}` ({lf_actual_dur/60.0:.1f} mins)  |  📁 `{lf_vp.parent.name}`")
+                st.video(str(lf_vp))
+
+                if lf_tp.exists():
+                    st.image(str(lf_tp), caption="16:9 Master YouTube Thumbnail", width="stretch")
+
+                st.markdown(f"**🏆 Title:** `{lf_meta['title']}`")
+                with st.expander("📝 View Chapter Timestamps, Description & Tags"):
+                    st.text_area("Long-Form Description (with Chapters):", value=lf_meta["description"], height=180, key="lf_mon_desc")
+                    st.code(", ".join(lf_meta.get("tags", [])), language="text")
+
+                if lf_meta.get("youtube_id"):
+                    st.success(f"🎉 LIVE ON YOUTUBE: https://www.youtube.com/watch?v={lf_meta['youtube_id']}")
+                else:
+                    for ch_n in channel_names:
+                        if st.button(f"🚀 Publish 16:9 Video + Thumbnail to '{ch_n}'", key=f"lf_pub_{ch_n}", width="stretch"):
+                            with st.spinner(f"Uploading {lf_vp.name} + 16:9 Thumbnail to {ch_n}..."):
+                                yt_id = backend.upload_video_to_youtube(ch_n, lf_vp, thumbnail_path=lf_tp)
+                                if yt_id:
+                                    st.success(f"🎉 Published! https://www.youtube.com/watch?v={yt_id}")
+                                    time.sleep(1.0)
+                                    st.rerun()
+
+
+with tab_story:
+    st.markdown("### \U0001f3ac 3-Minute AI Story Movie Engine (Gemini Omni 1.2 Flash \u2022 Nano Banana 2.1 \u2022 Google Flow Studio)")
+
+    with st.expander("\U0001f511 API Key Vault & Omni / Nano Banana Capability Checker", expanded=False):
+        cur_k = fse.get_active_gemini_key()
+        masked_k = f"{cur_k[:8]}...{cur_k[-4:]}" if len(cur_k) > 12 else ("Not Set" if not cur_k else cur_k)
+        st.caption(f"Current Saved Key in `.env`: **`{masked_k}`**")
+
+        k_col1, k_col2, k_col3 = st.columns([2.2, 1.0, 1.0])
+        with k_col1:
+            new_k_input = st.text_input("Paste / Update GEMINI_API_KEY:", value=cur_k, type="password", key="fse_api_key_in")
+        with k_col2:
+            st.write("")
+            if st.button("\U0001f4be Save Key to Studio (.env)", key="fse_save_key_btn", width="stretch"):
+                if fse.save_gemini_key_to_env(new_k_input):
+                    st.success("\u2705 Saved permanently to .env & activated!")
+                    time.sleep(0.5)
+                    st.rerun()
+        with k_col3:
+            st.write("")
+            if st.button("\U0001f50d Test Omni & Image Models", key="fse_test_key_btn", width="stretch"):
+                st.session_state["fse_cap_report"] = fse.test_gemini_key_capabilities(new_k_input)
+
+        if "fse_cap_report" in st.session_state:
+            rep = st.session_state["fse_cap_report"]
+            rc1, rc2, rc3 = st.columns(3)
+            with rc1:
+                st.info(f"**Story Brain (Gemini 3.8):**\n{rep['text_brain']}")
+            with rc2:
+                st.info(f"**Image Engine (Nano Banana 2.1):**\n{rep['imagen_api']}")
+            with rc3:
+                st.info(f"**Video Engine (Omni 1.2 Flash):**\n{rep['veo_video_api']}")
+
+    st_left, st_right = st.columns([1.25, 1.0], gap="large")
+
+    with st_left:
+        with st.container(border=True):
+            st.markdown("#### \U0001f9e0 Step 1: Select Models & Generate 12-Scene Storyboard (~3 Mins)")
+            sc_c1, sc_c2 = st.columns(2)
+            with sc_c1:
+                st_ch = st.selectbox("\U0001f4fa Target YouTube Channel:", channel_names, index=0, key="st_target_ch")
+                st_ar = st.selectbox("\U0001f4d0 Movie Aspect Ratio:", ["16:9 Horizontal (1920x1080)", "9:16 Vertical Short Movie (1080x1920)"], index=0, key="st_ar_sel")
+                st_img_engine = st.selectbox(
+                    "\U0001f5bc\ufe0f Image Generation Model:",
+                    [
+                        "Auto (Nano Banana 2.1 \u2794 Flux HD 2K Super-Sharp)",
+                        "Google Nano Banana 2.1 (gemini-nano-banana-2.1)",
+                        "Flux Pro HD + 2K Lanczos Super-Sharp Only"
+                    ],
+                    key="st_img_eng_sel"
+                )
+            with sc_c2:
+                st_num_sc = st.slider("\U0001f39e\ufe0f Number of Scenes (12 x 15s = 3 Mins):", min_value=6, max_value=15, value=12, key="st_num_sc")
+                st_v_list = next((v for k, v in VOICE_CATALOG.items() if "American" in k or "en-US" in k), list(VOICE_CATALOG.values())[0])
+                st_v_names = [v["name"] for v in st_v_list]
+                st_voice_sel = st.selectbox("\U0001f399\ufe0f Storyteller Voice:", st_v_names, index=0, key="st_voice_sel")
+                st_voice_id = st_v_list[st_v_names.index(st_voice_sel)]["voice"]
+                st_vid_engine = st.selectbox(
+                    "\U0001f3a5 Video Generation Mode:",
+                    [
+                        "Gemini Omni 1.2 Flash API (gemini-omni-1.2-flash 15s Clips)",
+                        "Google Flow Web Studio Bridge (flow.google Bulk Import)",
+                        "Ultra-Sharp 1080p Lanczos Camera Motion (From HD Images)"
+                    ],
+                    key="st_vid_eng_sel"
+                )
+
+            st_mode = st.radio("Story Source:", ["\U0001f4d6 12 Viral Biblical & Faith Stories", "\u270d\ufe0f Custom 3-Minute Story Idea"], horizontal=True, key="st_src_mode")
+            if "12 Viral" in st_mode:
+                st_chosen_topic = st.selectbox("Select Story:", fse.PRESET_STORY_TOPICS, key="st_preset_dd")
+            else:
+                st_chosen_topic = st.text_input("Describe Your Story Idea:", value="A widow praying over her last loaf of bread when a stranger knocks on her door", key="st_cust_topic")
+
+            if st.button("\U0001f9e0 1. Analyze Story & Generate 12-Scene Omni / Flow Storyboard", key="st_gen_board_btn", width="stretch") or "active_story_board" not in st.session_state:
+                sb_loader = LiveTaskLoader("Analyzing Story & Locking Character DNA")
+                sb = fse.analyze_and_create_story_board(st_chosen_topic, aspect_ratio=st_ar, num_scenes=st_num_sc)
+                st.session_state["active_story_board"] = sb
+                st.session_state["active_story_folder"] = str(fse.get_next_story_folder(sb["story_title"]))
+                sb_loader.complete("\u2705 12-Scene Storyboard & Character DNA Ready!")
+
+            sb = st.session_state["active_story_board"]
+            work_dir = Path(st.session_state.get("active_story_folder", str(fse.get_next_story_folder(sb["story_title"]))))
+            scenes_dir = work_dir / "scenes"
+            scenes_dir.mkdir(parents=True, exist_ok=True)
+
+            st.markdown(
+                f'<div class="verse-card">'
+                f'<div class="verse-hdr">\U0001f3ac {sb["story_title"]} ({sb["anchor_verse_ref"]})</div>'
+                f'<div class="verse-body"><b>\U0001f9ec Locked Character DNA (Flow Ingredients):</b> {sb["character_dna"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown("#### \U0001f3a8 Step 2: Generate Ultra-Sharp Images, Omni 1.2 Videos, or Bulk-Import from Google Flow")
+            act_c1, act_c2, act_c3 = st.columns(3)
+            with act_c1:
+                if st.button("\U0001f5bc\ufe0f Auto-Generate All 12 Sharp HD Images", key="st_gen_all_imgs", width="stretch"):
+                    img_loader = LiveTaskLoader("Rendering All 12 Ultra-Sharp HD Scene Images")
+                    last_eng = ""
+                    for idx_s, sc_item in enumerate(sb["scenes"], start=1):
+                        pct_i = int((idx_s - 1) / len(sb["scenes"]) * 100)
+                        img_loader.update(pct_i, f"\U0001f3a8 Scene {idx_s}/{len(sb['scenes'])}: Generating & Mastering 2K Sharpness...")
+                        out_p = scenes_dir / f"scene_{idx_s:02d}.jpg"
+                        _, last_eng = fse.generate_scene_image(sc_item["flow_image_prompt"], out_p, sb["aspect_ratio"], seed=400 + idx_s, image_model_pref=st_img_engine)
+                    img_loader.complete(f"\u2705 All 12 Scene Images Mastered in 1080p HD ({last_eng})!")
+            with act_c2:
+                if st.button("\U0001f3a5 Generate 15s Clips with Gemini Omni 1.2 Flash", key="st_gen_all_omni", width="stretch"):
+                    omni_loader = LiveTaskLoader("Calling Gemini Omni 1.2 Flash (gemini-omni-1.2-flash)")
+                    for idx_s, sc_item in enumerate(sb["scenes"], start=1):
+                        pct_v = int((idx_s - 1) / len(sb["scenes"]) * 100)
+                        omni_loader.update(pct_v, f"\U0001f3a5 Scene {idx_s}/{len(sb['scenes'])}: Requesting 15s Omni 1.2 Flash Video...")
+                        ref_img = scenes_dir / f"scene_{idx_s:02d}.jpg"
+                        out_vid = scenes_dir / f"scene_{idx_s:02d}_flow.mp4"
+                        ok_om, msg_om = fse.generate_scene_video_omni(sc_item["flow_video_prompt"], out_vid, ref_image_path=ref_img, aspect_ratio=sb["aspect_ratio"])
+                        if not ok_om:
+                            st.warning(msg_om)
+                            break
+                    else:
+                        omni_loader.complete("\u2705 All 15s Gemini Omni 1.2 Flash Video Clips Generated!")
+            with act_c3:
+                csv_bytes = fse.build_google_flow_csv_bytes(sb)
+                st.download_button(
+                    "\U0001f4e5 Export Google Flow CSV Queue",
+                    data=csv_bytes,
+                    file_name="google_flow_omni_queue.csv",
+                    mime="text/csv",
+                    width="stretch"
+                )
+
+            with st.expander("\U0001f4e6 Bulk Drop Zone: Drop Multiple Clips (.mp4) or Images (.png/.jpg) from Google Flow at Once", expanded=False):
+                st.caption("Generate clips in **flow.google** using the exported queue, then select all downloaded `.mp4` or `.jpg` files together to auto-assign them to Scenes 1 to 12!")
+                bulk_files = st.file_uploader("Select Multiple Flow Videos or Images:", type=["mp4", "mov", "webm", "jpg", "jpeg", "png", "webp"], accept_multiple_files=True, key="st_bulk_flow")
+                if bulk_files:
+                    is_v_ar = "9:16" in sb["aspect_ratio"]
+                    tw, th = (1080, 1920) if is_v_ar else (1920, 1080)
+                    for b_idx, bf in enumerate(sorted(bulk_files, key=lambda x: x.name), start=1):
+                        if b_idx > len(sb["scenes"]):
+                            break
+                        ext = Path(bf.name).suffix.lower()
+                        if ext in (".mp4", ".mov", ".webm"):
+                            target_f = scenes_dir / f"scene_{b_idx:02d}_flow.mp4"
+                            target_f.write_bytes(bf.getvalue())
+                        else:
+                            target_f = scenes_dir / f"scene_{b_idx:02d}.jpg"
+                            target_f.write_bytes(bf.getvalue())
+                            fse.master_sharp_hd_image(target_f, tw, th)
+                    st.success(f"\u2705 Auto-assigned {min(len(bulk_files), len(sb['scenes']))} file(s) to Scenes 1-{min(len(bulk_files), len(sb['scenes']))}!")
+
+            with st.expander("\U0001f39e\ufe0f Inspect / Edit Individual Scenes, Prompts & HD Previews", expanded=False):
+                for s_obj in sb["scenes"]:
+                    snum = s_obj["scene_num"]
+                    st.markdown(f"**Scene {snum} \u2014 {s_obj.get('act', '')}**")
+                    s_obj["narration"] = st.text_area(f"Spoken Narration (Scene {snum}):", value=s_obj["narration"], height=68, key=f"st_narr_{snum}")
+                    s_obj["flow_image_prompt"] = st.text_area(f"Nano Banana / Flow Image Prompt (Scene {snum}):", value=s_obj["flow_image_prompt"], height=68, key=f"st_imgp_{snum}")
+                    st.code(s_obj["flow_video_prompt"], language="text")
+
+                    sc_img_p = scenes_dir / f"scene_{snum:02d}.jpg"
+                    sc_vid_p = scenes_dir / f"scene_{snum:02d}_flow.mp4"
+
+                    u_c1, u_c2 = st.columns(2)
+                    with u_c1:
+                        if sc_img_p.exists():
+                            st.image(str(sc_img_p), caption=f"Scene {snum} Mastered HD Image", width="stretch")
+                        if st.button(f"\U0001f504 Regenerate Scene {snum} Sharp Image", key=f"st_regen_i_{snum}", width="stretch"):
+                            fse.generate_scene_image(s_obj["flow_image_prompt"], sc_img_p, sb["aspect_ratio"], seed=500 + snum, image_model_pref=st_img_engine)
+                            st.rerun()
+                    with u_c2:
+                        if sc_vid_p.exists():
+                            st.video(str(sc_vid_p))
+                        up_flow_vid = st.file_uploader(f"Drop Flow Video Clip (Scene {snum} .mp4):", type=["mp4", "mov", "webm"], key=f"st_up_v_{snum}")
+                        if up_flow_vid is not None:
+                            sc_vid_p.write_bytes(up_flow_vid.getvalue())
+                            st.success(f"\u2705 Flow Video Clip attached to Scene {snum}!")
+                    st.divider()
+
+            st.markdown("#### \U0001f39e\ufe0f Step 3: Merge All Scenes into 1080p HD 3-Minute Movie")
+            m_c1, m_c2 = st.columns(2)
+            with m_c1:
+                st_bgms = get_available_bgm_tracks()
+                st_bgm_lbl = st.selectbox("\U0001f3b5 Story Background Music:", list(st_bgms.keys()), key="st_bgm_sel")
+                st_bgm_file = st_bgms[st_bgm_lbl]
+            with m_c2:
+                st_bgm_vol = st.slider("\U0001f50a Music Volume:", min_value=0.05, max_value=0.35, value=0.16, step=0.01, key="st_bgm_vol")
+
+            if st.button("\U0001f680 3. MERGE & RENDER COMPLETE 3-MINUTE 1080p HD STORY MOVIE", key="st_render_movie_btn", width="stretch"):
+                mv_loader = LiveTaskLoader("Mastering 3-Minute 1080p Story Movie (Lanczos + Unsharp)")
+
+                def _upd(pct, msg):
+                    mv_loader.update(pct, msg)
+
+                ok_m, out_mv, out_th = fse.render_complete_3min_story_movie(
+                    sb,
+                    work_dir,
+                    voice_name=st_voice_id,
+                    voice_rate="-6%",
+                    bgm_file=st_bgm_file,
+                    bgm_vol=st_bgm_vol,
+                    palette_name="Gold Classic",
+                    progress_cb=_upd
+                )
+                if ok_m:
+                    story_desc = (
+                        f"\U0001f3ac {sb['story_title']}\n\n"
+                        f"\U0001f4d6 Anchor Scripture: {sb['anchor_verse_ref']}\n"
+                        f"\"{sb['anchor_verse_text']}\"\n\n"
+                        f"Watch this deeply moving 3-minute faith story until the very end. "
+                        f"If this message touched your heart, type \"AMEN\" in the comments! \U0001f64f\n\n"
+                        f"#BibleStory #FaithStory #ChristianMotivation #JesusChrist #GodIsGood #DailyWisdom"
+                    )
+                    story_tags = ["Bible Story", "Christian Short Film", "Faith Story", "Jesus Christ", sb["anchor_verse_ref"], "Inspirational Story"]
+                    backend.save_clip_metadata(out_mv, sb["story_title"], story_desc, story_tags, topic=sb["topic"])
+                    st.session_state["last_story_movie"] = str(out_mv)
+                    mv_loader.complete(f"\U0001f389 3-Minute 1080p HD Movie Rendered: `{out_mv.name}`!")
+                    time.sleep(0.5)
+                    st.rerun()
+
+    with st_right:
+        with st.container(border=True):
+            st.markdown("#### \U0001f37f 3-Minute Story Movie Monitor & Publisher")
+            existing_movies = sorted(list(fse.STORY_MOVIES_DIR.rglob("ST*.mp4")), key=lambda p: p.parent.name, reverse=True)
+            st_preview = st.session_state.get("last_story_movie")
+            if not st_preview or not Path(st_preview).exists():
+                st_preview = str(existing_movies[0]) if existing_movies else None
+
+            if not st_preview:
+                st.info("\U0001f3ac Click '1. Analyze Story', '2. Auto-Generate Sharp HD Images' (or drop Flow/Omni clips), and '3. Merge & Render' to watch your 3-Minute Movie here!")
+            else:
+                mv_p = Path(st_preview)
+                mv_th = mv_p.with_name(f"{mv_p.stem}_thumb.jpg")
+                mv_meta = backend.load_clip_metadata(mv_p)
+                mv_dur = backend.get_video_duration(mv_p)
+
+                st.markdown(f"**\u23f1\ufe0f Movie Duration:** `{int(mv_dur//60)}m {int(mv_dur%60)}s` ({mv_dur:.1f}s)  |  \U0001f4c1 `{mv_p.parent.name}`")
+                st.video(str(mv_p))
+                if mv_th.exists():
+                    st.image(str(mv_th), caption="Story Master Thumbnail (1080p Sharp)", width="stretch")
+
+                st.markdown(f"**\U0001f3c6 Story Title:** `{mv_meta['title']}`")
+                with st.expander("\U0001f4dd View Story Description & Tags"):
+                    st.text_area("Description:", value=mv_meta["description"], height=140, key="st_mon_desc")
+
+                if mv_meta.get("youtube_id"):
+                    yt_link = "https://www.youtube.com/watch?v=" + str(mv_meta["youtube_id"])
+                    st.success(f"\U0001f389 LIVE ON YOUTUBE: {yt_link}")
+                else:
+                    for ch_n in channel_names:
+                        if st.button(f"\U0001f680 Publish 3-Min Story Movie + Thumbnail to '{ch_n}'", key=f"st_pub_{ch_n}", width="stretch"):
+                            with st.spinner(f"Uploading {mv_p.name} to {ch_n}..."):
+                                yt_id = backend.upload_video_to_youtube(ch_n, mv_p, thumbnail_path=mv_th)
+                                if yt_id:
+                                    st.success(f"\U0001f389 Published! ID: {yt_id}")
+                                    time.sleep(1.0)
+                                    st.rerun()
 
 with tab_lib:
     st.markdown("### 📂 Sequential Shorts Vault (`001_`, `002_`, `003_...`)")

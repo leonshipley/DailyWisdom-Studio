@@ -4,7 +4,7 @@ import json
 import asyncio
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Optional
 from dotenv import load_dotenv
 import edge_tts
 
@@ -504,3 +504,237 @@ def mix_longform_master_audio(
 
     subprocess.run(cmd_mix, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return get_audio_duration(out_master_mp3)
+
+
+
+# ==============================================================================
+# 5. STEP 3: ULTRA-FAST 16:9 (1920x1080) LONG-FORM VIDEO & THUMBNAIL RENDERER
+# ==============================================================================
+def get_next_longform_folder(label: str) -> Path:
+    clean = re.sub(r"[^a-zA-Z0-9]+", "_", label or "").strip("_")[:35] or "longform_prayer"
+    nums = []
+    for d in LONGFORM_DIR.iterdir():
+        if d.is_dir():
+            m = re.match(r"^LF(\d{3})_", d.name)
+            if m:
+                nums.append(int(m.group(1)))
+    next_n = (max(nums) + 1) if nums else 1
+    folder = LONGFORM_DIR / f"LF{next_n:03d}_{clean}"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+def create_16x9_stage_overlay_png(
+    out_png: Path,
+    topic: str,
+    scriptures: List[Dict[str, str]],
+    w: int = 1920,
+    h: int = 1080
+):
+    """Creates a transparent 1920x1080 RGBA overlay with Double Gold Frame & Anchor Scriptures."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    ov = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(ov)
+
+    # Top and bottom dark cinematic vignette bands
+    for y in range(220):
+        alpha = int(210 * (1.0 - y / 220.0))
+        draw.line([(0, y), (w, y)], fill=(5, 8, 16, alpha))
+    for y in range(h - 320, h):
+        alpha = int(230 * ((y - (h - 320)) / 320.0))
+        draw.line([(0, y), (w, y)], fill=(5, 8, 16, alpha))
+
+    # Double Gold 16:9 Rounded Border
+    gold = (225, 185, 65, 235)
+    gold_soft = (225, 185, 65, 130)
+    draw.rounded_rectangle([28, 28, w - 28, h - 28], radius=26, outline=gold, width=4)
+    draw.rounded_rectangle([40, 40, w - 40, h - 40], radius=20, outline=gold_soft, width=2)
+
+    # Load Fonts
+    def _fnt(sz: int, black: bool = False):
+        cands = [
+            Path("C:/Windows/Fonts/ariblk.ttf") if black else Path("C:/Windows/Fonts/segoeuib.ttf"),
+            Path("C:/Windows/Fonts/arialbd.ttf"),
+            Path("C:/Windows/Fonts/arial.ttf")
+        ]
+        for p in cands:
+            if p.exists():
+                try:
+                    return ImageFont.truetype(str(p), sz)
+                except Exception:
+                    pass
+        return ImageFont.load_default()
+
+    f_top = _fnt(28, black=True)
+    f_ref = _fnt(36, black=True)
+    f_verse = _fnt(30, black=False)
+
+    # Top Sanctuary Pill Badge
+    top_txt = f"DEEP SOUL PRAYER  •  {topic.upper()[:42]}"
+    tb = draw.textbbox((0, 0), top_txt, font=f_top)
+    tw, th = tb[2] - tb[0] + 60, tb[3] - tb[1] + 24
+    bx = (w - tw) // 2
+    by = 54
+    draw.rounded_rectangle([bx, by, bx + tw, by + th], radius=th // 2, fill=(8, 12, 24, 230), outline=gold, width=2)
+    draw.text(((w - (tb[2] - tb[0])) // 2 - tb[0], by + 11 - tb[1]), top_txt, font=f_top, fill=(255, 242, 175, 255))
+
+    # Lower-Third Anchor Scripture Display
+    anchor = scriptures[0] if scriptures else {"ref": "Psalm 91:1-2", "text": "He that dwelleth in the secret place of the most High shall abide under the shadow of the Almighty."}
+    ref_str = f"📖 {anchor['ref'].upper()}   |   MEDITATIVE SCRIPTURE & PRAYER"
+    rb = draw.textbbox((0, 0), ref_str, font=f_ref)
+    draw.text(((w - (rb[2] - rb[0])) // 2 - rb[0], h - 235), ref_str, font=f_ref, fill=(235, 185, 55, 255), stroke_width=3, stroke_fill=(0, 0, 0, 240))
+
+    # Wrap verse text across max 2 lines
+    v_words = anchor["text"].strip().split()
+    lines, cur = [], []
+    for word in v_words:
+        test = " ".join(cur + [word])
+        wb = draw.textbbox((0, 0), test, font=f_verse)
+        if (wb[2] - wb[0]) <= (w - 260):
+            cur.append(word)
+        else:
+            lines.append(" ".join(cur))
+            cur = [word]
+    if cur:
+        lines.append(" ".join(cur))
+    lines = lines[:2]
+
+    vy = h - 175
+    for ln in lines:
+        lb = draw.textbbox((0, 0), f'"{ln}"' if ln == lines[0] and len(lines) == 1 else ln, font=f_verse)
+        draw.text(((w - (lb[2] - lb[0])) // 2 - lb[0], vy), ln, font=f_verse, fill=(248, 250, 252, 255), stroke_width=3, stroke_fill=(0, 0, 0, 230))
+        vy += 42
+
+    ov.save(str(out_png), "PNG")
+
+def render_longform_16x9_video(
+    master_audio_mp3: Path,
+    out_video_mp4: Path,
+    out_thumb_jpg: Path,
+    journey_pkg: Dict[str, Any],
+    bg_image_path: Path,
+    bg_video_path: Path | None = None,
+    visual_mode: str = "Looping Video Background (Fastest)",
+    palette_name: str = "Gold Classic"
+) -> bool:
+    """
+    Renders a Full-HD 1920x1080 (16:9) long-form video (5m to 1 Hour)
+    by building a high-definition 16:9 visual loop with scripture overlays
+    and stream-muxing it across the entire master audio track in seconds.
+    """
+    import pro_design_addon as pda
+    from types import SimpleNamespace
+
+    w, h = 1920, 1080
+    total_dur = get_audio_duration(master_audio_mp3)
+    if total_dur <= 1.0:
+        total_dur = float(journey_pkg["config"]["target_seconds"])
+
+    work_dir = out_video_mp4.parent / "temp_lf_render"
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    overlay_png = work_dir / "lf_overlay_16x9.png"
+    create_16x9_stage_overlay_png(overlay_png, journey_pkg["topic"], journey_pkg["scriptures"], w=w, h=h)
+
+    loop_segment_mp4 = work_dir / "loop_segment_16x9.mp4"
+
+    # Build a seamless 16-second 1920x1080 visual loop
+    if "Video" in visual_mode and bg_video_path and bg_video_path.exists():
+        cmd_loop = [
+            "ffmpeg", "-y",
+            "-stream_loop", "-1", "-t", "16", "-i", str(bg_video_path.absolute()),
+            "-loop", "1", "-t", "16", "-i", str(overlay_png.absolute()),
+            "-filter_complex",
+            f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps=24,format=yuv420p,setsar=1,eq=brightness=-0.07:contrast=1.12[bg];"
+            f"[bg][1:v]overlay=0:0:format=auto,format=yuv420p[vout]",
+            "-map", "[vout]", "-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+            str(loop_segment_mp4.absolute())
+        ]
+    else:
+        # Smooth Ken Burns zoom-and-pan loop over the 16:9 wallpaper image
+        cmd_loop = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-t", "16", "-i", str(bg_image_path.absolute()),
+            "-loop", "1", "-t", "16", "-i", str(overlay_png.absolute()),
+            "-filter_complex",
+            f"[0:v]scale=2200:1240:force_original_aspect_ratio=increase,crop={w}:{h}:'(in_w-out_w)/2':'(in_h-out_h)*(0.2+0.6*sin(t*3.14159/16))',fps=24,format=yuv420p,setsar=1,eq=brightness=-0.07:contrast=1.12[bg];"
+            f"[bg][1:v]overlay=0:0:format=auto,format=yuv420p[vout]",
+            "-map", "[vout]", "-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "20",
+            str(loop_segment_mp4.absolute())
+        ]
+
+    subprocess.run(cmd_loop, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    if not loop_segment_mp4.exists() or loop_segment_mp4.stat().st_size < 5000:
+        return False
+
+    # Ultra-fast stream-copy mux across the entire 5m, 10m, 20m, 30m, or 1 Hour audio!
+    cmd_final = [
+        "ffmpeg", "-y",
+        "-stream_loop", "-1", "-i", str(loop_segment_mp4.absolute()),
+        "-i", str(master_audio_mp3.absolute()),
+        "-map", "0:v:0", "-map", "1:a:0",
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+        "-t", f"{total_dur:.2f}",
+        str(out_video_mp4.absolute())
+    ]
+    res = subprocess.run(cmd_final, capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+    # Generate 16:9 Master Thumbnail (1280x720)
+    try:
+        first_ref = journey_pkg["scriptures"][0]["ref"] if journey_pkg["scriptures"] else "PSALM 91:1"
+        dummy_script = SimpleNamespace(
+            topic=journey_pkg["topic"],
+            verse_citation=first_ref,
+            thumbnail_hook=f"PRAY THIS OVER {journey_pkg['topic'].upper()[:18]}",
+            title=f"Deep Prayer for {journey_pkg['topic']}"
+        )
+        thumbs = pda.render_pro_thumbnails(bg_image_path, dummy_script, out_thumb_jpg, palette_name=palette_name)
+        if "16x9" in thumbs and Path(thumbs["16x9"]).exists():
+            from PIL import Image
+            im16 = Image.open(thumbs["16x9"]).convert("RGB")
+            im16.save(str(out_thumb_jpg), "JPEG", quality=95)
+    except Exception:
+        pass
+
+    return res.returncode == 0 and out_video_mp4.exists()
+
+def build_longform_youtube_metadata(
+    journey_pkg: Dict[str, Any],
+    chapters: List[Dict[str, Any]]
+) -> Tuple[str, str, List[str]]:
+    """Builds high-CTR Long-Form Title, Chapter-Timestamped Description, and Sanitized Tags."""
+    topic = journey_pkg["topic"]
+    dur_lbl = journey_pkg["duration_label"]
+    first_ref = journey_pkg["scriptures"][0]["ref"] if journey_pkg["scriptures"] else "Psalm 91"
+
+    title = f"Pray This Over {topic} | {dur_lbl} Deep Christian Prayer & Scripture ({first_ref})"[:98]
+
+    chapter_lines = "\n".join([f"{ch['timestamp']} - {ch['title']}" for ch in chapters])
+    if not chapter_lines or not chapter_lines.startswith("00:00"):
+        chapter_lines = "00:00 - Entering God's Presence\n" + chapter_lines
+
+    verse_summary = "\n".join([f"• {v['ref']}: \"{v['text'][:110]}...\"" for v in journey_pkg["scriptures"][:8]])
+
+    desc = f"""🙏 {topic.upper()} — {dur_lbl.upper()} DEEP SOUL PRAYER & SCRIPTURE SOAKING ({first_ref}) ❤️
+
+Take a slow, deep breath and step into God's sanctuary. If you have been silently carrying the heavy burden of {topic}, this {dur_lbl.lower()} meditative prayer and scripture journey was created to bring supernatural peace, breakthrough, and restoration into your home.
+
+⏱️ CHAPTERS & SPIRITUAL MOVEMENTS:
+{chapter_lines}
+
+📖 SCRIPTURES PRAYED IN THIS VIDEO:
+{verse_summary}
+
+💬 Let us pray in agreement! Type "AMEN" in the comments below to seal this prayer over your life and family.
+🔔 Subscribe to DailyWisdom for daily soaking prayers, Psalms for sleep, and biblical encouragement.
+
+#ChristianPrayer #DailyPrayer #{re.sub(r'[^a-zA-Z0-9]', '', topic.title())[:18]} #SleepPrayer #JesusChrist #FaithOverFear #BibleVerses #SoakingPrayer"""
+
+    raw_tags = [
+        f"{topic} Prayer", f"Prayer for {topic}", f"{dur_lbl} Christian Prayer",
+        first_ref, "Deep Soul Prayer", "Soaking Prayer", "Christian Meditation",
+        "Bible Verses for Sleep", "Peace of God", "Jesus Christ", "Powerful Prayer",
+        "Morning Prayer", "Night Prayer", "Spiritual Warfare Prayer", "Daily Wisdom"
+    ]
+    return title, desc, raw_tags
