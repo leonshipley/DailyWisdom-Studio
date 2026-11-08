@@ -1,3 +1,31 @@
+
+def sanitize_youtube_tags(raw_tags: list, max_total_chars: int = 380) -> list[str]:
+    cleaned_tags = []
+    seen = set()
+    total_len = 0
+
+    flat_list = []
+    for item in raw_tags:
+        if isinstance(item, str):
+            for part in item.split(","):
+                flat_list.append(part)
+        elif isinstance(item, list):
+            for part in item:
+                flat_list.append(str(part))
+
+    for t in flat_list:
+        clean = re.sub(r"[<>,#\"'\\`\r\n\t&!?:;]", "", str(t)).strip()
+        clean = re.sub(r"\s+", " ", clean)
+        if 2 <= len(clean) <= 35 and clean.lower() not in seen:
+            cost = len(clean) + (2 if " " in clean else 0) + 1
+            if total_len + cost <= max_total_chars:
+                cleaned_tags.append(clean)
+                seen.add(clean.lower())
+                total_len += cost
+
+    return cleaned_tags[:20]
+
+import sticker_studio
 from viral_researcher import research_viral_scripture_package
 
 
@@ -1727,7 +1755,7 @@ def upload_video_to_youtube(channel_name: str, video_path: Path, thumbnail_path:
     raw_desc = str(meta.get("description", ""))
     safe_desc = re.sub(r"<!--[\s\S]*?-->", "", raw_desc)
     safe_desc = safe_desc.replace("<", "").replace(">", "").strip()
-    safe_tags = [re.sub(r"[<>]", "", str(t)).strip() for t in meta.get("tags", []) if t][:22]
+    safe_tags = sanitize_youtube_tags(meta.get("tags", []))
 
     body = {
         "snippet": {
@@ -2177,6 +2205,10 @@ def render_faceless_bible_video(
     palette_name: str = "Gold Classic",
     custom_bgm: Path | None = None,
     bgm_volume: float = 0.18,
+    video_mode: str = "Full Video",
+    sticker_path: Path | None = None,
+    sticker_position: str = "Bottom Dock (Centered)",
+    sticker_timing: str = "Throughout Entire Video",
     **kwargs
 ) -> bool:
     w, h = 1080, 1920
@@ -2218,18 +2250,23 @@ def render_faceless_bible_video(
     clean_topic = re.sub(r"\s+", " ", re.sub(r"[^a-zA-Z0-9\u0900-\u097F\s&\-]", "", script.topic)).upper().strip() or "PAVITRA BAIBIL"
     topic_fsize = 36 if len(clean_topic) <= 22 else max(24, int(820 / max(1, len(clean_topic) * 0.62)))
 
-        # SMART ADAPTIVE VIDEO ENGINE:
-    # 1. If video is long enough -> Use the WHOLE video for the full Short!
-    # 2. If video is short -> Play the full video, THEN transition to wallpaper.
-    # 3. If no video -> Use wallpaper.
+            # SMART MULTI-MODE VIDEO ENGINE (10s, 20s, Full Video, or Wallpaper Only)
     vid_dur = get_video_duration(muted_video) if (muted_video and muted_video.exists()) else 0.0
 
-    print(f"  ⚡ Pacing: Total Voiceover = {duration:.1f}s | Intro Video Available = {vid_dur:.1f}s")
+    if video_mode == "10s Video ➔ Wallpaper":
+        target_vid_dur = min(10.0, vid_dur) if vid_dur > 1.0 else 0.0
+    elif video_mode == "20s Video ➔ Wallpaper":
+        target_vid_dur = min(20.0, vid_dur) if vid_dur > 1.0 else 0.0
+    elif video_mode == "Wallpaper Only":
+        target_vid_dur = 0.0
+    else:  # "Full Video"
+        target_vid_dur = vid_dur if vid_dur > 1.0 else 0.0
+
+    print(f"  ⚡ Pacing: Total Short = {duration:.1f}s | Mode: '{video_mode}' (Video play: {target_vid_dur:.1f}s)")
 
     inputs = []
-    if vid_dur >= (duration - 0.5):
-        # CASE 1: Video is long enough for the WHOLE Short -> NO wallpaper needed!
-        print("  🎬 Using FULL custom video for entire duration!")
+    if target_vid_dur >= (duration - 0.5):
+        # Case 1: Video covers the entire Short
         inputs = [
             "-t", f"{duration:.2f}", "-i", str(muted_video.absolute()),
             "-i", str(voice_path.absolute()),
@@ -2240,12 +2277,12 @@ def render_faceless_bible_video(
             f"eq=brightness=-0.06:contrast=1.16:saturation=1.12[bg];"
         )
         voice_idx, bgm_idx = "1:a", "2:a"
-    elif vid_dur > 1.5:
-        # CASE 2: Video is shorter than audio -> Play full video, then wallpaper for the rest
-        img_dur = max(1.0, duration - vid_dur)
-        print(f"  🎬 Playing full video ({vid_dur:.1f}s), then wallpaper for remaining ({img_dur:.1f}s)...")
+        stk_input_idx = 3
+    elif target_vid_dur > 1.5:
+        # Case 2: Plays chosen video duration, then transitions to animated wallpaper
+        img_dur = max(1.0, duration - target_vid_dur)
         inputs = [
-            "-t", f"{vid_dur:.2f}", "-i", str(muted_video.absolute()),
+            "-t", f"{target_vid_dur:.2f}", "-i", str(muted_video.absolute()),
             "-loop", "1", "-t", f"{img_dur:.2f}", "-i", str(jesus_img.absolute()),
             "-i", str(voice_path.absolute()),
             "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
@@ -2256,8 +2293,9 @@ def render_faceless_bible_video(
             f"[v_intro][v_jesus]concat=n=2:v=1:a=0,eq=brightness=-0.06:contrast=1.16:saturation=1.12[bg];"
         )
         voice_idx, bgm_idx = "2:a", "3:a"
+        stk_input_idx = 4
     else:
-        # CASE 3: No video -> Full wallpaper
+        # Case 3: Wallpaper Only
         inputs = [
             "-loop", "1", "-t", f"{duration:.2f}", "-i", str(jesus_img.absolute()),
             "-i", str(voice_path.absolute()),
@@ -2268,6 +2306,19 @@ def render_faceless_bible_video(
             f"fps=24,format=yuv420p,setsar=1,eq=brightness=-0.06:contrast=1.16:saturation=1.12[bg];"
         )
         voice_idx, bgm_idx = "1:a", "2:a"
+        stk_input_idx = 3
+
+    # Build sticker/GIF overlay filter if selected
+    stk_inputs, stk_filter = sticker_studio.build_ffmpeg_sticker_filter(
+        sticker_path, duration, position=sticker_position, timing=sticker_timing
+    )
+    if stk_inputs:
+        inputs.extend(stk_inputs)
+        stk_filter_full = f";[{stk_input_idx}:v]{stk_filter}"
+        final_video_out = "[vout_stk]"
+    else:
+        stk_filter_full = ""
+        final_video_out = "[vout]"
 
     json_path = str(voice_path).replace(".mp3", ".json")
     timings = []
@@ -2340,7 +2391,7 @@ def render_faceless_bible_video(
         f"[hdr0]drawtext=fontfile='{font_bold}':text='{clean_topic}':fontcolor=0xFFD700@0.95:fontsize={topic_fsize}:shadowcolor=black@0.8:shadowx=3:shadowy=3:x=(w-text_w)/2:y=190[hdr1];"
         f"[hdr1]drawtext=fontfile='{font_bold}':text='{ff_citation}':fontcolor=white@0.95:fontsize=46:shadowcolor=black@0.85:shadowx=3:shadowy=3:x=(w-text_w)/2:y=250[hdr2];"
         f"[hdr2]subtitles='temp_fast_subs.ass'[sub_out];"
-        f"[sub_out]drawtext=fontfile='{font_bold}':text='Type AMEN to receive this blessing':fontcolor=0xFFD700@0.85:fontsize=38:shadowcolor=black@0.7:shadowx=3:shadowy=3:x=(w-text_w)/2:y=1700[vout];"
+        f"[sub_out]drawtext=fontfile='{font_bold}':text='Type AMEN to receive this blessing':fontcolor=0xFFD700@0.85:fontsize=38:shadowcolor=black@0.7:shadowx=3:shadowy=3:x=(w-text_w)/2:y=1700[vout]" + stk_filter_full + ";"
         f"[{voice_idx}]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=1.0[voice];"
         f"[{bgm_idx}]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume={bgm_volume:.2f}[bgm];"
         f"[voice][bgm]amix=inputs=2:duration=first:normalize=0,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[aout]"
@@ -2350,7 +2401,7 @@ def render_faceless_bible_video(
         "ffmpeg", "-y", "-threads", "0",
         *inputs,
         "-filter_complex", filter_complex,
-        "-map", "[vout]", "-map", "[aout]",
+        "-map", final_video_out, "-map", "[aout]",
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "19", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         "-t", f"{duration:.2f}",
@@ -2558,7 +2609,7 @@ def render_podcast_short(raw_slice: Path, clip: BookClip, output_path: Path, bad
     cmd = [
         "ffmpeg", "-y", "-ss", str(offset_start), "-t", str(duration), "-i", str(raw_slice),
         "-stream_loop", "-1", "-i", str(BGM_PODCAST_FILE),
-        "-filter_complex", filter_complex, "-map", "[vout]", "-map", "[aout]",
+        "-filter_complex", filter_complex, "-map", final_video_out, "-map", "[aout]",
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "19", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         str(output_path)

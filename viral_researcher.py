@@ -72,7 +72,7 @@ HIGH_VOLUME_SEO_POOL = [
     "Bible Study", "Biblical Wisdom", "Peace In The Storm", "God Will Provide"
 ]
 
-def pack_tags_to_limit(topic: str, ai_tags: list, competitor_keywords: list, max_chars: int = 480) -> list:
+def pack_tags_to_limit(topic: str, ai_tags: list, competitor_keywords: list, max_chars: int = 380) -> list:
     combined = []
     seen = set()
     topic_clean = re.sub(r"[^a-zA-Z0-9\s]", "", topic).strip()
@@ -88,7 +88,7 @@ def pack_tags_to_limit(topic: str, ai_tags: list, competitor_keywords: list, max
     final_tags = []
     for raw_tag in priority_tags:
         t = str(raw_tag).replace("#", "").strip().title()
-        t_clean = re.sub(r"[<>]", "", t)
+        t_clean = re.sub(r"[<>,#\"'\\`\r\n\t&!?:;]", "", t)
         if len(t_clean) >= 3 and t_clean.lower() not in seen:
             tag_cost = len(t_clean) + 1
             if total_len + tag_cost <= max_chars:

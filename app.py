@@ -1,3 +1,4 @@
+import sticker_studio
 import warnings
 warnings.filterwarnings("ignore")
 import logging
@@ -558,9 +559,27 @@ def render_maker_workspace(lang_code: str):
                     st.audio(str(chosen_bgm_file), format="audio/mp3")
             with b_c2:
                 bgm_vol = st.slider("🔊 BGM Music Volume:", min_value=0.05, max_value=0.45, value=0.18, step=0.01, format="%.2f", key=f"{pfx}_bgm_vol")
-                palette_style = st.selectbox("🎨 Thumbnail Palette:", ["Gold Classic", "Midnight Blue", "Sunrise", "Crimson Glory"], key=f"{pfx}_pal")
 
             raw_thumb_toggle = st.checkbox("Raw Thumbnail Mode (Keep image without 3D text stamps)", value=False, key=f"{pfx}_raw_th")
+
+            # -------------------------------------------------------------
+            # VIDEO DURATION MODE & ASSET PICKERS
+            # -------------------------------------------------------------
+            v_mode_col1, v_mode_col2 = st.columns(2)
+            with v_mode_col1:
+                sel_vid_mode = st.selectbox(
+                    "⏱️ Video Playback Duration:",
+                    [
+                        "Full Video",
+                        "10s Video ➔ Wallpaper",
+                        "20s Video ➔ Wallpaper",
+                        "Wallpaper Only"
+                    ],
+                    index=0,
+                    key=f"{pfx}_v_mode"
+                )
+            with v_mode_col2:
+                palette_style = st.selectbox("🎨 Thumbnail Palette:", ["Gold Classic", "Midnight Blue", "Sunrise", "Crimson Glory"], key=f"{pfx}_pal")
 
             # Visual file pickers
             intro_files = get_media_files(backend.INTRO_DIR, (".mp4", ".mov", ".webm", ".mkv"))
@@ -569,14 +588,43 @@ def render_maker_workspace(lang_code: str):
 
             v_c1, v_c2 = st.columns(2)
             with v_c1:
-                pick_intro_name = st.selectbox("🎬 Intro/Full Video (Auto-Muted):", ["Auto / Newest"] + [f.name for f in intro_files], key=f"{pfx}_int_dd")
+                pick_intro_name = st.selectbox("🎬 B-Roll Video:", ["Auto / Newest"] + [f.name for f in intro_files], key=f"{pfx}_int_dd")
                 up_intro = st.file_uploader("Drop New Video:", type=["mp4", "mov", "webm"], key=f"{pfx}_u_int")
             with v_c2:
-                pick_bg_name = st.selectbox("🖼️ Main Wallpaper Image:", ["Auto / Newest"] + [f.name for f in bg_files], key=f"{pfx}_bg_dd")
+                pick_bg_name = st.selectbox("🖼️ Wallpaper Image:", ["Auto / Newest"] + [f.name for f in bg_files], key=f"{pfx}_bg_dd")
                 up_bg = st.file_uploader("Drop New Wallpaper:", type=["jpg", "jpeg", "png", "webp"], key=f"{pfx}_u_bg")
 
-            pick_thumb_name = st.selectbox("🔥 Thumbnail Custom Image:", ["Same as Main Wallpaper"] + [f.name for f in thumb_files], key=f"{pfx}_th_dd")
+            pick_thumb_name = st.selectbox("🔥 Thumbnail Image:", ["Same as Main Wallpaper"] + [f.name for f in thumb_files], key=f"{pfx}_th_dd")
             up_thumb = st.file_uploader("Drop Custom Thumbnail Image:", type=["jpg", "jpeg", "png", "webp"], key=f"{pfx}_u_th")
+
+            # -------------------------------------------------------------
+            # STICKER & LIVE ANIMATED GIF INVENTORY
+            # -------------------------------------------------------------
+            st.write("")
+            st.markdown("##### 🏷️ Floating Sticker & Live GIF Inventory")
+            sticker_inventory = sticker_studio.get_sticker_inventory()
+
+            stk_col1, stk_col2, stk_col3 = st.columns(3)
+            with stk_col1:
+                sel_stk_label = st.selectbox("Select Sticker / Live GIF:", list(sticker_inventory.keys()), index=1 if len(sticker_inventory) > 1 else 0, key=f"{pfx}_stk_sel")
+                chosen_stk_file = sticker_inventory[sel_stk_label]
+            with stk_col2:
+                sel_stk_pos = st.selectbox("Position on Screen:", ["Bottom Dock (Centered)", "Bottom Right (Floating)", "Top Right Corner"], key=f"{pfx}_stk_pos")
+            with stk_col3:
+                sel_stk_time = st.selectbox("Display Timing in Video:", ["Throughout Entire Video", "Outro CTA (Last 6s)", "Hook Only (First 5s)"], key=f"{pfx}_stk_time")
+
+            # Live preview of selected sticker
+            if chosen_stk_file and Path(chosen_stk_file).exists():
+                st.image(str(chosen_stk_file), caption=f"Active Overlay: {chosen_stk_file.name}", width=160)
+
+            # Drop new sticker directly into inventory
+            with st.expander("➕ Upload New Sticker / Animated GIF to Inventory"):
+                up_custom_stk = st.file_uploader("Upload PNG or Animated GIF:", type=["png", "webp", "gif"], key=f"{pfx}_u_stk")
+                if up_custom_stk is not None:
+                    dest_stk = sticker_studio.STICKERS_DIR / up_custom_stk.name
+                    dest_stk.write_bytes(up_custom_stk.getvalue())
+                    st.success(f"Added '{up_custom_stk.name}' to Sticker Inventory!")
+                    st.rerun()
 
             st.write("")
             gen_btn = st.button(
@@ -751,7 +799,7 @@ def render_maker_workspace(lang_code: str):
                 script, temp_voice, out_video, out_thumb,
                 custom_intro=c_intro_path, custom_bg=c_bg_path,
                 custom_thumb=c_thumb_path, raw_thumb_only=raw_thumb_toggle,
-                palette_name=palette_style, custom_bgm=chosen_bgm_file, bgm_volume=bgm_vol
+                palette_name=palette_style, custom_bgm=chosen_bgm_file, bgm_volume=bgm_vol, video_mode=sel_vid_mode, sticker_path=chosen_stk_file, sticker_position=sel_stk_pos, sticker_timing=sel_stk_time
             )
             if temp_voice.exists():
                 temp_voice.unlink(missing_ok=True)
