@@ -1,3 +1,4 @@
+import description_engine
 import os
 import re
 import json
@@ -122,7 +123,8 @@ def _clean_christian_hashtags(desc: str) -> str:
 
 def generate_grace_3scene_script(
     topic: str,
-    archetype_choice: str = "Auto-Rotate (Never Repeat Last Archetype)"
+    archetype_choice: str = "Auto-Rotate (Never Repeat Last Archetype)",
+    target_pacing: str = "Viral 18-24s (High Retention)"
 ) -> Dict[str, Any]:
     """
     Generates a deeply authentic, non-repetitive 28-to-38s 3-Scene YouTube Short script
@@ -144,7 +146,7 @@ STRICT ANTI-REPETITION RULES (CRITICAL FOR MONETIZATION):
 - Never make literal medical cure claims or literal financial advice guarantees. Frame financial topics around "wisdom, stewardship, and freedom from money anxiety" and health topics around "spiritual comfort, strength, and peace."
 - Use ONLY Christian/Biblical hashtags. NEVER include tags from other religions (no #dua, #islamicreminder, #manifestation).
 
-4. 3-SCENE VISUAL STORYBOARD (Total spoken words across all 3 scenes: 65 to 85 words so total audio is 28 to 36 seconds):
+4. 3-SCENE VISUAL STORYBOARD (Total spoken words across all 3 scenes: 44 to 55 words so total audio is 18 to 24 seconds (maximum Shorts retention)):
 - Break the video into 3 distinct visual scenes (Scene 1: 0-10s Hook & Context, Scene 2: 10-22s Scripture & Editorial Commentary, Scene 3: 22-35s Anointed Prayer & Natural CTA) that visually progress from "The Human Struggle/Setting" -> "The Spiritual Turning Point" -> "Peace & Breakthrough".
 - Do not just prompt for a static portrait of Jesus in every scene; include cinematic biblical landscapes, symbolic imagery (e.g., a warm oil lamp in a storm, olive groves at dawn, open ancient parchment scrolls), and warm biblical scenes."""
 
@@ -163,7 +165,7 @@ Respond ONLY with a valid JSON object matching this exact schema (no markdown fe
     {{
       "scene_number": 1,
       "Role": "Hook & Context (0-10s)",
-      "spoken_text": "20-26 words for TTS to read. Natural pauses (...) and punctuation. NO banned openings.",
+      "spoken_text": "13-17 words for TTS to read (short, punchy hook). Natural pauses (...) and punctuation. NO banned openings.",
       "on_screen_header": "SHORT 3-4 WORD UPPERCASE THEME",
       "image_prompt": "Detailed cinematic prompt for AI image generator, warm golden hour lighting, vertical 9:16 aspect ratio, no text in image.",
       "camera_motion": "zoom_in_slow"
@@ -171,7 +173,7 @@ Respond ONLY with a valid JSON object matching this exact schema (no markdown fe
     {{
       "scene_number": 2,
       "Role": "Scripture & Editorial Commentary (10-22s)",
-      "spoken_text": "25-32 words for TTS reading and explaining the verse meaning.",
+      "spoken_text": "16-20 words for TTS reading the verse and 1-sentence core meaning.",
       "bible_verse_reference": "e.g., Psalm 34:18 (ESV)",
       "bible_verse_quote_short": "Short 1-sentence quote for on-screen display (Max 90 chars).",
       "image_prompt": "Detailed cinematic prompt showing transformation/hope, vertical 9:16, no text.",
@@ -180,7 +182,7 @@ Respond ONLY with a valid JSON object matching this exact schema (no markdown fe
     {{
       "scene_number": 3,
       "Role": "Anointed Prayer & Natural CTA (22-35s)",
-      "spoken_text": "22-28 words heartfelt prayer + natural varied closing call to action.",
+      "spoken_text": "14-18 words heartfelt prayer ending in Amen + short call to action.",
       "image_prompt": "Detailed cinematic prompt of peace, sanctuary, or light breaking through clouds, vertical 9:16, no text.",
       "camera_motion": "zoom_out_slow"
     }}
@@ -370,12 +372,10 @@ def render_grace_3scene_short(
                                     "end": round(st_s + (w_i + 1) * step_d, 3)
                                 })
 
-        try:
-            asyncio.run(_make_sc(clean_tts, target_mp3, time_offset))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(_make_sc(clean_tts, target_mp3, time_offset))
-            loop.close()
+        import preacher_audio_engine as pae
+        sc_timings = pae.synthesize_preacher_voiceover(clean_tts, target_mp3, voice_name=voice_id, base_rate=voice_rate, base_pitch="+0Hz")
+        for wt in sc_timings:
+            all_word_timings.append({"text": wt["text"], "start": round(time_offset + wt["start"], 3), "end": round(time_offset + wt["end"], 3)})
 
         sc_d = max(3.0, backend.get_video_duration(target_mp3))
         scene_durs.append(sc_d + 0.55)
@@ -473,7 +473,8 @@ def render_grace_3scene_short(
 
     ov.save(str(hdr_png), "PNG")
 
-    bgm_audio = bgm_file if (bgm_file and Path(bgm_file).exists()) else backend.get_worship_bgm()
+    has_bgm = not (bgm_file == "NONE" or str(bgm_file).upper() == "NONE" or bgm_vol <= 0.001)
+    bgm_audio = bgm_file if (has_bgm and bgm_file and Path(str(bgm_file)).exists()) else (backend.get_worship_bgm() if has_bgm else None)
 
     # 3-Scene Distinct Camera Motions:
     # Scene 1: zoom_in_slow
@@ -488,9 +489,13 @@ def render_grace_3scene_short(
         f"crop=1080:1920:'(in_w-out_w)*(0.2+0.6*t/{d3:.2f})':'(in_h-out_h)/2',fps=24,format=yuv420p,setsar=1,setpts=PTS-STARTPTS[v3];"
         f"[v1][v2][v3]concat=n=3:v=1:a=0,unsharp=5:5:0.85:5:5:0.0,eq=brightness=-0.05:contrast=1.12:saturation=1.10[bg];"
         f"[bg][3:v]overlay=0:0:format=auto,subtitles='temp_grace_subs.ass'[vout];"
-        f"[4:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=1.0[voice];"
-        f"[5:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume={bgm_vol:.2f}[bgm];"
-        f"[voice][bgm]amix=inputs=2:duration=first:normalize=0[aout]"
+        (
+            f"[4:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=1.0[voice];"
+            f"[5:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume={bgm_vol:.2f}[bgm];"
+            f"[voice][bgm]amix=inputs=2:duration=first:normalize=0[aout]"
+            if has_bgm else
+            f"[4:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,volume=1.0[aout]"
+        )
     )
 
     inputs = [
@@ -498,13 +503,14 @@ def render_grace_3scene_short(
         "-loop", "1", "-t", f"{d2:.2f}", "-i", str(img_paths[1].absolute()),
         "-loop", "1", "-t", f"{d3:.2f}", "-i", str(img_paths[2].absolute()),
         "-loop", "1", "-t", f"{total_dur:.2f}", "-i", str(hdr_png.absolute()),
-        "-i", str(full_voice_mp3.absolute()),
-        "-stream_loop", "-1", "-t", f"{total_dur:.2f}", "-i", str(Path(bgm_audio).absolute())
+        "-i", str(full_voice_mp3.absolute())
     ]
 
     stk_inputs, stk_filter = sticker_studio.build_ffmpeg_sticker_filter(
         sticker_path, total_dur, position=sticker_position, timing=sticker_timing
     )
+    if has_bgm and bgm_audio:
+        inputs.extend(["-stream_loop", "-1", "-t", f"{total_dur:.2f}", "-i", str(Path(bgm_audio).absolute())])
     if stk_inputs:
         inputs.extend(stk_inputs)
         filter_complex = filter_complex.replace("[vout];", f"[vout];[6:v]{stk_filter};")
@@ -583,4 +589,5 @@ def post_pinned_comment_if_possible(channel_name: str, video_id: str, video_path
         return True
     except Exception as e:
         print(f"   [Comment Note] {e}")
-        return False
+        return False
+

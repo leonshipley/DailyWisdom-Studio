@@ -1,0 +1,208 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: LongFormSubs,Segoe UI,54,&H00FFFFFF,&H0000D4FF,&H90000000,&H90000000,-1,0,0,0,100,100,0,0,1,3.5,2,2,140,140,82,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.10,0:00:01.83,LongFormSubs,,0,0,0,,{\fs54}Grace and peace to you my
+Dialogue: 0,0:00:01.83,0:00:05.72,LongFormSubs,,0,0,0,,{\fs54}friend Welcome If\Nyou are sitting
+Dialogue: 0,0:00:05.72,0:00:07.90,LongFormSubs,,0,0,0,,{\fs54}somewhere today feeling\Na bit weary
+Dialogue: 0,0:00:07.90,0:00:10.03,LongFormSubs,,0,0,0,,{\fs54}carrying a heavy\Nheart or wondering
+Dialogue: 0,0:00:10.03,0:00:11.91,LongFormSubs,,0,0,0,,{\fs54}if God is\Ntruly paying attention
+Dialogue: 0,0:00:11.91,0:00:13.32,LongFormSubs,,0,0,0,,{\fs54}to your life I want you
+Dialogue: 0,0:00:13.32,0:00:17.37,LongFormSubs,,0,0,0,,{\fs54}to take a deep breath Right
+Dialogue: 0,0:00:17.37,0:00:19.43,LongFormSubs,,0,0,0,,{\fs54}now wherever you are let the
+Dialogue: 0,0:00:19.43,0:00:22.09,LongFormSubs,,0,0,0,,{\fs54}noise of the world fade away
+Dialogue: 0,0:00:22.09,0:00:23.83,LongFormSubs,,0,0,0,,{\fs54}Today we are opening up one
+Dialogue: 0,0:00:23.83,0:00:26.16,LongFormSubs,,0,0,0,,{\fs54}of the most\Ncomforting grounding passages
+Dialogue: 0,0:00:26.16,0:00:28.00,LongFormSubs,,0,0,0,,{\fs54}in all of\NScripture the first
+Dialogue: 0,0:00:28.00,0:00:30.88,LongFormSubs,,0,0,0,,{\fs54}chapter of 1 John Written by
+Dialogue: 0,0:00:30.88,0:00:32.85,LongFormSubs,,0,0,0,,{\fs54}an aging apostle a man who
+Dialogue: 0,0:00:32.85,0:00:34.41,LongFormSubs,,0,0,0,,{\fs54}literally leaned his\Nhead against the
+Dialogue: 0,0:00:34.41,0:00:36.75,LongFormSubs,,0,0,0,,{\fs54}chest of Jesus\Nthese words carry
+Dialogue: 0,0:00:36.75,0:00:41.45,LongFormSubs,,0,0,0,,{\fs54}a profound weight\Nof eyewitness testimony
+Dialogue: 0,0:00:41.45,0:00:43.78,LongFormSubs,,0,0,0,,{\fs54}In verse one\NJohn writes That
+Dialogue: 0,0:00:43.78,0:00:45.43,LongFormSubs,,0,0,0,,{\fs54}which was from\Nthe beginning which
+Dialogue: 0,0:00:45.43,0:00:46.87,LongFormSubs,,0,0,0,,{\fs54}we have heard which we have
+Dialogue: 0,0:00:46.87,0:00:48.69,LongFormSubs,,0,0,0,,{\fs54}seen with our eyes which we
+Dialogue: 0,0:00:48.69,0:00:50.47,LongFormSubs,,0,0,0,,{\fs54}have looked upon\Nand our hands
+Dialogue: 0,0:00:50.47,0:00:51.93,LongFormSubs,,0,0,0,,{\fs54}have handled of the Word of
+Dialogue: 0,0:00:51.93,0:00:54.64,LongFormSubs,,0,0,0,,{\fs54}life He is not talking about
+Dialogue: 0,0:00:54.64,0:00:56.70,LongFormSubs,,0,0,0,,{\fs54}a philosophy a theory or a
+Dialogue: 0,0:00:56.70,0:00:59.54,LongFormSubs,,0,0,0,,{\fs54}comforting myth He\Nis talking about
+Dialogue: 0,0:00:59.54,0:01:01.71,LongFormSubs,,0,0,0,,{\fs54}a person he\Ntouched heard and
+Dialogue: 0,0:01:01.71,0:01:07.63,LongFormSubs,,0,0,0,,{\fs54}walked with Notice\Nthe intimacy John
+Dialogue: 0,0:01:07.63,0:01:08.81,LongFormSubs,,0,0,0,,{\fs54}wants us to know that our
+Dialogue: 0,0:01:08.81,0:01:11.73,LongFormSubs,,0,0,0,,{\fs54}faith is rooted\Nin reality When
+Dialogue: 0,0:01:11.73,0:01:14.17,LongFormSubs,,0,0,0,,{\fs54}life feels chaotic\Nand uncertain our
+Dialogue: 0,0:01:14.17,0:01:15.50,LongFormSubs,,0,0,0,,{\fs54}anchor is in a Savior who
+Dialogue: 0,0:01:15.50,0:01:20.04,LongFormSubs,,0,0,0,,{\fs54}entered into human\Nhistory In verse
+Dialogue: 0,0:01:20.04,0:01:21.82,LongFormSubs,,0,0,0,,{\fs54}three he tells us why he
+Dialogue: 0,0:01:21.82,0:01:23.58,LongFormSubs,,0,0,0,,{\fs54}is writing this\NThat which we
+Dialogue: 0,0:01:23.58,0:01:25.12,LongFormSubs,,0,0,0,,{\fs54}have seen and\Nheard declare we
+Dialogue: 0,0:01:25.12,0:01:26.88,LongFormSubs,,0,0,0,,{\fs54}unto you that ye also may
+Dialogue: 0,0:01:26.88,0:01:28.98,LongFormSubs,,0,0,0,,{\fs54}have fellowship with\Nus and truly
+Dialogue: 0,0:01:28.98,0:01:30.91,LongFormSubs,,0,0,0,,{\fs54}our fellowship is\Nwith the Father
+Dialogue: 0,0:01:30.91,0:01:33.53,LongFormSubs,,0,0,0,,{\fs54}and with his\NSon Jesus Christ
+Dialogue: 0,0:01:33.53,0:01:35.43,LongFormSubs,,0,0,0,,{\fs54}And then verse four gives us
+Dialogue: 0,0:01:35.43,0:01:37.72,LongFormSubs,,0,0,0,,{\fs54}the ultimate purpose\NAnd these things
+Dialogue: 0,0:01:37.72,0:01:39.42,LongFormSubs,,0,0,0,,{\fs54}write we unto you that your
+Dialogue: 0,0:01:39.42,0:01:42.05,LongFormSubs,,0,0,0,,{\fs54}joy may be full God is
+Dialogue: 0,0:01:42.05,0:01:43.33,LongFormSubs,,0,0,0,,{\fs54}not trying to rob you of
+Dialogue: 0,0:01:43.33,0:01:45.12,LongFormSubs,,0,0,0,,{\fs54}joy He wants your joy to
+Dialogue: 0,0:01:45.12,0:01:47.14,LongFormSubs,,0,0,0,,{\fs54}overflow starting right\Nhere in the
+Dialogue: 0,0:01:47.14,0:01:54.09,LongFormSubs,,0,0,0,,{\fs54}truth of His Word As we
+Dialogue: 0,0:01:54.09,0:01:56.23,LongFormSubs,,0,0,0,,{\fs54}move further into\Nthe chapter John
+Dialogue: 0,0:01:56.23,0:01:58.00,LongFormSubs,,0,0,0,,{\fs54}shifts from the\Nwarmth of fellowship
+Dialogue: 0,0:01:58.00,0:01:59.34,LongFormSubs,,0,0,0,,{\fs54}to the radical truth of who
+Dialogue: 0,0:01:59.34,0:02:00.62,LongFormSubs,,0,0,0,,{\fs54}God is and who we are
+Dialogue: 0,0:02:00.62,0:02:03.04,LongFormSubs,,0,0,0,,{\fs54}in light of Him Verse five
+Dialogue: 0,0:02:03.04,0:02:05.61,LongFormSubs,,0,0,0,,{\fs54}delivers a stunning\Ndeclaration This then
+Dialogue: 0,0:02:05.61,0:02:06.78,LongFormSubs,,0,0,0,,{\fs54}is the message which we have
+Dialogue: 0,0:02:06.78,0:02:08.57,LongFormSubs,,0,0,0,,{\fs54}heard of him\Nand declare unto
+Dialogue: 0,0:02:08.57,0:02:10.54,LongFormSubs,,0,0,0,,{\fs54}you that God is light and
+Dialogue: 0,0:02:10.54,0:02:11.91,LongFormSubs,,0,0,0,,{\fs54}in him is no darkness at
+Dialogue: 0,0:02:11.91,0:02:14.32,LongFormSubs,,0,0,0,,{\fs54}all Think about that for a
+Dialogue: 0,0:02:14.32,0:02:18.79,LongFormSubs,,0,0,0,,{\fs54}moment There is\Nno hidden shadow
+Dialogue: 0,0:02:18.79,0:02:21.24,LongFormSubs,,0,0,0,,{\fs54}in God no hidden agenda no
+Dialogue: 0,0:02:21.24,0:02:24.50,LongFormSubs,,0,0,0,,{\fs54}cruelty and no\Ndeception He is
+Dialogue: 0,0:02:24.50,0:02:28.48,LongFormSubs,,0,0,0,,{\fs54}pure unadulterated\Nlight But immediately
+Dialogue: 0,0:02:28.48,0:02:30.07,LongFormSubs,,0,0,0,,{\fs54}that brings up\Na heavy question
+Dialogue: 0,0:02:30.07,0:02:31.90,LongFormSubs,,0,0,0,,{\fs54}in our minds If God is
+Dialogue: 0,0:02:31.90,0:02:33.69,LongFormSubs,,0,0,0,,{\fs54}pure light where\Ndoes that leave
+Dialogue: 0,0:02:33.69,0:02:36.51,LongFormSubs,,0,0,0,,{\fs54}us with all\Nour flaws failures
+Dialogue: 0,0:02:36.51,0:02:41.27,LongFormSubs,,0,0,0,,{\fs54}and messy thoughts\NJohn addresses this
+Dialogue: 0,0:02:41.27,0:02:43.38,LongFormSubs,,0,0,0,,{\fs54}with incredible pastoral\Ngentleness in the
+Dialogue: 0,0:02:43.38,0:02:46.40,LongFormSubs,,0,0,0,,{\fs54}subsequent verses He\Ntells us in
+Dialogue: 0,0:02:46.40,0:02:47.79,LongFormSubs,,0,0,0,,{\fs54}verse seven that if we walk
+Dialogue: 0,0:02:47.79,0:02:49.10,LongFormSubs,,0,0,0,,{\fs54}in the light as he is
+Dialogue: 0,0:02:49.10,0:02:50.81,LongFormSubs,,0,0,0,,{\fs54}in the light\Nwe have fellowship
+Dialogue: 0,0:02:50.81,0:02:52.40,LongFormSubs,,0,0,0,,{\fs54}one with another\Nand the blood
+Dialogue: 0,0:02:52.40,0:02:54.45,LongFormSubs,,0,0,0,,{\fs54}of Jesus Christ\Nhis Son cleanseth
+Dialogue: 0,0:02:54.45,0:02:57.03,LongFormSubs,,0,0,0,,{\fs54}us from all sin Notice it
+Dialogue: 0,0:02:57.03,0:03:01.28,LongFormSubs,,0,0,0,,{\fs54}is a continual\Ncleansing It is
+Dialogue: 0,0:03:01.28,0:03:02.73,LongFormSubs,,0,0,0,,{\fs54}not about pretending\Nwe have it
+Dialogue: 0,0:03:02.73,0:03:05.91,LongFormSubs,,0,0,0,,{\fs54}all together In\Nfact verse eight
+Dialogue: 0,0:03:05.91,0:03:07.56,LongFormSubs,,0,0,0,,{\fs54}gives us a\Nstern warning against
+Dialogue: 0,0:03:07.56,0:03:09.63,LongFormSubs,,0,0,0,,{\fs54}the exhaustion of\Npretense If we
+Dialogue: 0,0:03:09.63,0:03:11.42,LongFormSubs,,0,0,0,,{\fs54}say that we have no sin
+Dialogue: 0,0:03:11.42,0:03:13.47,LongFormSubs,,0,0,0,,{\fs54}we deceive ourselves\Nand the truth
+Dialogue: 0,0:03:13.47,0:03:16.15,LongFormSubs,,0,0,0,,{\fs54}is not in us The spiritual
+Dialogue: 0,0:03:16.15,0:03:17.67,LongFormSubs,,0,0,0,,{\fs54}lesson here is\Nthat pretending to
+Dialogue: 0,0:03:17.67,0:03:19.82,LongFormSubs,,0,0,0,,{\fs54}be perfect is\Na heavy back-breaking
+Dialogue: 0,0:03:19.82,0:03:24.20,LongFormSubs,,0,0,0,,{\fs54}burden God is not asking for
+Dialogue: 0,0:03:24.20,0:03:26.21,LongFormSubs,,0,0,0,,{\fs54}your perfection He\Nis asking for
+Dialogue: 0,0:03:26.21,0:03:28.92,LongFormSubs,,0,0,0,,{\fs54}your honesty He\Ninvites you out
+Dialogue: 0,0:03:28.92,0:03:30.32,LongFormSubs,,0,0,0,,{\fs54}of the shadows of hiding and
+Dialogue: 0,0:03:30.32,0:03:31.74,LongFormSubs,,0,0,0,,{\fs54}into the healing\Nwarmth of His
+Dialogue: 0,0:03:31.74,0:03:39.03,LongFormSubs,,0,0,0,,{\fs54}light Let's bring\Nthis right down
+Dialogue: 0,0:03:39.03,0:03:40.36,LongFormSubs,,0,0,0,,{\fs54}to the kitchen table of your
+Dialogue: 0,0:03:40.36,0:03:42.97,LongFormSubs,,0,0,0,,{\fs54}everyday life What\Ndoes it look
+Dialogue: 0,0:03:42.97,0:03:44.13,LongFormSubs,,0,0,0,,{\fs54}like to walk in the light
+Dialogue: 0,0:03:44.13,0:03:45.55,LongFormSubs,,0,0,0,,{\fs54}when you are\Nstruggling with crushing
+Dialogue: 0,0:03:45.55,0:03:47.84,LongFormSubs,,0,0,0,,{\fs54}debt anxiety that\Nkeeps you awake
+Dialogue: 0,0:03:47.84,0:03:49.63,LongFormSubs,,0,0,0,,{\fs54}at 3 AM or a broken
+Dialogue: 0,0:03:49.63,0:03:53.08,LongFormSubs,,0,0,0,,{\fs54}relationship that feels\Nbeyond repair Many
+Dialogue: 0,0:03:53.08,0:03:54.53,LongFormSubs,,0,0,0,,{\fs54}of us spend our lives living
+Dialogue: 0,0:03:54.53,0:03:58.58,LongFormSubs,,0,0,0,,{\fs54}in the shadows We hide our
+Dialogue: 0,0:03:58.58,0:04:00.57,LongFormSubs,,0,0,0,,{\fs54}financial stress from\Nour spouse out
+Dialogue: 0,0:04:00.57,0:04:03.20,LongFormSubs,,0,0,0,,{\fs54}of pride We hide our secret
+Dialogue: 0,0:04:03.20,0:04:05.75,LongFormSubs,,0,0,0,,{\fs54}habits our doubts\Nand our heartbreak
+Dialogue: 0,0:04:05.75,0:04:07.21,LongFormSubs,,0,0,0,,{\fs54}because we are\Nterrified that if
+Dialogue: 0,0:04:07.21,0:04:09.21,LongFormSubs,,0,0,0,,{\fs54}anyone truly knew\Nus they would
+Dialogue: 0,0:04:09.21,0:04:12.57,LongFormSubs,,0,0,0,,{\fs54}reject us And\Ntragically we treat
+Dialogue: 0,0:04:12.57,0:04:16.76,LongFormSubs,,0,0,0,,{\fs54}God the same way We keep
+Dialogue: 0,0:04:16.76,0:04:18.13,LongFormSubs,,0,0,0,,{\fs54}Him at arm's length when we
+Dialogue: 0,0:04:18.13,0:04:20.18,LongFormSubs,,0,0,0,,{\fs54}mess up assuming\NHe is standing
+Dialogue: 0,0:04:20.18,0:04:22.32,LongFormSubs,,0,0,0,,{\fs54}there with folded\Narms shaking His
+Dialogue: 0,0:04:22.32,0:04:25.39,LongFormSubs,,0,0,0,,{\fs54}head in disappointment\NBut 1 John
+Dialogue: 0,0:04:25.39,0:04:28.28,LongFormSubs,,0,0,0,,{\fs54}1 shatters that\Nlie Walking in
+Dialogue: 0,0:04:28.28,0:04:29.63,LongFormSubs,,0,0,0,,{\fs54}the light doesn't\Nmean you never
+Dialogue: 0,0:04:29.63,0:04:31.71,LongFormSubs,,0,0,0,,{\fs54}stumble it means\Nyou stop hiding
+Dialogue: 0,0:04:31.71,0:04:35.76,LongFormSubs,,0,0,0,,{\fs54}your stumbles in\Nthe dark When
+Dialogue: 0,0:04:35.76,0:04:38.06,LongFormSubs,,0,0,0,,{\fs54}the anxiety hits\Ninstead of numbing
+Dialogue: 0,0:04:38.06,0:04:39.87,LongFormSubs,,0,0,0,,{\fs54}it or pretending\Nyou are fine
+Dialogue: 0,0:04:39.87,0:04:41.32,LongFormSubs,,0,0,0,,{\fs54}bringing it into\Nthe light means
+Dialogue: 0,0:04:41.32,0:04:44.14,LongFormSubs,,0,0,0,,{\fs54}talking honestly to\NGod about it
+Dialogue: 0,0:04:44.14,0:04:46.82,LongFormSubs,,0,0,0,,{\fs54}When family tensions\Nboil over bringing
+Dialogue: 0,0:04:46.82,0:04:48.32,LongFormSubs,,0,0,0,,{\fs54}it into the\Nlight means admitting
+Dialogue: 0,0:04:48.32,0:04:49.81,LongFormSubs,,0,0,0,,{\fs54}your own anger and need for
+Dialogue: 0,0:04:49.81,0:04:52.95,LongFormSubs,,0,0,0,,{\fs54}grace God is\Nnot intimidated by
+Dialogue: 0,0:04:52.95,0:04:57.10,LongFormSubs,,0,0,0,,{\fs54}your mess He is the master
+Dialogue: 0,0:04:57.10,0:05:00.80,LongFormSubs,,0,0,0,,{\fs54}carpenter of broken\Nthings Stop exhausting
+Dialogue: 0,0:05:00.80,0:05:02.50,LongFormSubs,,0,0,0,,{\fs54}yourself by trying\Nto maintain a
+Dialogue: 0,0:05:02.50,0:05:05.44,LongFormSubs,,0,0,0,,{\fs54}flawless image The\Nmoment you step
+Dialogue: 0,0:05:05.44,0:05:07.07,LongFormSubs,,0,0,0,,{\fs54}out of the shadows of shame
+Dialogue: 0,0:05:07.07,0:05:08.58,LongFormSubs,,0,0,0,,{\fs54}you will realize\NHis grace is
+Dialogue: 0,0:05:08.58,0:05:10.24,LongFormSubs,,0,0,0,,{\fs54}already right there\Nwaiting to catch
+Dialogue: 0,0:05:10.24,0:05:17.05,LongFormSubs,,0,0,0,,{\fs54}you This brings us to the
+Dialogue: 0,0:05:17.05,0:05:19.45,LongFormSubs,,0,0,0,,{\fs54}magnificent climax of\Nthe chapter a
+Dialogue: 0,0:05:19.45,0:05:20.89,LongFormSubs,,0,0,0,,{\fs54}verse that has\Nbrought peace to
+Dialogue: 0,0:05:20.89,0:05:24.37,LongFormSubs,,0,0,0,,{\fs54}millions of anxious\Nsouls across centuries
+Dialogue: 0,0:05:24.37,0:05:26.09,LongFormSubs,,0,0,0,,{\fs54}Verse nine is\Narguably one of
+Dialogue: 0,0:05:26.09,0:05:27.77,LongFormSubs,,0,0,0,,{\fs54}the most liberating\Npromises in the
+Dialogue: 0,0:05:27.77,0:05:30.08,LongFormSubs,,0,0,0,,{\fs54}entire Bible If\Nwe confess our
+Dialogue: 0,0:05:30.08,0:05:32.08,LongFormSubs,,0,0,0,,{\fs54}sins he is faithful and just
+Dialogue: 0,0:05:32.08,0:05:33.87,LongFormSubs,,0,0,0,,{\fs54}to forgive us our sins and
+Dialogue: 0,0:05:33.87,0:05:36.96,LongFormSubs,,0,0,0,,{\fs54}to cleanse us\Nfrom all unrighteousness
+Dialogue: 0,0:05:36.96,0:05:38.65,LongFormSubs,,0,0,0,,{\fs54}Let those words\Nwash over your
+Dialogue: 0,0:05:38.65,0:05:40.22,LongFormSubs,,0,0,0,,{\fs54}soul like cool water on a
+Dialogue: 0,0:05:40.22,0:05:44.74,LongFormSubs,,0,0,0,,{\fs54}scorching day Notice\Nit does not
+Dialogue: 0,0:05:44.74,0:05:46.12,LongFormSubs,,0,0,0,,{\fs54}say He might forgive you if
+Dialogue: 0,0:05:46.12,0:05:47.55,LongFormSubs,,0,0,0,,{\fs54}you beg long enough or if
+Dialogue: 0,0:05:47.55,0:05:50.18,LongFormSubs,,0,0,0,,{\fs54}you clean yourself\Nup first It
+Dialogue: 0,0:05:50.18,0:05:51.76,LongFormSubs,,0,0,0,,{\fs54}says He is faithful and just
+Dialogue: 0,0:05:51.76,0:05:54.67,LongFormSubs,,0,0,0,,{\fs54}to forgive Because\Nof what Jesus
+Dialogue: 0,0:05:54.67,0:05:56.87,LongFormSubs,,0,0,0,,{\fs54}did on the\Ncross God's justice
+Dialogue: 0,0:05:56.87,0:05:58.18,LongFormSubs,,0,0,0,,{\fs54}is actually on the side of
+Dialogue: 0,0:05:58.18,0:06:02.95,LongFormSubs,,0,0,0,,{\fs54}the believer who\Nconfesses The penalty
+Dialogue: 0,0:06:02.95,0:06:05.64,LongFormSubs,,0,0,0,,{\fs54}has already been\Npaid in full
+Dialogue: 0,0:06:05.64,0:06:07.26,LongFormSubs,,0,0,0,,{\fs54}When you bring\Nyour mess your
+Dialogue: 0,0:06:07.26,0:06:09.74,LongFormSubs,,0,0,0,,{\fs54}guilt your failures\Nand your regrets
+Dialogue: 0,0:06:09.74,0:06:11.33,LongFormSubs,,0,0,0,,{\fs54}into the light\Nyou don't meet
+Dialogue: 0,0:06:11.33,0:06:13.02,LongFormSubs,,0,0,0,,{\fs54}a harsh judge you meet a
+Dialogue: 0,0:06:13.02,0:06:14.78,LongFormSubs,,0,0,0,,{\fs54}loving Father running\Ndown the road
+Dialogue: 0,0:06:14.78,0:06:17.78,LongFormSubs,,0,0,0,,{\fs54}to embrace you\NVerse ten reminds
+Dialogue: 0,0:06:17.78,0:06:19.58,LongFormSubs,,0,0,0,,{\fs54}us of the alternative If we
+Dialogue: 0,0:06:19.58,0:06:21.36,LongFormSubs,,0,0,0,,{\fs54}say that we have not sinned
+Dialogue: 0,0:06:21.36,0:06:22.76,LongFormSubs,,0,0,0,,{\fs54}we make him a liar and
+Dialogue: 0,0:06:22.76,0:06:26.72,LongFormSubs,,0,0,0,,{\fs54}his word is not in us
+Dialogue: 0,0:06:26.72,0:06:27.86,LongFormSubs,,0,0,0,,{\fs54}But you don't have to live
+Dialogue: 0,0:06:27.86,0:06:30.79,LongFormSubs,,0,0,0,,{\fs54}that lie anymore\NYou are invited
+Dialogue: 0,0:06:30.79,0:06:33.69,LongFormSubs,,0,0,0,,{\fs54}into freedom You\Nare invited into
+Dialogue: 0,0:06:33.69,0:06:39.34,LongFormSubs,,0,0,0,,{\fs54}complete unhindered\Ncleansing Every stain
+Dialogue: 0,0:06:39.34,0:06:41.59,LongFormSubs,,0,0,0,,{\fs54}every regret and\Nevery heavy burden
+Dialogue: 0,0:06:41.59,0:06:43.04,LongFormSubs,,0,0,0,,{\fs54}youve been carrying\Ncan be laid
+Dialogue: 0,0:06:43.04,0:06:44.02,LongFormSubs,,0,0,0,,{\fs54}down at the foot of the
+Dialogue: 0,0:06:44.02,0:06:46.96,LongFormSubs,,0,0,0,,{\fs54}cross today His\Ngrace is bigger
+Dialogue: 0,0:06:46.96,0:06:54.98,LongFormSubs,,0,0,0,,{\fs54}than your biggest\Nmistake Heavenly Father
+Dialogue: 0,0:06:54.98,0:06:57.19,LongFormSubs,,0,0,0,,{\fs54}Lord God Almighty\Nwe come before
+Dialogue: 0,0:06:57.19,0:06:58.78,LongFormSubs,,0,0,0,,{\fs54}You right now\Nwith open hands
+Dialogue: 0,0:06:58.78,0:07:01.33,LongFormSubs,,0,0,0,,{\fs54}and open hearts You see the
+Dialogue: 0,0:07:01.33,0:07:02.63,LongFormSubs,,0,0,0,,{\fs54}viewer on the other side of
+Dialogue: 0,0:07:02.63,0:07:05.38,LongFormSubs,,0,0,0,,{\fs54}this screen Lord\NYou know the
+Dialogue: 0,0:07:05.38,0:07:07.75,LongFormSubs,,0,0,0,,{\fs54}exact weight they\Nare carrying today
+Dialogue: 0,0:07:07.75,0:07:10.16,LongFormSubs,,0,0,0,,{\fs54}whether it's fear\Nabout tomorrow sorrow
+Dialogue: 0,0:07:10.16,0:07:11.98,LongFormSubs,,0,0,0,,{\fs54}from a recent\Nheartbreak or the
+Dialogue: 0,0:07:11.98,0:07:16.51,LongFormSubs,,0,0,0,,{\fs54}lingering shame of\Na past mistake
+Dialogue: 0,0:07:16.51,0:07:18.13,LongFormSubs,,0,0,0,,{\fs54}Father we thank You that You
+Dialogue: 0,0:07:18.13,0:07:19.85,LongFormSubs,,0,0,0,,{\fs54}are light and in You there
+Dialogue: 0,0:07:19.85,0:07:22.40,LongFormSubs,,0,0,0,,{\fs54}is no darkness at all Give
+Dialogue: 0,0:07:22.40,0:07:24.09,LongFormSubs,,0,0,0,,{\fs54}us the courage today to step
+Dialogue: 0,0:07:24.09,0:07:25.77,LongFormSubs,,0,0,0,,{\fs54}out of the shadows of hiding
+Dialogue: 0,0:07:25.77,0:07:29.21,LongFormSubs,,0,0,0,,{\fs54}pretense and fear\NWash us clean
+Dialogue: 0,0:07:29.21,0:07:33.49,LongFormSubs,,0,0,0,,{\fs54}by the blood of Jesus Christ
+Dialogue: 0,0:07:33.49,0:07:35.08,LongFormSubs,,0,0,0,,{\fs54}Remind us that\NYour mercies are
+Dialogue: 0,0:07:35.08,0:07:38.06,LongFormSubs,,0,0,0,,{\fs54}new every single\Nmorning Fill our
+Dialogue: 0,0:07:38.06,0:07:40.70,LongFormSubs,,0,0,0,,{\fs54}hearts with a\Ndeep unshakable joy
+Dialogue: 0,0:07:40.70,0:07:42.09,LongFormSubs,,0,0,0,,{\fs54}and help us to walk forward
+Dialogue: 0,0:07:42.09,0:07:43.45,LongFormSubs,,0,0,0,,{\fs54}in the freedom\Nand victory that
+Dialogue: 0,0:07:43.45,0:07:46.28,LongFormSubs,,0,0,0,,{\fs54}You purchased for\Nus Surround this
+Dialogue: 0,0:07:46.28,0:07:47.96,LongFormSubs,,0,0,0,,{\fs54}precious soul with\NYour peace that
+Dialogue: 0,0:07:47.96,0:07:53.52,LongFormSubs,,0,0,0,,{\fs54}surpasses all understanding\NIn Jesus' name
+Dialogue: 0,0:07:53.52,0:07:54.27,LongFormSubs,,0,0,0,,{\fs54}Amen

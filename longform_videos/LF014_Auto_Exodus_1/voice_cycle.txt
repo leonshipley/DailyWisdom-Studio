@@ -1,0 +1,4 @@
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/longform_videos/LF014_Auto_Exodus_1/meditative_voice.mp3'
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/longform_videos/LF014_Auto_Exodus_1/soaking_interlude.mp3'
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/longform_videos/LF014_Auto_Exodus_1/meditative_voice.mp3'
+file 'C:/Users/leons/OneDrive/Desktop/ShortsClipper/longform_videos/LF014_Auto_Exodus_1/soaking_interlude.mp3'

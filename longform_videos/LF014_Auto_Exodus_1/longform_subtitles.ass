@@ -1,0 +1,163 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: LongFormSubs,Segoe UI,54,&H00FFFFFF,&H0000D4FF,&H90000000,&H90000000,-1,0,0,0,100,100,0,0,1,3.5,2,2,140,140,82,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.10,0:00:01.75,LongFormSubs,,0,0,0,,{\fs54}Welcome to the\Nreading of God's
+Dialogue: 0,0:00:01.75,0:00:04.92,LongFormSubs,,0,0,0,,{\fs54}Holy Word Today\Nwe are reading
+Dialogue: 0,0:00:04.92,0:00:06.93,LongFormSubs,,0,0,0,,{\fs54}from the book\Nof Genesis chapter
+Dialogue: 0,0:00:06.93,0:00:09.51,LongFormSubs,,0,0,0,,{\fs54}1 Let your heart be still
+Dialogue: 0,0:00:09.51,0:00:17.47,LongFormSubs,,0,0,0,,{\fs54}and receive His\Ntruth Verse 1
+Dialogue: 0,0:00:17.47,0:00:19.12,LongFormSubs,,0,0,0,,{\fs54}In the beginning\NGod created the
+Dialogue: 0,0:00:19.12,0:00:22.94,LongFormSubs,,0,0,0,,{\fs54}heaven and the earth Verse 2
+Dialogue: 0,0:00:22.94,0:00:24.80,LongFormSubs,,0,0,0,,{\fs54}And the earth\Nwas without form
+Dialogue: 0,0:00:24.80,0:00:26.98,LongFormSubs,,0,0,0,,{\fs54}and void and\Ndarkness was upon
+Dialogue: 0,0:00:26.98,0:00:29.12,LongFormSubs,,0,0,0,,{\fs54}the face of the deep And
+Dialogue: 0,0:00:29.12,0:00:30.82,LongFormSubs,,0,0,0,,{\fs54}the Spirit of God moved upon
+Dialogue: 0,0:00:30.82,0:00:33.42,LongFormSubs,,0,0,0,,{\fs54}the face of the waters Verse
+Dialogue: 0,0:00:33.42,0:00:36.37,LongFormSubs,,0,0,0,,{\fs54}3 And God said Let there
+Dialogue: 0,0:00:36.37,0:00:39.02,LongFormSubs,,0,0,0,,{\fs54}be light and there was light
+Dialogue: 0,0:00:39.02,0:00:41.77,LongFormSubs,,0,0,0,,{\fs54}Verse 4 And God saw the
+Dialogue: 0,0:00:41.77,0:00:43.62,LongFormSubs,,0,0,0,,{\fs54}light that it was good and
+Dialogue: 0,0:00:43.62,0:00:45.15,LongFormSubs,,0,0,0,,{\fs54}God divided the\Nlight from the
+Dialogue: 0,0:00:45.15,0:00:49.60,LongFormSubs,,0,0,0,,{\fs54}darkness Verse 5\NAnd God called
+Dialogue: 0,0:00:49.60,0:00:51.40,LongFormSubs,,0,0,0,,{\fs54}the light Day\Nand the darkness
+Dialogue: 0,0:00:51.40,0:00:54.08,LongFormSubs,,0,0,0,,{\fs54}he called Night\NAnd the evening
+Dialogue: 0,0:00:54.08,0:00:55.28,LongFormSubs,,0,0,0,,{\fs54}and the morning\Nwere the first
+Dialogue: 0,0:00:55.28,0:00:59.67,LongFormSubs,,0,0,0,,{\fs54}day Verse 6 And God said
+Dialogue: 0,0:00:59.67,0:01:00.93,LongFormSubs,,0,0,0,,{\fs54}Let there be a firmament in
+Dialogue: 0,0:01:00.93,0:01:02.55,LongFormSubs,,0,0,0,,{\fs54}the midst of the waters and
+Dialogue: 0,0:01:02.55,0:01:03.95,LongFormSubs,,0,0,0,,{\fs54}let it divide\Nthe waters from
+Dialogue: 0,0:01:03.95,0:01:12.09,LongFormSubs,,0,0,0,,{\fs54}the waters Verse 7 And God
+Dialogue: 0,0:01:12.09,0:01:13.92,LongFormSubs,,0,0,0,,{\fs54}made the firmament\Nand divided the
+Dialogue: 0,0:01:13.92,0:01:15.56,LongFormSubs,,0,0,0,,{\fs54}waters which were\Nunder the firmament
+Dialogue: 0,0:01:15.56,0:01:16.97,LongFormSubs,,0,0,0,,{\fs54}from the waters\Nwhich were above
+Dialogue: 0,0:01:16.97,0:01:19.61,LongFormSubs,,0,0,0,,{\fs54}the firmament and it was so
+Dialogue: 0,0:01:19.61,0:01:22.37,LongFormSubs,,0,0,0,,{\fs54}Verse 8 And God called the
+Dialogue: 0,0:01:22.37,0:01:25.22,LongFormSubs,,0,0,0,,{\fs54}firmament Heaven And\Nthe evening and
+Dialogue: 0,0:01:25.22,0:01:27.71,LongFormSubs,,0,0,0,,{\fs54}the morning were\Nthe second day
+Dialogue: 0,0:01:27.71,0:01:30.91,LongFormSubs,,0,0,0,,{\fs54}Verse 9 And God said Let
+Dialogue: 0,0:01:30.91,0:01:32.29,LongFormSubs,,0,0,0,,{\fs54}the waters under\Nthe heaven be
+Dialogue: 0,0:01:32.29,0:01:34.73,LongFormSubs,,0,0,0,,{\fs54}gathered together unto\None place and
+Dialogue: 0,0:01:34.73,0:01:36.59,LongFormSubs,,0,0,0,,{\fs54}let the dry land appear and
+Dialogue: 0,0:01:36.59,0:01:40.13,LongFormSubs,,0,0,0,,{\fs54}it was so Verse 10 And
+Dialogue: 0,0:01:40.13,0:01:42.40,LongFormSubs,,0,0,0,,{\fs54}God called the\Ndry land Earth
+Dialogue: 0,0:01:42.40,0:01:43.74,LongFormSubs,,0,0,0,,{\fs54}and the gathering\Ntogether of the
+Dialogue: 0,0:01:43.74,0:01:46.04,LongFormSubs,,0,0,0,,{\fs54}waters called he\NSeas and God
+Dialogue: 0,0:01:46.04,0:01:48.46,LongFormSubs,,0,0,0,,{\fs54}saw that it was good Verse
+Dialogue: 0,0:01:48.46,0:01:51.48,LongFormSubs,,0,0,0,,{\fs54}11 And God said Let the
+Dialogue: 0,0:01:51.48,0:01:53.72,LongFormSubs,,0,0,0,,{\fs54}earth bring forth\Ngrass the herb
+Dialogue: 0,0:01:53.72,0:01:55.77,LongFormSubs,,0,0,0,,{\fs54}yielding seed and\Nthe fruit tree
+Dialogue: 0,0:01:55.77,0:01:57.95,LongFormSubs,,0,0,0,,{\fs54}yielding fruit after\Nhis kind whose
+Dialogue: 0,0:01:57.95,0:01:59.75,LongFormSubs,,0,0,0,,{\fs54}seed is in itself upon the
+Dialogue: 0,0:01:59.75,0:02:02.60,LongFormSubs,,0,0,0,,{\fs54}earth and it was so Verse
+Dialogue: 0,0:02:02.60,0:02:05.38,LongFormSubs,,0,0,0,,{\fs54}12 And the\Nearth brought forth
+Dialogue: 0,0:02:05.38,0:02:07.80,LongFormSubs,,0,0,0,,{\fs54}grass and herb\Nyielding seed after
+Dialogue: 0,0:02:07.80,0:02:09.70,LongFormSubs,,0,0,0,,{\fs54}his kind and\Nthe tree yielding
+Dialogue: 0,0:02:09.70,0:02:12.11,LongFormSubs,,0,0,0,,{\fs54}fruit whose seed\Nwas in itself
+Dialogue: 0,0:02:12.11,0:02:14.17,LongFormSubs,,0,0,0,,{\fs54}after his kind and God saw
+Dialogue: 0,0:02:14.17,0:02:22.10,LongFormSubs,,0,0,0,,{\fs54}that it was good Verse 13
+Dialogue: 0,0:02:22.10,0:02:23.56,LongFormSubs,,0,0,0,,{\fs54}And the evening\Nand the morning
+Dialogue: 0,0:02:23.56,0:02:27.50,LongFormSubs,,0,0,0,,{\fs54}were the third day Verse 14
+Dialogue: 0,0:02:27.50,0:02:29.20,LongFormSubs,,0,0,0,,{\fs54}And God said Let there be
+Dialogue: 0,0:02:29.20,0:02:30.46,LongFormSubs,,0,0,0,,{\fs54}lights in the\Nfirmament of the
+Dialogue: 0,0:02:30.46,0:02:31.91,LongFormSubs,,0,0,0,,{\fs54}heaven to divide\Nthe day from
+Dialogue: 0,0:02:31.91,0:02:33.44,LongFormSubs,,0,0,0,,{\fs54}the night and let them be
+Dialogue: 0,0:02:33.44,0:02:35.88,LongFormSubs,,0,0,0,,{\fs54}for signs and\Nfor seasons and
+Dialogue: 0,0:02:35.88,0:02:39.72,LongFormSubs,,0,0,0,,{\fs54}for days and years Verse 15
+Dialogue: 0,0:02:39.72,0:02:41.11,LongFormSubs,,0,0,0,,{\fs54}And let them be for lights
+Dialogue: 0,0:02:41.11,0:02:42.38,LongFormSubs,,0,0,0,,{\fs54}in the firmament\Nof the heaven
+Dialogue: 0,0:02:42.38,0:02:44.15,LongFormSubs,,0,0,0,,{\fs54}to give light upon the earth
+Dialogue: 0,0:02:44.15,0:02:47.87,LongFormSubs,,0,0,0,,{\fs54}and it was so Verse 16
+Dialogue: 0,0:02:47.87,0:02:50.06,LongFormSubs,,0,0,0,,{\fs54}And God made\Ntwo great lights
+Dialogue: 0,0:02:50.06,0:02:51.42,LongFormSubs,,0,0,0,,{\fs54}the greater light\Nto rule the
+Dialogue: 0,0:02:51.42,0:02:53.10,LongFormSubs,,0,0,0,,{\fs54}day and the lesser light to
+Dialogue: 0,0:02:53.10,0:02:54.69,LongFormSubs,,0,0,0,,{\fs54}rule the night he made the
+Dialogue: 0,0:02:54.69,0:02:59.33,LongFormSubs,,0,0,0,,{\fs54}stars also Verse 17 And God
+Dialogue: 0,0:02:59.33,0:03:00.58,LongFormSubs,,0,0,0,,{\fs54}set them in the firmament of
+Dialogue: 0,0:03:00.58,0:03:02.00,LongFormSubs,,0,0,0,,{\fs54}the heaven to\Ngive light upon
+Dialogue: 0,0:03:02.00,0:03:05.01,LongFormSubs,,0,0,0,,{\fs54}the earth Verse 18 And to
+Dialogue: 0,0:03:05.01,0:03:06.37,LongFormSubs,,0,0,0,,{\fs54}rule over the day and over
+Dialogue: 0,0:03:06.37,0:03:07.90,LongFormSubs,,0,0,0,,{\fs54}the night and to divide the
+Dialogue: 0,0:03:07.90,0:03:09.96,LongFormSubs,,0,0,0,,{\fs54}light from the\Ndarkness and God
+Dialogue: 0,0:03:09.96,0:03:16.50,LongFormSubs,,0,0,0,,{\fs54}saw that it was good Verse
+Dialogue: 0,0:03:16.50,0:03:19.20,LongFormSubs,,0,0,0,,{\fs54}19 And the evening and the
+Dialogue: 0,0:03:19.20,0:03:21.93,LongFormSubs,,0,0,0,,{\fs54}morning were the\Nfourth day Verse
+Dialogue: 0,0:03:21.93,0:03:24.89,LongFormSubs,,0,0,0,,{\fs54}20 And God said Let the
+Dialogue: 0,0:03:24.89,0:03:27.05,LongFormSubs,,0,0,0,,{\fs54}waters bring forth\Nabundantly the moving
+Dialogue: 0,0:03:27.05,0:03:29.31,LongFormSubs,,0,0,0,,{\fs54}creature that hath\Nlife and fowl
+Dialogue: 0,0:03:29.31,0:03:30.88,LongFormSubs,,0,0,0,,{\fs54}that may fly above the earth
+Dialogue: 0,0:03:30.88,0:03:33.38,LongFormSubs,,0,0,0,,{\fs54}in the open\Nfirmament of heaven
+Dialogue: 0,0:03:33.38,0:03:36.75,LongFormSubs,,0,0,0,,{\fs54}Verse 21 And\NGod created great
+Dialogue: 0,0:03:36.75,0:03:38.92,LongFormSubs,,0,0,0,,{\fs54}whales and every\Nliving creature that
+Dialogue: 0,0:03:38.92,0:03:41.08,LongFormSubs,,0,0,0,,{\fs54}moveth which the\Nwaters brought forth
+Dialogue: 0,0:03:41.08,0:03:43.78,LongFormSubs,,0,0,0,,{\fs54}abundantly after their\Nkind and every
+Dialogue: 0,0:03:43.78,0:03:45.93,LongFormSubs,,0,0,0,,{\fs54}winged fowl after\Nhis kind and
+Dialogue: 0,0:03:45.93,0:03:48.39,LongFormSubs,,0,0,0,,{\fs54}God saw that it was good
+Dialogue: 0,0:03:48.39,0:03:51.93,LongFormSubs,,0,0,0,,{\fs54}Verse 22 And\NGod blessed them
+Dialogue: 0,0:03:51.93,0:03:54.99,LongFormSubs,,0,0,0,,{\fs54}saying Be fruitful\Nand multiply and
+Dialogue: 0,0:03:54.99,0:03:56.89,LongFormSubs,,0,0,0,,{\fs54}fill the waters in the seas
+Dialogue: 0,0:03:56.89,0:03:58.56,LongFormSubs,,0,0,0,,{\fs54}and let fowl multiply in the
+Dialogue: 0,0:03:58.56,0:04:02.91,LongFormSubs,,0,0,0,,{\fs54}earth Verse 23\NAnd the evening
+Dialogue: 0,0:04:02.91,0:04:04.11,LongFormSubs,,0,0,0,,{\fs54}and the morning\Nwere the fifth
+Dialogue: 0,0:04:04.11,0:04:08.75,LongFormSubs,,0,0,0,,{\fs54}day Verse 24 And God said
+Dialogue: 0,0:04:08.75,0:04:10.20,LongFormSubs,,0,0,0,,{\fs54}Let the earth\Nbring forth the
+Dialogue: 0,0:04:10.20,0:04:12.87,LongFormSubs,,0,0,0,,{\fs54}living creature after\Nhis kind cattle
+Dialogue: 0,0:04:12.87,0:04:14.73,LongFormSubs,,0,0,0,,{\fs54}and creeping thing\Nand beast of
+Dialogue: 0,0:04:14.73,0:04:16.58,LongFormSubs,,0,0,0,,{\fs54}the earth after his kind and
+Dialogue: 0,0:04:16.58,0:04:24.64,LongFormSubs,,0,0,0,,{\fs54}it was so Verse 25 And
+Dialogue: 0,0:04:24.64,0:04:25.99,LongFormSubs,,0,0,0,,{\fs54}God made the beast of the
+Dialogue: 0,0:04:25.99,0:04:28.17,LongFormSubs,,0,0,0,,{\fs54}earth after his\Nkind and cattle
+Dialogue: 0,0:04:28.17,0:04:30.16,LongFormSubs,,0,0,0,,{\fs54}after their kind\Nand every thing
+Dialogue: 0,0:04:30.16,0:04:31.84,LongFormSubs,,0,0,0,,{\fs54}that creepeth upon\Nthe earth after
+Dialogue: 0,0:04:31.84,0:04:33.77,LongFormSubs,,0,0,0,,{\fs54}his kind and God saw that
+Dialogue: 0,0:04:33.77,0:04:37.76,LongFormSubs,,0,0,0,,{\fs54}it was good Verse 26 And
+Dialogue: 0,0:04:37.76,0:04:39.66,LongFormSubs,,0,0,0,,{\fs54}God said Let us make man
+Dialogue: 0,0:04:39.66,0:04:41.97,LongFormSubs,,0,0,0,,{\fs54}in our image\Nafter our likeness
+Dialogue: 0,0:04:41.97,0:04:43.37,LongFormSubs,,0,0,0,,{\fs54}and let them\Nhave dominion over
+Dialogue: 0,0:04:43.37,0:04:44.99,LongFormSubs,,0,0,0,,{\fs54}the fish of the sea and
+Dialogue: 0,0:04:44.99,0:04:46.55,LongFormSubs,,0,0,0,,{\fs54}over the fowl of the air
+Dialogue: 0,0:04:46.55,0:04:48.18,LongFormSubs,,0,0,0,,{\fs54}and over the cattle and over
+Dialogue: 0,0:04:48.18,0:04:49.88,LongFormSubs,,0,0,0,,{\fs54}all the earth and over every
+Dialogue: 0,0:04:49.88,0:04:51.62,LongFormSubs,,0,0,0,,{\fs54}creeping thing that\Ncreepeth upon the
+Dialogue: 0,0:04:51.62,0:04:56.31,LongFormSubs,,0,0,0,,{\fs54}earth Verse 27\NSo God created
+Dialogue: 0,0:04:56.31,0:04:57.86,LongFormSubs,,0,0,0,,{\fs54}man in his own image in
+Dialogue: 0,0:04:57.86,0:04:59.55,LongFormSubs,,0,0,0,,{\fs54}the image of God created he
+Dialogue: 0,0:04:59.55,0:05:01.70,LongFormSubs,,0,0,0,,{\fs54}him male and\Nfemale created he
+Dialogue: 0,0:05:01.70,0:05:05.92,LongFormSubs,,0,0,0,,{\fs54}them Verse 28\NAnd God blessed
+Dialogue: 0,0:05:05.92,0:05:07.95,LongFormSubs,,0,0,0,,{\fs54}them and God said unto them
+Dialogue: 0,0:05:07.95,0:05:10.84,LongFormSubs,,0,0,0,,{\fs54}Be fruitful and\Nmultiply and replenish
+Dialogue: 0,0:05:10.84,0:05:12.93,LongFormSubs,,0,0,0,,{\fs54}the earth and subdue it and
+Dialogue: 0,0:05:12.93,0:05:14.39,LongFormSubs,,0,0,0,,{\fs54}have dominion over\Nthe fish of
+Dialogue: 0,0:05:14.39,0:05:16.09,LongFormSubs,,0,0,0,,{\fs54}the sea and over the fowl
+Dialogue: 0,0:05:16.09,0:05:17.65,LongFormSubs,,0,0,0,,{\fs54}of the air and over every
+Dialogue: 0,0:05:17.65,0:05:19.12,LongFormSubs,,0,0,0,,{\fs54}living thing that\Nmoveth upon the
+Dialogue: 0,0:05:19.12,0:05:23.91,LongFormSubs,,0,0,0,,{\fs54}earth Verse 29 And God said
+Dialogue: 0,0:05:23.91,0:05:25.85,LongFormSubs,,0,0,0,,{\fs54}Behold I have\Ngiven you every
+Dialogue: 0,0:05:25.85,0:05:27.89,LongFormSubs,,0,0,0,,{\fs54}herb bearing seed\Nwhich is upon
+Dialogue: 0,0:05:27.89,0:05:29.54,LongFormSubs,,0,0,0,,{\fs54}the face of all the earth
+Dialogue: 0,0:05:29.54,0:05:31.28,LongFormSubs,,0,0,0,,{\fs54}and every tree in the which
+Dialogue: 0,0:05:31.28,0:05:32.37,LongFormSubs,,0,0,0,,{\fs54}is the fruit of a tree
+Dialogue: 0,0:05:32.37,0:05:34.17,LongFormSubs,,0,0,0,,{\fs54}yielding seed to\Nyou it shall
+Dialogue: 0,0:05:34.17,0:05:37.81,LongFormSubs,,0,0,0,,{\fs54}be for meat Verse 30 And
+Dialogue: 0,0:05:37.81,0:05:39.49,LongFormSubs,,0,0,0,,{\fs54}to every beast of the earth
+Dialogue: 0,0:05:39.49,0:05:40.69,LongFormSubs,,0,0,0,,{\fs54}and to every fowl of the
+Dialogue: 0,0:05:40.69,0:05:42.40,LongFormSubs,,0,0,0,,{\fs54}air and to every thing that
+Dialogue: 0,0:05:42.40,0:05:44.58,LongFormSubs,,0,0,0,,{\fs54}creepeth upon the\Nearth wherein there
+Dialogue: 0,0:05:44.58,0:05:46.35,LongFormSubs,,0,0,0,,{\fs54}is life I have given every
+Dialogue: 0,0:05:46.35,0:05:47.95,LongFormSubs,,0,0,0,,{\fs54}green herb for meat and it
+Dialogue: 0,0:05:47.95,0:05:56.20,LongFormSubs,,0,0,0,,{\fs54}was so Verse 31 And God
+Dialogue: 0,0:05:56.20,0:05:57.59,LongFormSubs,,0,0,0,,{\fs54}saw every thing that he had
+Dialogue: 0,0:05:57.59,0:06:00.25,LongFormSubs,,0,0,0,,{\fs54}made and behold it was very
+Dialogue: 0,0:06:00.25,0:06:02.65,LongFormSubs,,0,0,0,,{\fs54}good And the evening and the
+Dialogue: 0,0:06:02.65,0:06:09.43,LongFormSubs,,0,0,0,,{\fs54}morning were the\Nsixth day May
+Dialogue: 0,0:06:09.43,0:06:10.91,LongFormSubs,,0,0,0,,{\fs54}the Lord bless\Nthe reading of
+Dialogue: 0,0:06:10.91,0:06:12.61,LongFormSubs,,0,0,0,,{\fs54}His Holy Word and may it
+Dialogue: 0,0:06:12.61,0:06:14.17,LongFormSubs,,0,0,0,,{\fs54}bring peace and\Nstrength to your
+Dialogue: 0,0:06:14.17,0:06:17.65,LongFormSubs,,0,0,0,,{\fs54}soul In Jesus' name Amen

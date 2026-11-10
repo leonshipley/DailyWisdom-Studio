@@ -1,3 +1,4 @@
+import description_engine
 
 
 def sanitize_youtube_tags(raw_tags: list, max_total_chars: int = 380) -> list[str]:
@@ -1482,7 +1483,7 @@ def iter_llm_json(prompt: str, system: str = "", temperature: float = 0.7, timeo
 
 
 
-    candidate_models = ["gemini-1.5-flash", "gemini-1.5-pro"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-2.5-flash"]
 
     payload = {
 
@@ -2184,7 +2185,7 @@ def scan_competitor_shorts(topic: str, limit: int = 6, channel_name: str = "") -
 
         try:
 
-            ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True, "socket_timeout": 3, "no_warnings": True}
+            ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True, "socket_timeout": 4, "no_warnings": True, "geo_bypass_country": "US"}
 
             query = f"ytsearch3:{topic} #shorts"
 
@@ -3108,9 +3109,10 @@ def load_clip_metadata(video_path: Path) -> dict:
 
             pass
 
+    from title_engine import research_and_generate_titles
+    auto_pkg = research_and_generate_titles(video_path.stem, scan_live_competitors=False)
     return {
-
-        "title": video_path.stem.replace("_", " "),
+        "title": auto_pkg["winning_title"],
 
         "description": "Watch this message.\n\n[HASHTAGS]\n#Shorts #Faith #Prayer\n[/HASHTAGS]",
 
@@ -3514,36 +3516,39 @@ def upload_video_to_youtube(channel_name: str, video_path: Path, thumbnail_path:
 
             "categoryId": "27",
 
-            "defaultLanguage": "en",
+            "defaultLanguage": "en-US",
 
-            "defaultAudioLanguage": "en"
+            "defaultAudioLanguage": "en-US"
 
         },
 
-        "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}
+        "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False, "containsSyntheticMedia": False}
 
     }
 
 
 
-    media = MediaFileUpload(str(video_path), chunksize=-1, resumable=True, mimetype="video/mp4")
-
+            # ⚡ 32MB TURBO RESUMABLE CHUNKS (Optimized for 15-30m+ Long-Form Videos)
+    media = MediaFileUpload(str(video_path), chunksize=1024 * 1024 * 32, resumable=True, mimetype="video/mp4")
     req = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
 
-
-
     res = None
-
+    retries = 0
     try:
-
+        import time
         while res is None:
-
-            status, res = req.next_chunk()
-
-            if status:
-
-                print(f"   Upload progress: {int(status.progress() * 100)}%")
-
+            try:
+                status, res = req.next_chunk()
+                if status:
+                    pct = int(status.progress() * 100)
+                    print(f"   📡 Upload progress: {pct}%")
+                retries = 0  # Reset retries on success
+            except Exception as chunk_e:
+                if retries > 8:
+                    raise Exception(f"Connection dropped too many times: {chunk_e}")
+                retries += 1
+                print(f"   ⚠️ Socket delay, auto-retrying chunk in 3s (Retry {retries}/8)...")
+                time.sleep(3)
         yt_id = res.get("id")
 
 
@@ -4054,7 +4059,7 @@ IMPORTANT: Keep verse_citation as '{ref_str}' and verse_text as '{v_text_final}'
 
     if API_KEY:
 
-        for m_name in ["gemini-1.5-flash", "gemini-1.5-flash", "gemini-3.5-flash-lite"]:
+        for m_name in ["gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-2.5-flash"]:
 
             try:
 
@@ -4145,207 +4150,25 @@ IMPORTANT: Keep verse_citation as '{ref_str}' and verse_text as '{v_text_final}'
 
 
 def generate_voiceover(text: str, output_voice_path: Path):
-
-    """Generates audio AND millisecond-synced word timings using the selected Voice Studio profile (Hindi/Indian/UK/US)."""
-
+    """Generates emotional Preacher Cadence audio + Sacred SFX + millisecond word timings."""
     from voice_studio import load_active_voice
-
+    import preacher_audio_engine as pae
     active_v = load_active_voice()
-
     v_name = active_v.get("voice", "en-US-ChristopherNeural")
-
-    v_rate = active_v.get("rate", "+5%")
-
+    v_rate = active_v.get("rate", "+0%")
     v_pitch = active_v.get("pitch", "+0Hz")
-
-    print(f"   🎙️ Speaking with Voice: {active_v.get('name')} [{v_name} | Rate: {v_rate} | Pitch: {v_pitch}]")
-
-
-
-    # Ensure no raw number:number colons reach TTS as clock time
-
-    if "hi-IN" in v_name and "Hindi" in active_v.get("script_mode", ""):
-
-        text = re.sub(r"(\d+):(\d+)", r"अध्याय \1 वचन \2", text)
-
-    else:
-
-        text = re.sub(r"(\d+):(\d+)", r"chapter \1 verse \2", text)
-
-    json_path = Path(str(output_voice_path).replace(".mp3", ".json"))
-
-
-
-    async def _make():
-
-        try:
-
-            communicate = edge_tts.Communicate(text, voice=v_name, rate=v_rate, pitch=v_pitch, boundary="WordBoundary")
-
-        except TypeError:
-
-            try:
-
-                communicate = edge_tts.Communicate(text, voice=v_name, rate=v_rate, boundary="WordBoundary")
-
-            except TypeError:
-
-                communicate = edge_tts.Communicate(text, voice=v_name, rate=v_rate)
-
-
-
-        raw_events = []
-
-        with open(output_voice_path, "wb") as f_voice:
-
-            async for chunk in communicate.stream():
-
-                if chunk["type"] == "audio":
-
-                    f_voice.write(chunk["data"])
-
-                elif chunk["type"] in ("WordBoundary", "SentenceBoundary"):
-
-                    start_s = chunk["offset"] / 10_000_000.0
-
-                    dur_s = chunk["duration"] / 10_000_000.0
-
-                    raw_events.append({
-
-                        "type": chunk["type"],
-
-                        "text": chunk["text"],
-
-                        "start": start_s,
-
-                        "end": start_s + dur_s
-
-                    })
-
-
-
-        word_timings = []
-
-        for ev in raw_events:
-
-            if ev["type"] == "WordBoundary" or len(ev["text"].split()) == 1:
-
-                word_timings.append({
-
-                    "text": ev["text"].strip(),
-
-                    "start": round(ev["start"], 3),
-
-                    "end": round(ev["end"], 3)
-
-                })
-
-            else:
-
-                words = ev["text"].split()
-
-                if not words:
-
-                    continue
-
-                weights = []
-
-                for w in words:
-
-                    w_weight = max(2, len(w))
-
-                    if re.search(r"[.,;!?]", w):
-
-                        w_weight += 4
-
-                    weights.append(w_weight)
-
-                total_w = sum(weights) or 1
-
-                cur_t = ev["start"]
-
-                ev_dur = max(0.1, ev["end"] - ev["start"])
-
-                for w, wt in zip(words, weights):
-
-                    w_dur = ev_dur * (wt / total_w)
-
-                    word_timings.append({
-
-                        "text": w,
-
-                        "start": round(cur_t, 3),
-
-                        "end": round(cur_t + w_dur, 3)
-
-                    })
-
-                    cur_t += w_dur
-
-
-
-        merged_timings = []
-
-        i = 0
-
-        while i < len(word_timings):
-
-            cur = word_timings[i]
-
-            c_clean = re.sub(r"[^0-9]", "", cur["text"])
-
-            if i + 1 < len(word_timings):
-
-                nxt = word_timings[i + 1]
-
-                n_clean = re.sub(r"[^0-9\-]", "", nxt["text"])
-
-                if cur["text"].isdigit() and n_clean and nxt["text"][0].isdigit():
-
-                    merged_timings.append({
-
-                        "text": f"{c_clean}:{n_clean}",
-
-                        "start": cur["start"],
-
-                        "end": nxt["end"]
-
-                    })
-
-                    i += 2
-
-                    continue
-
-            merged_timings.append(cur)
-
-            i += 1
-
-
-
-        if merged_timings:
-
-            json_path.write_text(json.dumps(merged_timings, indent=2), encoding="utf-8")
-
-
-
-    try:
-
-        asyncio.run(_make())
-
-    except RuntimeError:
-
-        loop = asyncio.new_event_loop()
-
-        asyncio.set_event_loop(loop)
-
-        loop.run_until_complete(_make())
-
-        loop.close()
-
-
-
-
-
+    p_cfg = pae.load_preacher_config()
+    print(f"   🎙️ Preacher Engine: {active_v.get('name')} | Mode: {p_cfg.get('mode')} | SFX: {p_cfg.get('sfx_enabled')}")
+    pae.synthesize_preacher_voiceover(
+        text=text,
+        output_voice_path=output_voice_path,
+        voice_name=v_name,
+        base_rate=v_rate,
+        base_pitch=v_pitch,
+        mode=p_cfg.get("mode"),
+        sfx_enabled=p_cfg.get("sfx_enabled", True),
+        sfx_vol=p_cfg.get("sfx_vol", 0.28)
+    )
 
 
 def create_designer_thumbnail(bg_image_path: Path, script: BibleShortScript, font_path: Path, thumb_path: Path, palette_name: str = "Gold Classic"):
@@ -4476,7 +4299,7 @@ def render_faceless_bible_video(
 
     jesus_img = custom_bg if (custom_bg and custom_bg.exists()) else get_jesus_image()
 
-    bgm_audio = custom_bgm if (custom_bgm and custom_bgm.exists()) else get_worship_bgm()
+    bgm_audio = Path(custom_bgm) if (custom_bgm and str(custom_bgm).upper() != "NONE" and Path(str(custom_bgm)).exists()) else get_worship_bgm()
 
 
 
@@ -4798,7 +4621,7 @@ def render_faceless_bible_video(
 
         "-filter_complex", filter_complex,
 
-        "-map", final_video_out, "-map", "[aout]",
+        "-map", "[vout]", "-map", "[aout]",
 
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "19", "-pix_fmt", "yuv420p",
 
@@ -4906,7 +4729,7 @@ def find_viral_video(min_views: int, queries: list[str]) -> dict | None:
 
     print(f"  • Scanning influencer channels for {min_views:,}+ view videos...")
 
-    ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True, "socket_timeout": 3, "no_warnings": True}
+    ydl_opts = {"quiet": True, "extract_flat": True, "skip_download": True, "socket_timeout": 4, "no_warnings": True, "geo_bypass_country": "US"}
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
@@ -5214,7 +5037,7 @@ def render_podcast_short(raw_slice: Path, clip: BookClip, output_path: Path, bad
 
         "-stream_loop", "-1", "-i", str(BGM_PODCAST_FILE),
 
-        "-filter_complex", filter_complex, "-map", final_video_out, "-map", "[aout]",
+        "-filter_complex", filter_complex, "-map", "[vout]", "-map", "[aout]",
 
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "19", "-pix_fmt", "yuv420p",
 
@@ -5751,6 +5574,9 @@ def run_cli_bible(active_channel: str):
     print(f"\n⚡ [1/3] Loading scripture & prayer for '{topic}'...")
 
     script = generate_bible_content(topic)
+    import title_engine
+    t_pkg = title_engine.research_and_generate_titles(script.topic, script.verse_citation, script.verse_text, channel_name=active_channel, scan_live_competitors=False)
+    script.title = t_pkg["winning_title"]
 
     print(f"   📖 Verse: {script.verse_citation} - \"{script.verse_text}\"")
 
@@ -5783,8 +5609,11 @@ def run_cli_bible(active_channel: str):
 
 
     c_intro, c_bg, c_thumb = choose_media_in_cli(script.topic)
+    ask_music = input("Include Background Music? ([y]=Yes, worship music / n=No Music, voice only): ").strip().lower()
+    cli_bgm = "NONE" if ask_music in ("n", "no", "0") else None
+    cli_vol = 0.0 if ask_music in ("n", "no", "0") else 0.20
 
-    success = render_faceless_bible_video(script, temp_voice, out_video, out_thumb, custom_intro=c_intro, custom_bg=c_bg, custom_thumb=c_thumb)
+    success = render_faceless_bible_video(script, temp_voice, out_video, out_thumb, custom_intro=c_intro, custom_bg=c_bg, custom_thumb=c_thumb, custom_bgm=cli_bgm, bgm_volume=cli_vol)
 
     if temp_voice.exists():
 
@@ -5794,47 +5623,11 @@ def run_cli_bible(active_channel: str):
 
     if success:
 
-        desc = f"""If you are dealing with {script.topic}, let this powerful scripture speak to your spirit.
-
-
-
-📖 Scripture: {script.verse_citation}
-
-"{script.verse_text}"
-
-
-
-💡 Reflection:
-
-{script.meaning}
-
-
-
-🙏 Prayer:
-
-{script.prayer}
-
-
-
-Type "AMEN" in the comments if you receive this word today! 🙏
-
-
-
----
-
-📖 Recommended Study Bible & Prayer Journal (Linked in channel bio):
-
-Grab your copy to deepen your walk with God.
-
-
-
-{' '.join(script.hashtags)} #Bible #Jesus #Prayer #Shorts #Faith
-
-
-
----
-
-Disclaimer: As an Amazon Associate, I earn from qualifying purchases at no extra cost to you."""
+        d_pkg = description_engine.build_curated_description(
+            topic=script.topic, verse_ref=script.verse_citation, verse_text=script.verse_text,
+            reflection=script.meaning, prayer=script.prayer, style="emotional", lang="en"
+        )
+        desc = d_pkg["description"]
 
 
 
@@ -6228,70 +6021,81 @@ def run_cli_channel_switcher(current_active: str) -> str:
 
 # --- 1-CLICK GIT & GITHUB AUTO-BACKUP ---
 
-def save_everything_to_git() -> tuple[bool, str]:
-
-    """Stages all safe project files, commits with a timestamp, and pushes to GitHub."""
-
-    from datetime import datetime
-
-    print("\n☁️ [Git Backup] Saving & pushing project to GitHub (leonshipley/DailyWisdom-Studio)...")
-
+def _find_git_executable() -> str | None:
+    """Finds git.exe from .env, PATH, Windows where.exe, or common directories."""
+    import shutil
+    load_dotenv(BASE_DIR / ".env", override=True)
+    env_git = os.getenv("GIT_EXECUTABLE", "").strip()
+    if env_git and Path(env_git).exists():
+        return env_git
+    w = shutil.which("git")
+    if w:
+        return w
     try:
+        r = subprocess.run("where git", shell=True, capture_output=True, text=True, timeout=4)
+        for ln in r.stdout.splitlines():
+            if ln.strip() and Path(ln.strip()).exists():
+                return ln.strip()
+    except Exception:
+        pass
+    home = Path.home()
+    for c in [
+        Path("C:/Program Files/Git/cmd/git.exe"),
+        Path("C:/Program Files/Git/bin/git.exe"),
+        Path("C:/Program Files (x86)/Git/cmd/git.exe"),
+        home / "AppData/Local/Programs/Git/cmd/git.exe",
+        home / "AppData/Local/Programs/Git/bin/git.exe",
+    ]:
+        if c.exists():
+            return str(c)
+    return None
 
-        # Ensure secrets stay untracked
-
-        subprocess.run(
-
-            ["git", "rm", "-r", "--cached", ".env", "client_secret*.json", "youtube_token.pickle", "channels/", "--ignore-unmatch"],
-
-            cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-
-        )
-
-        subprocess.run(["git", "add", "."], cwd=str(BASE_DIR), check=True)
-
-
-
-        status = subprocess.run(["git", "status", "--porcelain"], cwd=str(BASE_DIR), capture_output=True, text=True)
-
-        if status.stdout.strip():
-
-            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            subprocess.run(["git", "commit", "-m", f"Studio Auto-Save: {ts}"], cwd=str(BASE_DIR), check=True)
-
-
-
-        push_res = subprocess.run(["git", "push", "-u", "origin", "main"], cwd=str(BASE_DIR), capture_output=True, text=True)
-
-        if push_res.returncode == 0:
-
-            msg = "✅ Successfully saved & pushed everything to GitHub (leonshipley/DailyWisdom-Studio)!"
-
-            print(msg)
-
-            return True, msg
-
-        else:
-
-            err = push_res.stderr.strip() or push_res.stdout.strip()
-
-            msg = f"⚠️ Committed locally, but push returned: {err}"
-
-            print(msg)
-
-            return False, msg
-
-    except Exception as e:
-
-        msg = f"❌ Git save error: {e}"
-
+def save_everything_to_git() -> tuple[bool, str]:
+    """Stages all safe project files, commits with a timestamp, and pushes to GitHub."""
+    from datetime import datetime
+    print("\n☁️  [Git Backup] Saving & pushing project to GitHub (leonshipley/DailyWisdom-Studio)...")
+    git_exe = _find_git_executable()
+    if not git_exe:
+        print("   ⚙️ Git not found in PATH. Installing Git via winget...")
+        subprocess.run(["winget", "install", "--id", "Git.Git", "-e", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        git_exe = _find_git_executable()
+    if not git_exe:
+        msg = "❌ Git is not installed on this Windows PC! Run: winget install --id Git.Git -e"
         print(msg)
-
         return False, msg
 
+    try:
+        # Ensure repo is initialized
+        if not (BASE_DIR / ".git").exists():
+            subprocess.run([git_exe, "init"], cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run([git_exe, "branch", "-M", "main"], cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+        subprocess.run(
+            [git_exe, "rm", "-r", "--cached", ".env", "client_secret*.json", "youtube_token.pickle", "channels/", "--ignore-unmatch"],
+            cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        subprocess.run([git_exe, "add", "."], cwd=str(BASE_DIR), check=True)
 
+        status = subprocess.run([git_exe, "status", "--porcelain"], cwd=str(BASE_DIR), capture_output=True, text=True)
+        if status.stdout.strip():
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            subprocess.run([git_exe, "commit", "-m", f"Studio Auto-Save: {ts}"], cwd=str(BASE_DIR), check=False)
+
+        subprocess.run([git_exe, "remote", "add", "origin", "https://github.com/leonshipley/DailyWisdom-Studio.git"], cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        push_res = subprocess.run([git_exe, "push", "-u", "origin", "main"], cwd=str(BASE_DIR), capture_output=True, text=True)
+        if push_res.returncode == 0:
+            msg = "✅ Successfully saved & pushed everything to GitHub (leonshipley/DailyWisdom-Studio)!"
+            print(msg)
+            return True, msg
+        else:
+            err = push_res.stderr.strip() or push_res.stdout.strip()
+            msg = f"⚠️ Committed locally using {Path(git_exe).name}, push note: {err[:140]}"
+            print(msg)
+            return False, msg
+    except Exception as e:
+        msg = f"❌ Git save error: {e}"
+        print(msg)
+        return False, msg
 
 
 # --- 9. MAIN INTERACTIVE BACKEND MENU ---
@@ -6414,6 +6218,124 @@ def run_cli_voice_studio():
 
 
 
+def run_cli_longform_prayer(active_channel: str):
+    """CLI Menu Option [13]: Generates a 5-Chapter Long-Form Soaking Prayer Video (15-30m)."""
+    import longform_prayer_engine as lpe
+    import grace_of_lord_engine as gle
+    from bible_database import TOP_50_PRAYER_TOPICS
+
+    print("\n" + "=" * 68)
+    print("🕊️ 5-CHAPTER LONG-FORM SOAKING PRAYER GENERATOR (15-30 MINUTES)")
+    print("=" * 68)
+    topic = input("Enter Prayer Topic (or press Enter for 'Complete Financial Restoration'): ").strip() or "Complete Financial Restoration"
+    dur_list = list(lpe.DURATION_CONFIGS.keys())
+    for i, d_k in enumerate(dur_list, start=1):
+        print(f"  [{i}] {d_k}")
+    d_ch = input(f"Select Duration (1-{len(dur_list)}, default 1): ").strip()
+    dur_label = dur_list[int(d_ch) - 1] if (d_ch.isdigit() and 1 <= int(d_ch) <= len(dur_list)) else dur_list[0]
+
+    print(f"\n📜 [1/3] Writing 5-Chapter Pastoral Soaking Prayer JSON for '{topic}' ({dur_label})...")
+    journey = lpe.generate_soul_prayer_journey(topic, dur_label)
+    print(f"   🏆 Title: {journey['youtube_title']}")
+    print(f"   📌 Pinned Comment: {journey['pinned_comment']}")
+    for ch in journey["chapters"]:
+        print(f"   • Chapter {ch['chapter_number']}: {ch['chapter_title']} ({len(ch['spoken_script'].split())} words)")
+
+    out_folder = lpe.get_next_longform_folder(f"{dur_label}_{topic}")
+    (out_folder / "soaking_prayer_script.json").write_text(json.dumps(journey["strict_json"], indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_folder / "pinned_comment.txt").write_text(journey["pinned_comment"], encoding="utf-8")
+
+    voice_raw_mp3 = out_folder / "meditative_voice.mp3"
+    master_mix_mp3 = out_folder / "master_soaking_audio.mp3"
+    final_16x9_mp4 = out_folder / f"{out_folder.name}.mp4"
+    final_16x9_thumb = out_folder / f"{out_folder.name}_thumb.jpg"
+
+    print("\n🎙️ [2/3] Synthesizing meditative voiceover & mixing soaking worship audio...")
+    v_res = lpe.synthesize_meditative_voiceover(journey, voice_raw_mp3)
+    lpe.mix_longform_master_audio(voice_raw_mp3, master_mix_mp3, target_duration_sec=journey["config"]["target_seconds"], nature_style="Gentle Night Rain")
+
+    print("\n🎬 [3/3] Rendering 1920x1080 (16:9) Long-Form Video & 3D Gold Thumbnail...")
+    ok = lpe.render_longform_16x9_video(
+        master_mix_mp3, final_16x9_mp4, final_16x9_thumb, journey,
+        bg_image_path=get_jesus_image(), bg_video_path=prepare_muted_short_main()
+    )
+    if ok:
+        lf_title, lf_desc, lf_tags = lpe.build_longform_youtube_metadata(journey, v_res["chapters"])
+        save_clip_metadata(final_16x9_mp4, lf_title, lf_desc, lf_tags, topic=topic)
+        print(f"\n✅ LONG-FORM SOAKING PRAYER READY: {final_16x9_mp4}")
+        target_ch = choose_upload_channel(active_channel)
+        if target_ch:
+            yt_id = upload_video_to_youtube(target_ch, final_16x9_mp4, thumbnail_path=final_16x9_thumb)
+            if yt_id:
+                gle.post_pinned_comment_if_possible(target_ch, yt_id, final_16x9_mp4)
+
+
+def run_cli_chapter_reader(active_channel: str):
+    """CLI Menu Option [14]: Generates a Full Bible Chapter Reading Video."""
+    import longform_prayer_engine as lpe
+    import grace_of_lord_engine as gle
+    from bible_database import BIBLE_66_BOOKS
+
+    print("\n" + "=" * 68)
+    print("📖 FULL BIBLE CHAPTER READING VIDEO GENERATOR")
+    print("=" * 68)
+    
+    print("Popular Books:")
+    print("  [1] Psalms  [2] Proverbs  [3] Matthew  [4] John  [5] Romans")
+    book_in = input("Enter Book Name (or 1-5 for quick pick): ").strip()
+    
+    book = "Psalms"
+    if book_in == "1": book = "Psalms"
+    elif book_in == "2": book = "Proverbs"
+    elif book_in == "3": book = "Matthew"
+    elif book_in == "4": book = "John"
+    elif book_in == "5": book = "Romans"
+    elif book_in: book = book_in.title()
+    
+    ch_in = input(f"Enter Chapter Number for {book} (default 91): ").strip()
+    chapter = int(ch_in) if ch_in.isdigit() else 91
+    
+    lang_in = input("Language? (en = English / hi = Hindi): ").strip().lower()
+    lang = "hi" if lang_in == "hi" else "en"
+
+    print(f"\n📜 [1/3] Preparing Reading Script for '{book} {chapter}'...")
+    journey = lpe.generate_full_chapter_reading_journey(book, chapter, lang)
+    print(f"   🏆 Title: {journey['youtube_title']}")
+    print(f"   ⏱️ Est. Duration: {journey['duration_label']}")
+
+    out_folder = lpe.get_next_longform_folder(f"Reading_{book}_{chapter}")
+    (out_folder / "reading_script.json").write_text(json.dumps(journey, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_folder / "pinned_comment.txt").write_text(journey["pinned_comment"], encoding="utf-8")
+
+    voice_raw_mp3 = out_folder / "reading_voice.mp3"
+    master_mix_mp3 = out_folder / "master_audio.mp3"
+    final_16x9_mp4 = out_folder / f"{out_folder.name}.mp4"
+    final_16x9_thumb = out_folder / f"{out_folder.name}_thumb.jpg"
+
+    print("\n🎙️ [2/3] Synthesizing voiceover & mixing ambient audio...")
+    from voice_studio import load_active_voice
+    cv = load_active_voice()
+    use_v_name = "hi-IN-MadhurNeural" if lang == "hi" else cv.get("voice", "en-US-ChristopherNeural")
+    v_res = lpe.synthesize_meditative_voiceover(journey, voice_raw_mp3, voice_name=use_v_name, rate_str="-2%", pitch_str="-2Hz")
+    
+    lpe.mix_longform_master_audio(voice_raw_mp3, master_mix_mp3, target_duration_sec=journey["config"]["target_seconds"], nature_style="Gentle Night Rain")
+
+    print("\n🎬 [3/3] Rendering 1920x1080 (16:9) Reading Video & Thumbnail...")
+    ok = lpe.render_longform_16x9_video(
+        master_mix_mp3, final_16x9_mp4, final_16x9_thumb, journey,
+        bg_image_path=get_jesus_image(), bg_video_path=prepare_muted_short_main()
+    )
+    if ok:
+        lf_title, lf_desc, lf_tags = lpe.build_longform_youtube_metadata(journey, v_res["chapters"])
+        save_clip_metadata(final_16x9_mp4, lf_title, lf_desc, lf_tags, topic=f"{book} {chapter}")
+        print(f"\n✅ FULL CHAPTER VIDEO READY: {final_16x9_mp4}")
+        target_ch = choose_upload_channel(active_channel)
+        if target_ch:
+            yt_id = upload_video_to_youtube(target_ch, final_16x9_mp4, thumbnail_path=final_16x9_thumb)
+            if yt_id:
+                gle.post_pinned_comment_if_possible(target_ch, yt_id, final_16x9_mp4)
+
+
 def main():
 
     channels = load_channels()
@@ -6461,6 +6383,8 @@ def main():
         print("  [11] ☁️ Save & Push Everything to GitHub")
 
         print("  [12] 🎙️ Voice & Accent Studio (Listen & Choose from 28 Voices)")
+        print("  [13] 🕊️ Generate 5-Chapter Long-Form Soaking Prayer (15-30m)")
+        print("  [14] 📖 Generate Full Bible Chapter Reading Video (Any Chapter)")
 
         print("  [0] ❌ Exit")
 
@@ -6468,7 +6392,7 @@ def main():
 
 
 
-        opt = input("Select an option (0-12): ").strip()
+        opt = input("Select an option (0-14): ").strip()
 
 
 
@@ -6534,7 +6458,7 @@ def main():
 
         else:
 
-            print("⚠️ Invalid choice. Enter 0 to 12.")
+            print("⚠️ Invalid choice. Enter 0 to 14.")
 
 
 

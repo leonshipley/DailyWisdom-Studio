@@ -1,0 +1,197 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: LongFormSubs,Segoe UI,54,&H00FFFFFF,&H0000D4FF,&H90000000,&H90000000,-1,0,0,0,100,100,0,0,1,3.5,2,2,140,140,82,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.10,0:00:03.78,LongFormSubs,,0,0,0,,{\fs54}Welcome my friends I am so
+Dialogue: 0,0:00:03.78,0:00:05.05,LongFormSubs,,0,0,0,,{\fs54}glad you are here with me
+Dialogue: 0,0:00:05.05,0:00:06.48,LongFormSubs,,0,0,0,,{\fs54}today as we open up the
+Dialogue: 0,0:00:06.48,0:00:09.56,LongFormSubs,,0,0,0,,{\fs54}Word of God together If you
+Dialogue: 0,0:00:09.56,0:00:11.28,LongFormSubs,,0,0,0,,{\fs54}have your Bibles I want to
+Dialogue: 0,0:00:11.28,0:00:12.65,LongFormSubs,,0,0,0,,{\fs54}invite you to turn with me
+Dialogue: 0,0:00:12.65,0:00:17.79,LongFormSubs,,0,0,0,,{\fs54}to the Book of\N1 Kings Chapter 1
+Dialogue: 0,0:00:17.79,0:00:19.12,LongFormSubs,,0,0,0,,{\fs54}We are looking at a pivotal
+Dialogue: 0,0:00:19.12,0:00:21.39,LongFormSubs,,0,0,0,,{\fs54}moment in Scripture\Na transition of
+Dialogue: 0,0:00:21.39,0:00:23.84,LongFormSubs,,0,0,0,,{\fs54}power a time\Nof uncertainty and
+Dialogue: 0,0:00:23.84,0:00:25.60,LongFormSubs,,0,0,0,,{\fs54}a profound reminder\Nthat even when
+Dialogue: 0,0:00:25.60,0:00:27.77,LongFormSubs,,0,0,0,,{\fs54}earthly kings grow\Nweak the King
+Dialogue: 0,0:00:27.77,0:00:29.64,LongFormSubs,,0,0,0,,{\fs54}of Kings remains\Nfirmly on His
+Dialogue: 0,0:00:29.64,0:00:32.51,LongFormSubs,,0,0,0,,{\fs54}throne As we read in the
+Dialogue: 0,0:00:32.51,0:00:34.91,LongFormSubs,,0,0,0,,{\fs54}opening verses King\NDavid is now
+Dialogue: 0,0:00:34.91,0:00:38.11,LongFormSubs,,0,0,0,,{\fs54}old and stricken in years He
+Dialogue: 0,0:00:38.11,0:00:39.89,LongFormSubs,,0,0,0,,{\fs54}is wrapped in\Nblankets yet he
+Dialogue: 0,0:00:39.89,0:00:44.32,LongFormSubs,,0,0,0,,{\fs54}can find no\Nphysical warmth It
+Dialogue: 0,0:00:44.32,0:00:46.35,LongFormSubs,,0,0,0,,{\fs54}is a striking\Nhumbling picture of
+Dialogue: 0,0:00:46.35,0:00:49.42,LongFormSubs,,0,0,0,,{\fs54}human frailty Here\Nis the mighty
+Dialogue: 0,0:00:49.42,0:00:51.94,LongFormSubs,,0,0,0,,{\fs54}warrior the giant-killer\Nthe man after
+Dialogue: 0,0:00:51.94,0:00:54.03,LongFormSubs,,0,0,0,,{\fs54}God's own heart\Nnow shivering in
+Dialogue: 0,0:00:54.03,0:00:55.96,LongFormSubs,,0,0,0,,{\fs54}his bed unable\Nto generate his
+Dialogue: 0,0:00:55.96,0:00:58.99,LongFormSubs,,0,0,0,,{\fs54}own heat Life brings us all
+Dialogue: 0,0:00:58.99,0:01:03.61,LongFormSubs,,0,0,0,,{\fs54}to seasons of\Ncoldness doesn't it
+Dialogue: 0,0:01:03.61,0:01:05.70,LongFormSubs,,0,0,0,,{\fs54}Seasons where our\Nstrength fades where
+Dialogue: 0,0:01:05.70,0:01:07.20,LongFormSubs,,0,0,0,,{\fs54}the fire we once had feels
+Dialogue: 0,0:01:07.20,0:01:09.02,LongFormSubs,,0,0,0,,{\fs54}reduced to embers\Nand where we
+Dialogue: 0,0:01:09.02,0:01:11.01,LongFormSubs,,0,0,0,,{\fs54}realize just how\Nfragile our grip
+Dialogue: 0,0:01:11.01,0:01:14.04,LongFormSubs,,0,0,0,,{\fs54}on this life truly is But
+Dialogue: 0,0:01:14.04,0:01:15.44,LongFormSubs,,0,0,0,,{\fs54}do not miss what God is
+Dialogue: 0,0:01:15.44,0:01:17.18,LongFormSubs,,0,0,0,,{\fs54}doing underneath the\Nsurface of this
+Dialogue: 0,0:01:17.18,0:01:20.75,LongFormSubs,,0,0,0,,{\fs54}human weakness When\NDavid's house seems
+Dialogue: 0,0:01:20.75,0:01:23.33,LongFormSubs,,0,0,0,,{\fs54}vulnerable God is\Nquietly positioning His
+Dialogue: 0,0:01:23.33,0:01:27.78,LongFormSubs,,0,0,0,,{\fs54}chosen vessel Let\Nthis comfort your
+Dialogue: 0,0:01:27.78,0:01:29.75,LongFormSubs,,0,0,0,,{\fs54}heart today even\Nin our weakest
+Dialogue: 0,0:01:29.75,0:01:33.83,LongFormSubs,,0,0,0,,{\fs54}hours God's sovereign\Nplan never sleeps
+Dialogue: 0,0:01:33.83,0:01:35.30,LongFormSubs,,0,0,0,,{\fs54}He is never caught off guard
+Dialogue: 0,0:01:35.30,0:01:37.56,LongFormSubs,,0,0,0,,{\fs54}by aging by\Nfailing health or
+Dialogue: 0,0:01:37.56,0:01:39.04,LongFormSubs,,0,0,0,,{\fs54}by the changing\Nof seasons in
+Dialogue: 0,0:01:39.04,0:01:46.33,LongFormSubs,,0,0,0,,{\fs54}our lives As we move further
+Dialogue: 0,0:01:46.33,0:01:49.86,LongFormSubs,,0,0,0,,{\fs54}into the chapter\Nthe tension rises
+Dialogue: 0,0:01:49.86,0:01:52.78,LongFormSubs,,0,0,0,,{\fs54}We see Adonijah\NDavid's son exalting
+Dialogue: 0,0:01:52.78,0:01:54.53,LongFormSubs,,0,0,0,,{\fs54}himself and saying I will be
+Dialogue: 0,0:01:54.53,0:01:58.27,LongFormSubs,,0,0,0,,{\fs54}king He gathers\Nchariots horsemen and
+Dialogue: 0,0:01:58.27,0:02:02.45,LongFormSubs,,0,0,0,,{\fs54}powerful allies like\NJoab and Abiathar
+Dialogue: 0,0:02:02.45,0:02:04.13,LongFormSubs,,0,0,0,,{\fs54}He throws a massive feast at
+Dialogue: 0,0:02:04.13,0:02:06.76,LongFormSubs,,0,0,0,,{\fs54}En-rogel celebrating\Nhis own coronation
+Dialogue: 0,0:02:06.76,0:02:08.83,LongFormSubs,,0,0,0,,{\fs54}before it has\Neven been authorized
+Dialogue: 0,0:02:08.83,0:02:11.32,LongFormSubs,,0,0,0,,{\fs54}intentionally leaving out\NNathan the prophet
+Dialogue: 0,0:02:11.32,0:02:16.41,LongFormSubs,,0,0,0,,{\fs54}Benaiah and\Nyoung Solomon Adonijah
+Dialogue: 0,0:02:16.41,0:02:18.54,LongFormSubs,,0,0,0,,{\fs54}represents the human\Ninstinct to grasp
+Dialogue: 0,0:02:18.54,0:02:21.61,LongFormSubs,,0,0,0,,{\fs54}for control When\Nwe see authority
+Dialogue: 0,0:02:21.61,0:02:23.94,LongFormSubs,,0,0,0,,{\fs54}slipping our flesh\Nwants to hustle
+Dialogue: 0,0:02:23.94,0:02:26.20,LongFormSubs,,0,0,0,,{\fs54}to promote ourselves\Nto force doors
+Dialogue: 0,0:02:26.20,0:02:27.64,LongFormSubs,,0,0,0,,{\fs54}open that God has not yet
+Dialogue: 0,0:02:27.64,0:02:34.01,LongFormSubs,,0,0,0,,{\fs54}unlocked But notice\Nwhat happens next
+Dialogue: 0,0:02:34.01,0:02:35.80,LongFormSubs,,0,0,0,,{\fs54}The prophet Nathan\Nsteps in with
+Dialogue: 0,0:02:35.80,0:02:39.34,LongFormSubs,,0,0,0,,{\fs54}divine wisdom He\Ngoes to Bathsheba
+Dialogue: 0,0:02:39.34,0:02:41.36,LongFormSubs,,0,0,0,,{\fs54}and says Come let me give
+Dialogue: 0,0:02:41.36,0:02:43.45,LongFormSubs,,0,0,0,,{\fs54}thee counsel that\Nthou mayest save
+Dialogue: 0,0:02:43.45,0:02:45.12,LongFormSubs,,0,0,0,,{\fs54}thine own life and the life
+Dialogue: 0,0:02:45.12,0:02:47.94,LongFormSubs,,0,0,0,,{\fs54}of thy son\NSolomon Nathan does
+Dialogue: 0,0:02:47.94,0:02:50.99,LongFormSubs,,0,0,0,,{\fs54}not panic He\Ndoesn't join the
+Dialogue: 0,0:02:50.99,0:02:54.14,LongFormSubs,,0,0,0,,{\fs54}self-promotion party instead\Nhe reminds the
+Dialogue: 0,0:02:54.14,0:02:58.37,LongFormSubs,,0,0,0,,{\fs54}king of the\Ntrue promise When
+Dialogue: 0,0:02:58.37,0:03:00.89,LongFormSubs,,0,0,0,,{\fs54}Bathsheba and Nathan\Napproach David they
+Dialogue: 0,0:03:00.89,0:03:02.32,LongFormSubs,,0,0,0,,{\fs54}remind the aging king of the
+Dialogue: 0,0:03:02.32,0:03:05.45,LongFormSubs,,0,0,0,,{\fs54}vow he made before God And
+Dialogue: 0,0:03:05.45,0:03:07.94,LongFormSubs,,0,0,0,,{\fs54}David though frail\Nawakens to his
+Dialogue: 0,0:03:07.94,0:03:11.44,LongFormSubs,,0,0,0,,{\fs54}calling He declares\Nthat Solomon shall
+Dialogue: 0,0:03:11.44,0:03:15.79,LongFormSubs,,0,0,0,,{\fs54}sit on the\Nthrone The spiritual
+Dialogue: 0,0:03:15.79,0:03:18.31,LongFormSubs,,0,0,0,,{\fs54}lesson here is\Nprofound human ambition
+Dialogue: 0,0:03:18.31,0:03:20.15,LongFormSubs,,0,0,0,,{\fs54}and self-promotion will\Nalways try to
+Dialogue: 0,0:03:20.15,0:03:22.87,LongFormSubs,,0,0,0,,{\fs54}bypass God's timing\Nbut divine destiny
+Dialogue: 0,0:03:22.87,0:03:24.53,LongFormSubs,,0,0,0,,{\fs54}cannot be stolen by a loud
+Dialogue: 0,0:03:24.53,0:03:28.03,LongFormSubs,,0,0,0,,{\fs54}crowd or a\Npremature feast What
+Dialogue: 0,0:03:28.03,0:03:30.15,LongFormSubs,,0,0,0,,{\fs54}God has promised\NHe is faithful
+Dialogue: 0,0:03:30.15,0:03:37.65,LongFormSubs,,0,0,0,,{\fs54}to bring to pass Now lets
+Dialogue: 0,0:03:37.65,0:03:39.01,LongFormSubs,,0,0,0,,{\fs54}bring this right\Ndown to where
+Dialogue: 0,0:03:39.01,0:03:41.96,LongFormSubs,,0,0,0,,{\fs54}you live Perhaps\Nyou are watching
+Dialogue: 0,0:03:41.96,0:03:43.41,LongFormSubs,,0,0,0,,{\fs54}this today and you feel like
+Dialogue: 0,0:03:43.41,0:03:45.51,LongFormSubs,,0,0,0,,{\fs54}Adonijah is winning\Nin your life
+Dialogue: 0,0:03:45.51,0:03:47.34,LongFormSubs,,0,0,0,,{\fs54}meaning you see\Npeople around you
+Dialogue: 0,0:03:47.34,0:03:50.16,LongFormSubs,,0,0,0,,{\fs54}cutting corners\Npromoting themselves playing
+Dialogue: 0,0:03:50.16,0:03:52.89,LongFormSubs,,0,0,0,,{\fs54}office politics or\Ntaking shortcuts and
+Dialogue: 0,0:03:52.89,0:03:54.09,LongFormSubs,,0,0,0,,{\fs54}it feels like\Nthey are getting
+Dialogue: 0,0:03:54.09,0:03:57.06,LongFormSubs,,0,0,0,,{\fs54}ahead while you\Nare left behind
+Dialogue: 0,0:03:57.06,0:03:58.57,LongFormSubs,,0,0,0,,{\fs54}Or maybe you\Nare dealing with
+Dialogue: 0,0:03:58.57,0:04:02.03,LongFormSubs,,0,0,0,,{\fs54}deep personal anxiety\Nfinancial strain or
+Dialogue: 0,0:04:02.03,0:04:06.84,LongFormSubs,,0,0,0,,{\fs54}a broken family\Ndynamic You look
+Dialogue: 0,0:04:06.84,0:04:08.59,LongFormSubs,,0,0,0,,{\fs54}at your own\Nstrength just like
+Dialogue: 0,0:04:08.59,0:04:10.28,LongFormSubs,,0,0,0,,{\fs54}David in his\Nblankets and you
+Dialogue: 0,0:04:10.28,0:04:12.95,LongFormSubs,,0,0,0,,{\fs54}feel cold powerless\Nand unable to
+Dialogue: 0,0:04:12.95,0:04:15.75,LongFormSubs,,0,0,0,,{\fs54}fix the mess around you I
+Dialogue: 0,0:04:15.75,0:04:17.31,LongFormSubs,,0,0,0,,{\fs54}want to speak\Ndirectly to that
+Dialogue: 0,0:04:17.31,0:04:20.45,LongFormSubs,,0,0,0,,{\fs54}anxiety in your\Nchest right now
+Dialogue: 0,0:04:20.45,0:04:22.32,LongFormSubs,,0,0,0,,{\fs54}Stop trying to\Nengineer your own
+Dialogue: 0,0:04:22.32,0:04:27.02,LongFormSubs,,0,0,0,,{\fs54}rescue through\Nfrantic self-reliance
+Dialogue: 0,0:04:27.02,0:04:29.15,LongFormSubs,,0,0,0,,{\fs54}Adonijah threw a\Nbig party but
+Dialogue: 0,0:04:29.15,0:04:31.07,LongFormSubs,,0,0,0,,{\fs54}he didn't have\NGod's backing and
+Dialogue: 0,0:04:31.07,0:04:34.09,LongFormSubs,,0,0,0,,{\fs54}in the end fear gripped him
+Dialogue: 0,0:04:34.09,0:04:35.83,LongFormSubs,,0,0,0,,{\fs54}True peace doesn't\Ncome from throwing
+Dialogue: 0,0:04:35.83,0:04:37.19,LongFormSubs,,0,0,0,,{\fs54}a loud party to prove your
+Dialogue: 0,0:04:37.19,0:04:38.91,LongFormSubs,,0,0,0,,{\fs54}worth it comes\Nfrom resting in
+Dialogue: 0,0:04:38.91,0:04:41.83,LongFormSubs,,0,0,0,,{\fs54}the appointment of\Nthe Almighty If
+Dialogue: 0,0:04:41.83,0:04:43.05,LongFormSubs,,0,0,0,,{\fs54}God has called you to a
+Dialogue: 0,0:04:43.05,0:04:44.76,LongFormSubs,,0,0,0,,{\fs54}season if He has whispered a
+Dialogue: 0,0:04:44.76,0:04:46.50,LongFormSubs,,0,0,0,,{\fs54}promise to your heart you do
+Dialogue: 0,0:04:46.50,0:04:47.70,LongFormSubs,,0,0,0,,{\fs54}not need to claw your way
+Dialogue: 0,0:04:47.70,0:04:53.33,LongFormSubs,,0,0,0,,{\fs54}to the top Trust His timing
+Dialogue: 0,0:04:53.33,0:04:55.13,LongFormSubs,,0,0,0,,{\fs54}Even when things\Nlook chaotic behind
+Dialogue: 0,0:04:55.13,0:04:57.11,LongFormSubs,,0,0,0,,{\fs54}the scenes God\Nis orchestrating a
+Dialogue: 0,0:04:57.11,0:04:59.34,LongFormSubs,,0,0,0,,{\fs54}quiet beautiful victory\Nfor you that
+Dialogue: 0,0:04:59.34,0:05:01.05,LongFormSubs,,0,0,0,,{\fs54}no amount of\Nhuman opposition can
+Dialogue: 0,0:05:01.05,0:05:08.42,LongFormSubs,,0,0,0,,{\fs54}stop Look at\Nhow this chapter
+Dialogue: 0,0:05:08.42,0:05:13.15,LongFormSubs,,0,0,0,,{\fs54}glorious concludes my\Nfriends David commands
+Dialogue: 0,0:05:13.15,0:05:15.57,LongFormSubs,,0,0,0,,{\fs54}Zadok the priest\NNathan the prophet
+Dialogue: 0,0:05:15.57,0:05:17.58,LongFormSubs,,0,0,0,,{\fs54}and Benaiah to\Ntake young Solomon
+Dialogue: 0,0:05:17.58,0:05:18.67,LongFormSubs,,0,0,0,,{\fs54}put him on the king's own
+Dialogue: 0,0:05:18.67,0:05:20.11,LongFormSubs,,0,0,0,,{\fs54}mule and lead him down to
+Dialogue: 0,0:05:20.11,0:05:23.29,LongFormSubs,,0,0,0,,{\fs54}Gihon They blow\Nthe trumpet and
+Dialogue: 0,0:05:23.29,0:05:25.49,LongFormSubs,,0,0,0,,{\fs54}the people shout\NGod save king
+Dialogue: 0,0:05:25.49,0:05:28.44,LongFormSubs,,0,0,0,,{\fs54}Solomon The sound\Nof their rejoicing
+Dialogue: 0,0:05:28.44,0:05:29.80,LongFormSubs,,0,0,0,,{\fs54}is so loud that the earth
+Dialogue: 0,0:05:29.80,0:05:31.60,LongFormSubs,,0,0,0,,{\fs54}itself seems to\Nsplit open with
+Dialogue: 0,0:05:31.60,0:05:36.13,LongFormSubs,,0,0,0,,{\fs54}the noise When\NAdonijah and his
+Dialogue: 0,0:05:36.13,0:05:38.09,LongFormSubs,,0,0,0,,{\fs54}guests hear the\Ntrumpet the party
+Dialogue: 0,0:05:38.09,0:05:41.84,LongFormSubs,,0,0,0,,{\fs54}stops instantly Fear\Ngrips them and
+Dialogue: 0,0:05:41.84,0:05:45.45,LongFormSubs,,0,0,0,,{\fs54}they scatter Adonijah\Nruns in terror
+Dialogue: 0,0:05:45.45,0:05:46.66,LongFormSubs,,0,0,0,,{\fs54}and grabs the horns of the
+Dialogue: 0,0:05:46.66,0:05:51.38,LongFormSubs,,0,0,0,,{\fs54}altar begging for\Nhis life But
+Dialogue: 0,0:05:51.38,0:05:53.89,LongFormSubs,,0,0,0,,{\fs54}Solomon responds with\Ngrace and wisdom
+Dialogue: 0,0:05:53.89,0:05:55.17,LongFormSubs,,0,0,0,,{\fs54}telling him that if he shows
+Dialogue: 0,0:05:55.17,0:05:57.06,LongFormSubs,,0,0,0,,{\fs54}himself a worthy man not a
+Dialogue: 0,0:05:57.06,0:05:59.79,LongFormSubs,,0,0,0,,{\fs54}hair of his head will fall
+Dialogue: 0,0:05:59.79,0:06:01.84,LongFormSubs,,0,0,0,,{\fs54}Listen to me today when God
+Dialogue: 0,0:06:01.84,0:06:03.76,LongFormSubs,,0,0,0,,{\fs54}steps in to\Nestablish His kingdom
+Dialogue: 0,0:06:03.76,0:06:05.32,LongFormSubs,,0,0,0,,{\fs54}in your life the noise of
+Dialogue: 0,0:06:05.32,0:06:09.14,LongFormSubs,,0,0,0,,{\fs54}the enemy's false\Ncelebration is silenced
+Dialogue: 0,0:06:09.14,0:06:10.66,LongFormSubs,,0,0,0,,{\fs54}The panic shifts\Nto the other
+Dialogue: 0,0:06:10.66,0:06:14.54,LongFormSubs,,0,0,0,,{\fs54}side You do not need to
+Dialogue: 0,0:06:14.54,0:06:16.05,LongFormSubs,,0,0,0,,{\fs54}fight the battles\Nthat belong to
+Dialogue: 0,0:06:16.05,0:06:18.79,LongFormSubs,,0,0,0,,{\fs54}the Lord He takes you out
+Dialogue: 0,0:06:18.79,0:06:20.62,LongFormSubs,,0,0,0,,{\fs54}of obscurity seats\Nyou in His
+Dialogue: 0,0:06:20.62,0:06:22.49,LongFormSubs,,0,0,0,,{\fs54}grace and surrounds\Nyou with His
+Dialogue: 0,0:06:22.49,0:06:26.01,LongFormSubs,,0,0,0,,{\fs54}unshakeable peace The\Ntrumpet of God's
+Dialogue: 0,0:06:26.01,0:06:28.04,LongFormSubs,,0,0,0,,{\fs54}victory is sounding\Nover your situation
+Dialogue: 0,0:06:28.04,0:06:30.03,LongFormSubs,,0,0,0,,{\fs54}right now and\Nevery weapon formed
+Dialogue: 0,0:06:30.03,0:06:31.38,LongFormSubs,,0,0,0,,{\fs54}against you will\Nultimately have to
+Dialogue: 0,0:06:31.38,0:06:38.83,LongFormSubs,,0,0,0,,{\fs54}bow to His\Nsovereign grace Father
+Dialogue: 0,0:06:38.83,0:06:40.97,LongFormSubs,,0,0,0,,{\fs54}God Lord of Heaven and Earth
+Dialogue: 0,0:06:40.97,0:06:42.93,LongFormSubs,,0,0,0,,{\fs54}we come before\NYou today acknowledging
+Dialogue: 0,0:06:42.93,0:06:46.21,LongFormSubs,,0,0,0,,{\fs54}our human frailty\NWe confess that
+Dialogue: 0,0:06:46.21,0:06:47.91,LongFormSubs,,0,0,0,,{\fs54}like David there\Nare days when
+Dialogue: 0,0:06:47.91,0:06:50.18,LongFormSubs,,0,0,0,,{\fs54}we feel weak cold and unable
+Dialogue: 0,0:06:50.18,0:06:52.56,LongFormSubs,,0,0,0,,{\fs54}to control the\Nshifting circumstances around
+Dialogue: 0,0:06:52.56,0:06:55.98,LongFormSubs,,0,0,0,,{\fs54}us And Lord we confess that
+Dialogue: 0,0:06:55.98,0:06:58.22,LongFormSubs,,0,0,0,,{\fs54}like Adonijah we\Nhave sometimes been
+Dialogue: 0,0:06:58.22,0:06:59.51,LongFormSubs,,0,0,0,,{\fs54}tempted to lean on our own
+Dialogue: 0,0:06:59.51,0:07:01.16,LongFormSubs,,0,0,0,,{\fs54}strength to rush\Nahead of Your
+Dialogue: 0,0:07:01.16,0:07:02.88,LongFormSubs,,0,0,0,,{\fs54}timing and to seek our own
+Dialogue: 0,0:07:02.88,0:07:08.20,LongFormSubs,,0,0,0,,{\fs54}glory Forgive us\NLord and wash
+Dialogue: 0,0:07:08.20,0:07:11.26,LongFormSubs,,0,0,0,,{\fs54}us clean We thank You today
+Dialogue: 0,0:07:11.26,0:07:13.00,LongFormSubs,,0,0,0,,{\fs54}that Your plans\Ncannot be thwarted
+Dialogue: 0,0:07:13.00,0:07:16.92,LongFormSubs,,0,0,0,,{\fs54}by human manipulation\Nor earthly chaos
+Dialogue: 0,0:07:16.92,0:07:18.77,LongFormSubs,,0,0,0,,{\fs54}Right now I lift up every
+Dialogue: 0,0:07:18.77,0:07:20.54,LongFormSubs,,0,0,0,,{\fs54}precious viewer who\Nis listening to
+Dialogue: 0,0:07:20.54,0:07:26.41,LongFormSubs,,0,0,0,,{\fs54}this message Whatever\Ncoldness anxiety or
+Dialogue: 0,0:07:26.41,0:07:27.78,LongFormSubs,,0,0,0,,{\fs54}fear they are\Nfacing in their
+Dialogue: 0,0:07:27.78,0:07:31.12,LongFormSubs,,0,0,0,,{\fs54}finances their families\Nor their hearts
+Dialogue: 0,0:07:31.12,0:07:32.27,LongFormSubs,,0,0,0,,{\fs54}I pray that the warmth of
+Dialogue: 0,0:07:32.27,0:07:35.43,LongFormSubs,,0,0,0,,{\fs54}Your Holy Spirit\Nwould enfold them
+Dialogue: 0,0:07:35.43,0:07:36.81,LongFormSubs,,0,0,0,,{\fs54}Remind them that they do not
+Dialogue: 0,0:07:36.81,0:07:39.50,LongFormSubs,,0,0,0,,{\fs54}need to panic\Nself-promote or grasp
+Dialogue: 0,0:07:39.50,0:07:42.36,LongFormSubs,,0,0,0,,{\fs54}for control Let\Nthem hear the
+Dialogue: 0,0:07:42.36,0:07:43.72,LongFormSubs,,0,0,0,,{\fs54}trumpet of Your\Nvictory in their
+Dialogue: 0,0:07:43.72,0:07:48.20,LongFormSubs,,0,0,0,,{\fs54}spirits today Secure\Nthem in Your
+Dialogue: 0,0:07:48.20,0:07:50.08,LongFormSubs,,0,0,0,,{\fs54}grace silence the\Nvoice of the
+Dialogue: 0,0:07:50.08,0:07:52.25,LongFormSubs,,0,0,0,,{\fs54}accuser and let\Nthem rest safely
+Dialogue: 0,0:07:52.25,0:07:55.15,LongFormSubs,,0,0,0,,{\fs54}under the shadow\Nof Your wings
+Dialogue: 0,0:07:55.15,0:07:56.82,LongFormSubs,,0,0,0,,{\fs54}We give You all the praise
+Dialogue: 0,0:07:56.82,0:07:58.95,LongFormSubs,,0,0,0,,{\fs54}the honor and\Nthe glory knowing
+Dialogue: 0,0:07:58.95,0:08:00.06,LongFormSubs,,0,0,0,,{\fs54}that You are the King who
+Dialogue: 0,0:08:00.06,0:08:03.93,LongFormSubs,,0,0,0,,{\fs54}reigns forevermore In\NJesus' mighty and
+Dialogue: 0,0:08:03.93,0:08:05.94,LongFormSubs,,0,0,0,,{\fs54}matchless name Amen
