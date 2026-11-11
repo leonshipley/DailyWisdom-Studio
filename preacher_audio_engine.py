@@ -1,3 +1,4 @@
+import time
 import os
 import re
 import json
@@ -71,7 +72,10 @@ DEFAULT_PREACHER_CONFIG = {
     "amen_pitch": -5,
     "amen_rate": -11,
     "amen_vol": 4,
-    "sentence_overrides": {}
+    "sentence_overrides": {},
+    "tts_engine": "🌟 Gemini AI Native Acting Voice (ElevenLabs-Style Feeling & Emotion Commands!)",
+    "gemini_acting_voice": "Charon — Deep Gravelly Pulpit Preacher (Male)",
+    "custom_feeling_prompt": "Start with deep tearful empathy and a soft sigh, build into fiery righteous preacher authority on power words, and finish with a warm, slow, comforting whisper on Amen."
 }
 
 def load_preacher_config() -> Dict[str, Any]:
@@ -178,27 +182,27 @@ def _apply_emotion_preset(emo_label: str, b_rate: int, b_pitch: int, cfg: Dict[s
         r = max(-25, min(30, b_rate + int(cfg.get("angry_rate", 9))))
         p = max(-15, min(18, b_pitch + int(cfg.get("angry_pitch", 6))))
         v = int(cfg.get("angry_vol", 18))
-        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.30, "😡 Angry / Righteous Thunder"
+        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.18, "😡 Angry / Righteous Thunder"
     if "Warfare" in emo_label:
         r = max(-25, min(25, b_rate + int(cfg.get("warfare_rate", 5))))
         p = max(-15, min(15, b_pitch + int(cfg.get("warfare_pitch", 4))))
         v = int(cfg.get("warfare_vol", 12))
-        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.35, "🔥 Warfare & Breakthrough"
+        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.20, "🔥 Warfare & Breakthrough"
     if "Empathy" in emo_label:
         r = max(-28, min(25, b_rate + int(cfg.get("empathy_rate", -10))))
         p = max(-15, min(15, b_pitch + int(cfg.get("empathy_pitch", -5))))
         v = int(cfg.get("empathy_vol", -4))
-        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.44, "🥺 Empathy & Comfort"
+        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.22, "🥺 Empathy & Comfort"
     if "Whisper" in emo_label:
         r = max(-30, min(20, b_rate + int(cfg.get("whisper_rate", -14))))
         p = max(-15, min(15, b_pitch + int(cfg.get("whisper_pitch", -7))))
         v = int(cfg.get("whisper_vol", -12))
-        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.50, "🤫 Soft Intimate Whisper"
+        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.25, "🤫 Soft Intimate Whisper"
     if "Scripture" in emo_label:
         r = max(-25, min(25, b_rate + int(cfg.get("scripture_rate", -5))))
         p = max(-15, min(15, b_pitch + int(cfg.get("scripture_pitch", -2))))
         v = int(cfg.get("scripture_vol", 5))
-        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.40, "📖 Reverent Scripture"
+        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.22, "📖 Reverent Scripture"
     if "Joyful" in emo_label:
         r = max(-20, min(25, b_rate + int(cfg.get("joy_rate", 3))))
         p = max(-10, min(15, b_pitch + int(cfg.get("joy_pitch", 4))))
@@ -208,7 +212,7 @@ def _apply_emotion_preset(emo_label: str, b_rate: int, b_pitch: int, cfg: Dict[s
         r = max(-28, min(25, b_rate + int(cfg.get("amen_rate", -11))))
         p = max(-15, min(15, b_pitch + int(cfg.get("amen_pitch", -5))))
         v = int(cfg.get("amen_vol", 4))
-        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.45, "🙏 Benediction & Amen"
+        return f"{r:+d}%", f"{p:+d}Hz", f"{v:+d}%", 0.25, "🙏 Benediction & Amen"
     return f"{b_rate:+d}%", f"{b_pitch:+d}Hz", "+0%", 0.28, "🎙️ Pastoral Teaching"
 
 def classify_sentence_prosody(sentence: str, base_rate: str, base_pitch: str, cfg: Dict[str, Any], sent_idx: int = -1) -> Tuple[str, str, str, float, str]:
@@ -267,8 +271,11 @@ def classify_sentence_prosody(sentence: str, base_rate: str, base_pitch: str, cf
     return _apply_emotion_preset("🎙️ Pastoral Teaching", b_rate, b_pitch, cfg)
 
 def split_into_preacher_sentences(text: str) -> List[str]:
+    """Splits on sentence endings AND mid-sentence emotion tags (like [angry], [soft], [whisper]) so word/clause-level tags shift voice immediately!"""
     clean = re.sub(r"\s+", " ", text.strip())
-    parts = re.split(r"(?<=[\.\!\?।])\s+|\.\.\.\s*", clean)
+    # Insert a split marker right before any mid-sentence emotion tag
+    clean = re.sub(r"(?<!^)\s*(\[(?:angry|fierce|rebuke|empathy|sad|comfort|whisper|soft|scripture|verse|warfare|bold|joy|praise|amen)\])", r"||SPLIT||\1", clean, flags=re.IGNORECASE)
+    parts = re.split(r"\|\|SPLIT\|\||(?<=[\.\!\?।])\s+|\.\.\.\s*", clean)
     return [p.strip() for p in parts if p and p.strip()]
 
 def preview_script_preacher_breakdown(text: str, base_rate: str = "+0%", base_pitch: str = "+0Hz") -> List[Dict[str, str]]:
@@ -402,6 +409,22 @@ def synthesize_preacher_voiceover(
                         "end": round(ev["start"] + (idx_w + 1) * step, 3)
                     })
 
+    raw_joined = work_dir / 'joined_raw.mp3'
+    # Check if user selected ElevenLabs-Style Gemini Native Emotional Acting TTS
+    import ai_emotional_tts_engine as aete
+    if "Gemini AI Native Acting" in str(cfg.get("tts_engine", "")) and "Classic" not in str(cfg.get("mode", "")):
+        g_v_lbl = cfg.get("gemini_acting_voice", "Charon — Deep Gravelly Pulpit Preacher (Male)")
+        g_v_id = aete.GEMINI_ACTING_VOICES.get(g_v_lbl, "Charon")
+        feel_cmd = cfg.get("custom_feeling_prompt", "")
+        raw_gem_mp3 = work_dir / "gemini_acted_raw.mp3"
+        ok_gem, gem_msg = aete.synthesize_gemini_native_emotional_tts(text, raw_gem_mp3, gemini_voice_name=g_v_id, custom_feeling_prompt=feel_cmd)
+        if ok_gem and raw_gem_mp3.exists():
+            gem_dur = max(1.0, _get_audio_dur(raw_gem_mp3))
+            clean_plain = strip_emotion_tags(text)
+            all_word_timings = aete.build_proportional_word_timings(clean_plain, gem_dur)
+            shutil.copy(raw_gem_mp3, raw_joined)
+            sentences = []  # Skip Edge-TTS loop since Gemini Native Acting Voice succeeded!
+
     for idx, sent in enumerate(sentences):
         r_s, p_s, v_s, pause_sec, emo_lbl = classify_sentence_prosody(sent, base_rate, base_pitch, cfg, sent_idx=idx)
 
@@ -430,12 +453,20 @@ def synthesize_preacher_voiceover(
             continue
 
         sent_mp3 = work_dir / f"sent_{idx:03d}.mp3"
-        try:
-            asyncio.run(_synth_sentence(clean_sent, sent_mp3, r_s, p_s, v_s, current_offset))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(_synth_sentence(clean_sent, sent_mp3, r_s, p_s, v_s, current_offset))
-            loop.close()
+        for attempt in range(1, 4):
+            try:
+                try:
+                    asyncio.run(_synth_sentence(clean_sent, sent_mp3, r_s, p_s, v_s, current_offset))
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    loop.run_until_complete(_synth_sentence(clean_sent, sent_mp3, r_s, p_s, v_s, current_offset))
+                    loop.close()
+                if sent_mp3.exists() and sent_mp3.stat().st_size > 200:
+                    break
+            except Exception as e_tts:
+                if attempt < 3:
+                    time.sleep(0.75 * attempt)
+        time.sleep(0.18)
 
         if sent_mp3.exists() and sent_mp3.stat().st_size > 200:
             dur = _get_audio_dur(sent_mp3)
@@ -452,13 +483,13 @@ def synthesize_preacher_voiceover(
                     concat_files.append(sil_f)
                     current_offset += pause_sec
 
-    raw_joined = work_dir / "joined_raw.mp3"
-    list_txt = work_dir / "concat.txt"
-    list_txt.write_text(chr(10).join([f"file '{f.absolute().as_posix()}'" for f in concat_files]), encoding="utf-8")
-    subprocess.run([
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(list_txt.absolute()),
-        "-ar", "44100", "-ac", "2", "-c:a", "libmp3lame", "-b:a", "192k", str(raw_joined.absolute())
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if concat_files:
+        list_txt = work_dir / "concat.txt"
+        list_txt.write_text(chr(10).join([f"file '{f.absolute().as_posix()}'" for f in concat_files]), encoding="utf-8")
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(list_txt.absolute()),
+            "-ar", "44100", "-ac", "2", "-c:a", "libmp3lame", "-b:a", "192k", str(raw_joined.absolute())
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     if "Classic" in cfg.get("mode", "") or not cfg.get("reverb_enabled", True):
         voice_eq = "aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo"
@@ -986,7 +1017,27 @@ def build_ai_directed_preacher_audio_preview(
                         "end": round(ev["start"] + (idx_w + 1) * step, 3)
                     })
 
-    for idx, seg in enumerate(segments):
+    raw_joined = work_dir / "joined_raw.mp3"
+    import ai_emotional_tts_engine as aete
+    if "Gemini AI Native Acting" in str(cfg.get("tts_engine", "")) and not custom_segments:
+        g_v_lbl = cfg.get("gemini_acting_voice", "Charon — Deep Gravelly Pulpit Preacher (Male)")
+        g_v_id = aete.GEMINI_ACTING_VOICES.get(g_v_lbl, "Charon")
+        feel_cmd = cfg.get("custom_feeling_prompt", "")
+        raw_gem_mp3 = work_dir / "gemini_acted_raw.mp3"
+        ok_gem, gem_msg = aete.synthesize_gemini_native_emotional_tts(raw_script, raw_gem_mp3, gemini_voice_name=g_v_id, custom_feeling_prompt=feel_cmd)
+        if ok_gem and raw_gem_mp3.exists():
+            gem_dur = max(1.0, _get_audio_dur(raw_gem_mp3))
+            all_word_timings = aete.build_proportional_word_timings(strip_emotion_tags(raw_script), gem_dur)
+            sfx_cues = detect_sfx_cues_from_timings(all_word_timings, cfg)
+            shutil.copy(raw_gem_mp3, raw_joined)
+            ai_note = f"{gem_msg} + {ai_note}"
+            segments_to_run = []
+        else:
+            segments_to_run = segments
+    else:
+        segments_to_run = segments
+
+    for idx, seg in enumerate(segments_to_run):
         txt_s = strip_emotion_tags(seg.get("text", "")).strip()
         if not txt_s:
             continue
@@ -1000,12 +1051,30 @@ def build_ai_directed_preacher_audio_preview(
             sfx_cues.append((sfx_tag, max(0.0, current_offset)))
 
         seg_mp3 = work_dir / f"seg_{idx:03d}.mp3"
-        try:
-            asyncio.run(_synth_seg(txt_s, seg_mp3, r_s, p_s, v_s, current_offset))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(_synth_seg(txt_s, seg_mp3, r_s, p_s, v_s, current_offset))
-            loop.close()
+        # 3-Attempt Retry Loop with Exponential Backoff for 503/Network Glitches
+        for attempt in range(1, 4):
+            try:
+                try:
+                    asyncio.run(_synth_seg(txt_s, seg_mp3, r_s, p_s, v_s, current_offset))
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    loop.run_until_complete(_synth_seg(txt_s, seg_mp3, r_s, p_s, v_s, current_offset))
+                    loop.close()
+                if seg_mp3.exists() and seg_mp3.stat().st_size > 200:
+                    break
+            except Exception as e_tts:
+                if attempt < 3:
+                    time.sleep(0.75 * attempt)
+                else:
+                    # Final fallback: synthesize plain text without SSML boundaries if server is struggling
+                    try:
+                        async def _plain_fallback():
+                            c_fb = edge_tts.Communicate(txt_s, voice=voice_name)
+                            await c_fb.save(str(seg_mp3))
+                        asyncio.run(_plain_fallback())
+                    except Exception:
+                        pass
+        time.sleep(0.18)
 
         if seg_mp3.exists() and seg_mp3.stat().st_size > 200:
             dur = _get_audio_dur(seg_mp3)
@@ -1022,13 +1091,13 @@ def build_ai_directed_preacher_audio_preview(
                     concat_files.append(sil_f)
                     current_offset += pause_s
 
-    raw_joined = work_dir / "joined_raw.mp3"
-    list_txt = work_dir / "concat.txt"
-    list_txt.write_text(chr(10).join([f"file '{f.absolute().as_posix()}'" for f in concat_files]), encoding="utf-8")
-    subprocess.run([
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(list_txt.absolute()),
-        "-ar", "44100", "-ac", "2", "-c:a", "libmp3lame", "-b:a", "192k", str(raw_joined.absolute())
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if concat_files:
+        list_txt = work_dir / "concat.txt"
+        list_txt.write_text(chr(10).join([f"file '{f.absolute().as_posix()}'" for f in concat_files]), encoding="utf-8")
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(list_txt.absolute()),
+            "-ar", "44100", "-ac", "2", "-c:a", "libmp3lame", "-b:a", "192k", str(raw_joined.absolute())
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     if not cfg.get("reverb_enabled", True) or "Classic" in cfg.get("mode", ""):
         voice_eq = "aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo"

@@ -1,0 +1,705 @@
+{
+  "voice_dur": 101.344649,
+  "timings": [
+    {
+      "text": "Welcome",
+      "start": 0.102,
+      "end": 0.584
+    },
+    {
+      "text": "to",
+      "start": 0.597,
+      "end": 0.688
+    },
+    {
+      "text": "the",
+      "start": 0.701,
+      "end": 0.818
+    },
+    {
+      "text": "reading",
+      "start": 0.831,
+      "end": 1.209
+    },
+    {
+      "text": "of",
+      "start": 1.222,
+      "end": 1.339
+    },
+    {
+      "text": "God's",
+      "start": 1.352,
+      "end": 1.704
+    },
+    {
+      "text": "Holy",
+      "start": 1.717,
+      "end": 2.042
+    },
+    {
+      "text": "Word",
+      "start": 2.055,
+      "end": 2.524
+    },
+    {
+      "text": "Today",
+      "start": 3.976,
+      "end": 4.46
+    },
+    {
+      "text": "we",
+      "start": 4.715,
+      "end": 4.863
+    },
+    {
+      "text": "are",
+      "start": 4.876,
+      "end": 5.038
+    },
+    {
+      "text": "reading",
+      "start": 5.051,
+      "end": 5.4
+    },
+    {
+      "text": "from",
+      "start": 5.414,
+      "end": 5.562
+    },
+    {
+      "text": "the",
+      "start": 5.575,
+      "end": 5.656
+    },
+    {
+      "text": "book",
+      "start": 5.669,
+      "end": 5.925
+    },
+    {
+      "text": "of",
+      "start": 5.938,
+      "end": 6.059
+    },
+    {
+      "text": "Psalms",
+      "start": 6.073,
+      "end": 6.677
+    },
+    {
+      "text": "chapter 117",
+      "start": 6.892,
+      "end": 8.452
+    },
+    {
+      "text": "Let",
+      "start": 9.898,
+      "end": 10.148
+    },
+    {
+      "text": "your",
+      "start": 10.161,
+      "end": 10.606
+    },
+    {
+      "text": "be",
+      "start": 11.57,
+      "end": 11.778
+    },
+    {
+      "text": "still",
+      "start": 11.792,
+      "end": 12.264
+    },
+    {
+      "text": "and",
+      "start": 12.278,
+      "end": 12.834
+    },
+    {
+      "text": "His",
+      "start": 13.792,
+      "end": 14.056
+    },
+    {
+      "text": "truth",
+      "start": 14.07,
+      "end": 14.681
+    },
+    {
+      "text": "Verse",
+      "start": 20.274,
+      "end": 20.65
+    },
+    {
+      "text": "1",
+      "start": 20.664,
+      "end": 21.067
+    },
+    {
+      "text": "O",
+      "start": 22.541,
+      "end": 22.926
+    },
+    {
+      "text": "the",
+      "start": 23.74,
+      "end": 23.896
+    },
+    {
+      "text": "LORD",
+      "start": 23.908,
+      "end": 24.281
+    },
+    {
+      "text": "all",
+      "start": 24.485,
+      "end": 24.678
+    },
+    {
+      "text": "ye",
+      "start": 24.69,
+      "end": 24.834
+    },
+    {
+      "text": "nations",
+      "start": 24.846,
+      "end": 25.435
+    },
+    {
+      "text": "praise",
+      "start": 25.711,
+      "end": 26.036
+    },
+    {
+      "text": "him",
+      "start": 26.048,
+      "end": 26.24
+    },
+    {
+      "text": "all",
+      "start": 26.42,
+      "end": 26.577
+    },
+    {
+      "text": "ye",
+      "start": 26.589,
+      "end": 26.733
+    },
+    {
+      "text": "people",
+      "start": 26.745,
+      "end": 27.238
+    },
+    {
+      "text": "Verse",
+      "start": 28.459,
+      "end": 28.797
+    },
+    {
+      "text": "2",
+      "start": 28.809,
+      "end": 29.183
+    },
+    {
+      "text": "For",
+      "start": 31.855,
+      "end": 32.083
+    },
+    {
+      "text": "his",
+      "start": 32.095,
+      "end": 32.252
+    },
+    {
+      "text": "merciful",
+      "start": 32.264,
+      "end": 32.708
+    },
+    {
+      "text": "kindness",
+      "start": 32.72,
+      "end": 33.225
+    },
+    {
+      "text": "is",
+      "start": 33.237,
+      "end": 33.694
+    },
+    {
+      "text": "toward",
+      "start": 34.521,
+      "end": 34.81
+    },
+    {
+      "text": "us",
+      "start": 34.822,
+      "end": 35.11
+    },
+    {
+      "text": "and",
+      "start": 35.363,
+      "end": 35.495
+    },
+    {
+      "text": "the",
+      "start": 35.507,
+      "end": 35.603
+    },
+    {
+      "text": "truth",
+      "start": 35.615,
+      "end": 35.976
+    },
+    {
+      "text": "of",
+      "start": 35.988,
+      "end": 36.072
+    },
+    {
+      "text": "the",
+      "start": 36.084,
+      "end": 36.18
+    },
+    {
+      "text": "LORD",
+      "start": 36.192,
+      "end": 36.469
+    },
+    {
+      "text": "endureth",
+      "start": 36.481,
+      "end": 37.118
+    },
+    {
+      "text": "Praise",
+      "start": 38.325,
+      "end": 38.68
+    },
+    {
+      "text": "ye",
+      "start": 38.692,
+      "end": 38.784
+    },
+    {
+      "text": "the",
+      "start": 38.795,
+      "end": 38.91
+    },
+    {
+      "text": "LORD",
+      "start": 38.921,
+      "end": 39.368
+    },
+    {
+      "text": "May",
+      "start": 44.804,
+      "end": 45.02
+    },
+    {
+      "text": "the",
+      "start": 45.032,
+      "end": 45.153
+    },
+    {
+      "text": "Lord",
+      "start": 45.165,
+      "end": 45.657
+    },
+    {
+      "text": "the",
+      "start": 46.485,
+      "end": 46.617
+    },
+    {
+      "text": "reading",
+      "start": 46.629,
+      "end": 46.99
+    },
+    {
+      "text": "of",
+      "start": 47.002,
+      "end": 47.074
+    },
+    {
+      "text": "His",
+      "start": 47.086,
+      "end": 47.218
+    },
+    {
+      "text": "Holy",
+      "start": 47.23,
+      "end": 47.543
+    },
+    {
+      "text": "Word",
+      "start": 47.555,
+      "end": 47.927
+    },
+    {
+      "text": "and",
+      "start": 48.156,
+      "end": 48.3
+    },
+    {
+      "text": "may",
+      "start": 48.312,
+      "end": 48.492
+    },
+    {
+      "text": "it",
+      "start": 48.504,
+      "end": 48.624
+    },
+    {
+      "text": "bring",
+      "start": 48.636,
+      "end": 49.021
+    },
+    {
+      "text": "and",
+      "start": 49.85,
+      "end": 50.379
+    },
+    {
+      "text": "to",
+      "start": 51.196,
+      "end": 51.329
+    },
+    {
+      "text": "your",
+      "start": 51.341,
+      "end": 51.497
+    },
+    {
+      "text": "soul",
+      "start": 51.509,
+      "end": 52.002
+    },
+    {
+      "text": "In",
+      "start": 53.288,
+      "end": 53.483
+    },
+    {
+      "text": "Jesus'",
+      "start": 53.494,
+      "end": 53.896
+    },
+    {
+      "text": "name",
+      "start": 53.907,
+      "end": 54.24
+    },
+    {
+      "text": "Amen",
+      "start": 54.435,
+      "end": 54.859
+    },
+    {
+      "text": "Verse",
+      "start": 60.302,
+      "end": 60.651
+    },
+    {
+      "text": "7",
+      "start": 60.665,
+      "end": 61.162
+    },
+    {
+      "text": "Thou",
+      "start": 62.596,
+      "end": 62.843
+    },
+    {
+      "text": "hast",
+      "start": 62.856,
+      "end": 63.247
+    },
+    {
+      "text": "put",
+      "start": 63.26,
+      "end": 63.612
+    },
+    {
+      "text": "in",
+      "start": 64.512,
+      "end": 64.668
+    },
+    {
+      "text": "my",
+      "start": 64.681,
+      "end": 64.864
+    },
+    {
+      "text": "heart",
+      "start": 64.877,
+      "end": 65.28
+    },
+    {
+      "text": "more",
+      "start": 65.502,
+      "end": 65.749
+    },
+    {
+      "text": "than",
+      "start": 65.762,
+      "end": 65.892
+    },
+    {
+      "text": "in",
+      "start": 65.905,
+      "end": 65.984
+    },
+    {
+      "text": "the",
+      "start": 65.997,
+      "end": 66.075
+    },
+    {
+      "text": "time",
+      "start": 66.088,
+      "end": 66.465
+    },
+    {
+      "text": "that",
+      "start": 66.478,
+      "end": 66.609
+    },
+    {
+      "text": "their",
+      "start": 66.622,
+      "end": 66.778
+    },
+    {
+      "text": "corn",
+      "start": 66.791,
+      "end": 67.181
+    },
+    {
+      "text": "and",
+      "start": 67.195,
+      "end": 67.312
+    },
+    {
+      "text": "their",
+      "start": 67.325,
+      "end": 67.494
+    },
+    {
+      "text": "wine",
+      "start": 67.507,
+      "end": 67.741
+    },
+    {
+      "text": "increased",
+      "start": 67.754,
+      "end": 68.484
+    },
+    {
+      "text": "Verse",
+      "start": 69.919,
+      "end": 70.246
+    },
+    {
+      "text": "8",
+      "start": 70.257,
+      "end": 70.608
+    },
+    {
+      "text": "I",
+      "start": 73.318,
+      "end": 73.513
+    },
+    {
+      "text": "will",
+      "start": 73.526,
+      "end": 73.722
+    },
+    {
+      "text": "both",
+      "start": 73.735,
+      "end": 74.269
+    },
+    {
+      "text": "me",
+      "start": 75.169,
+      "end": 75.377
+    },
+    {
+      "text": "down",
+      "start": 75.391,
+      "end": 75.716
+    },
+    {
+      "text": "in",
+      "start": 75.729,
+      "end": 75.833
+    },
+    {
+      "text": "peace",
+      "start": 75.846,
+      "end": 76.341
+    },
+    {
+      "text": "and",
+      "start": 76.549,
+      "end": 76.745
+    },
+    {
+      "text": "sleep",
+      "start": 76.758,
+      "end": 77.2
+    },
+    {
+      "text": "for",
+      "start": 77.448,
+      "end": 77.63
+    },
+    {
+      "text": "thou",
+      "start": 77.643,
+      "end": 77.995
+    },
+    {
+      "text": "LORD",
+      "start": 78.242,
+      "end": 78.62
+    },
+    {
+      "text": "only",
+      "start": 78.88,
+      "end": 79.154
+    },
+    {
+      "text": "makest",
+      "start": 79.167,
+      "end": 79.635
+    },
+    {
+      "text": "me",
+      "start": 79.648,
+      "end": 79.778
+    },
+    {
+      "text": "dwell",
+      "start": 79.792,
+      "end": 80.117
+    },
+    {
+      "text": "in",
+      "start": 80.13,
+      "end": 80.443
+    },
+    {
+      "text": "May",
+      "start": 85.993,
+      "end": 86.199
+    },
+    {
+      "text": "the",
+      "start": 86.211,
+      "end": 86.325
+    },
+    {
+      "text": "Lord",
+      "start": 86.337,
+      "end": 86.807
+    },
+    {
+      "text": "the",
+      "start": 87.594,
+      "end": 87.72
+    },
+    {
+      "text": "reading",
+      "start": 87.732,
+      "end": 88.076
+    },
+    {
+      "text": "of",
+      "start": 88.087,
+      "end": 88.168
+    },
+    {
+      "text": "His",
+      "start": 88.179,
+      "end": 88.305
+    },
+    {
+      "text": "Holy",
+      "start": 88.317,
+      "end": 88.603
+    },
+    {
+      "text": "Word",
+      "start": 88.615,
+      "end": 88.97
+    },
+    {
+      "text": "and",
+      "start": 89.211,
+      "end": 89.349
+    },
+    {
+      "text": "may",
+      "start": 89.36,
+      "end": 89.544
+    },
+    {
+      "text": "it",
+      "start": 89.555,
+      "end": 89.67
+    },
+    {
+      "text": "bring",
+      "start": 89.681,
+      "end": 89.922
+    },
+    {
+      "text": "deep",
+      "start": 89.934,
+      "end": 90.163
+    },
+    {
+      "text": "peace",
+      "start": 90.175,
+      "end": 90.484
+    },
+    {
+      "text": "and",
+      "start": 90.496,
+      "end": 90.931
+    },
+    {
+      "text": "to",
+      "start": 91.723,
+      "end": 91.849
+    },
+    {
+      "text": "your",
+      "start": 91.86,
+      "end": 92.009
+    },
+    {
+      "text": "soul",
+      "start": 92.021,
+      "end": 92.491
+    },
+    {
+      "text": "In",
+      "start": 93.835,
+      "end": 94.236
+    },
+    {
+      "text": "name",
+      "start": 95.012,
+      "end": 95.413
+    },
+    {
+      "text": "Amen",
+      "start": 95.597,
+      "end": 96.01
+    }
+  ]
+}

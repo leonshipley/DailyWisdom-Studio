@@ -590,15 +590,8 @@ client = genai.Client(api_key=API_KEY) if API_KEY else None
 
 
 YOUTUBE_SCOPES = [
-
-    "https://www.googleapis.com/auth/youtube",
-
-    "https://www.googleapis.com/auth/yt-analytics.readonly",
-
     "https://www.googleapis.com/auth/youtube.upload",
-
     "https://www.googleapis.com/auth/youtube.readonly"
-
 ]
 
 
@@ -1148,27 +1141,29 @@ def ensure_sacred_assets():
 # --- 2. MULTI-CHANNEL SYSTEM ---
 
 def load_channels() -> dict:
-
+    channels = {}
+    seen_files = set()
     if CHANNELS_CONFIG.exists():
-
         try:
-
             with open(CHANNELS_CONFIG, "r", encoding="utf-8") as f:
-
-                channels = json.load(f)
-
-            if channels:
-
-                return channels
-
+                saved = json.load(f)
+            if isinstance(saved, dict):
+                for k, v in saved.items():
+                    fn = Path(v).name.lower()
+                    if fn not in seen_files:
+                        seen_files.add(fn)
+                        channels[k] = v
         except Exception:
-
             pass
-
-    default_pkl = CHANNELS_DIR / "Grace_of_the_Lord.pickle"
-
-    return {"Grace of the Lord (@GraceAndDailyPrayer)": str(default_pkl)}
-
+    if CHANNELS_DIR.exists():
+        for pkl in sorted(CHANNELS_DIR.glob("*.pickle")):
+            if pkl.name.lower() not in seen_files:
+                seen_files.add(pkl.name.lower())
+                channels[pkl.stem.replace("_", " ")] = str(pkl.resolve())
+    if not channels:
+        default_pkl = CHANNELS_DIR / "Grace_of_the_Lord.pickle"
+        channels["Grace of the Lord (@GraceAndDailyPrayer)"] = str(default_pkl)
+    return channels
 
 
 def save_channels(data: dict):
@@ -1193,7 +1188,7 @@ def connect_new_channel():
 
     flow = InstalledAppFlow.from_client_secrets_file(str(CLIENT_SECRET_FILE), YOUTUBE_SCOPES)
 
-    credentials = flow.run_local_server(port=0, prompt="consent")
+    credentials = flow.run_local_server(port=0, prompt="select_account consent")
 
     youtube = build("youtube", "v3", credentials=credentials)
 
@@ -3474,6 +3469,52 @@ def choose_upload_channel(default_channel: str) -> str | None:
 
 
 
+
+def publish_video_to_selected_target(target_choice: str, video_path: Path, thumbnail_path: Path | None = None) -> list[tuple[str, str]]:
+    """
+    Publishes a video (+ custom thumbnail + pinned comment) to either:
+    - A single selected YouTube channel, OR
+    - '🔥 BOTH / ALL Connected Channels' simultaneously!
+    Records per-channel YouTube IDs in metadata['uploaded_channels'].
+    """
+    import grace_of_lord_engine as gle
+    channels_map = load_channels()
+    all_ch_names = list(channels_map.keys())
+
+    if "BOTH" in str(target_choice).upper() or "ALL CONNECTED" in str(target_choice).upper():
+        targets = all_ch_names
+    else:
+        # Match channel name cleanly
+        matched = None
+        for ch in all_ch_names:
+            if ch == target_choice or ch.split("(")[0].strip() in str(target_choice) or str(target_choice) in ch:
+                matched = ch
+                break
+        targets = [matched] if matched else [target_choice]
+
+    results = []
+    for ch_name in targets:
+        yt_id = upload_video_to_youtube(ch_name, video_path, thumbnail_path=thumbnail_path)
+        if yt_id:
+            try:
+                gle.post_pinned_comment_if_possible(ch_name, yt_id, video_path)
+            except Exception:
+                pass
+            meta_p = video_path.with_suffix(".json")
+            try:
+                m_data = json.loads(meta_p.read_text(encoding="utf-8")) if meta_p.exists() else {}
+            except Exception:
+                m_data = {}
+            up_map = m_data.get("uploaded_channels", {})
+            if not isinstance(up_map, dict):
+                up_map = {}
+            up_map[ch_name] = yt_id
+            m_data["uploaded_channels"] = up_map
+            m_data["youtube_id"] = yt_id
+            meta_p.write_text(json.dumps(m_data, indent=2, ensure_ascii=False), encoding="utf-8")
+            results.append((ch_name, yt_id))
+    return results
+
 def upload_video_to_youtube(channel_name: str, video_path: Path, thumbnail_path: Path | None = None) -> str | None:
 
     youtube = get_authenticated_youtube(channel_name)
@@ -4255,7 +4296,7 @@ def render_faceless_bible_video(
 
         if probe.stdout.strip():
 
-            duration = float(probe.stdout.strip()) + 1.0
+            duration = float(probe.stdout.strip()) + 0.2
 
     except Exception:
 
@@ -4353,7 +4394,7 @@ def render_faceless_bible_video(
 
             "-i", str(voice_path.absolute()),
 
-            "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
+            "-stream_loop", "-1", "-i", str(bgm_audio.absolute())
 
         ]
 
@@ -4383,7 +4424,7 @@ def render_faceless_bible_video(
 
             "-i", str(voice_path.absolute()),
 
-            "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
+            "-stream_loop", "-1", "-i", str(bgm_audio.absolute())
 
         ]
 
@@ -4411,7 +4452,7 @@ def render_faceless_bible_video(
 
             "-i", str(voice_path.absolute()),
 
-            "-stream_loop", "-1", "-t", f"{duration:.2f}", "-i", str(bgm_audio.absolute())
+            "-stream_loop", "-1", "-i", str(bgm_audio.absolute())
 
         ]
 
@@ -4637,7 +4678,7 @@ def render_faceless_bible_video(
 
     try:
 
-        subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=60, check=True, encoding="utf-8", errors="replace")
+        subprocess.run(cmd, cwd=str(BASE_DIR), capture_output=True, text=True, timeout=300, check=True, encoding="utf-8", errors="replace")
 
     except subprocess.CalledProcessError as e:
 

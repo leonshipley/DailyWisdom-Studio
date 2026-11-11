@@ -31,6 +31,8 @@ import main as backend
 importlib.reload(backend)
 import sticker_studio
 import importlib
+import ai_emotional_tts_engine as aete
+importlib.reload(aete)
 import preacher_audio_engine as pae
 import studio_screen_recorder as ssr
 importlib.reload(ssr)
@@ -40,6 +42,8 @@ import longform_prayer_engine as lpe
 importlib.reload(lpe)
 import flow_story_engine as fse
 import channel_analytics_engine as cae
+import personal_ai_analyzer as paa
+importlib.reload(paa)
 import grace_of_lord_engine as gle
 import viral_researcher as vr
 import title_engine
@@ -520,6 +524,73 @@ st.markdown('''
     
     img { border-radius: 10px; }
     video { width: 100% !important; max-height: 620px !important; border-radius: 12px; background: #000; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
+
+    /* Luxury 2x4 Grid Studio Navigation Deck */
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) > div[role="radiogroup"] {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 10px !important;
+        background: rgba(10, 15, 28, 0.85) !important;
+        backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(235, 185, 55, 0.35) !important;
+        border-radius: 14px !important;
+        padding: 10px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+        margin-bottom: 15px !important;
+    }
+
+    /* Hide the awkward radio dot circle */
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label > div:first-child {
+        display: none !important;
+    }
+
+    /* Style the tabs as luxury clickable buttons */
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: rgba(20, 28, 48, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
+        padding: 12px 14px !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+        transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        text-align: center !important;
+    }
+
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label div,
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label p {
+        font-size: 13.5px !important;
+        font-weight: 700 !important;
+        color: #CBD5E1 !important;
+        margin: 0 !important;
+    }
+
+    /* Smooth Hover Glow */
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label:hover {
+        background: rgba(30, 41, 59, 0.95) !important;
+        border-color: #EBB937 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 18px rgba(235, 185, 55, 0.25) !important;
+    }
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label:hover p {
+        color: #FDE047 !important;
+    }
+
+    /* Selected Active Tab Highlight (Red & Gold Studio Theme) */
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label:has(input:checked) {
+        background: linear-gradient(135deg, #DC2626 0%, #991B1B 50%, #B91C1C 100%) !important;
+        border: 1px solid #FDE047 !important;
+        box-shadow: 0 6px 22px rgba(220, 38, 38, 0.6), inset 0 0 12px rgba(253, 224, 71, 0.3) !important;
+        transform: scale(1.02) !important;
+    }
+    div[data-testid="stRadio"]:has(input[name*="fast_nav_bar"]) label:has(input:checked) p {
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.8) !important;
+    }
+
 </style>
 ''', unsafe_allow_html=True)
 
@@ -632,6 +703,31 @@ with st.container(border=True):
         ])
 
         with tab_preach_dir:
+            st.markdown("##### 🌟 ElevenLabs-Style AI Acting Voice & Natural-Language Feeling Command")
+            el_c1, el_c2 = st.columns([1.15, 1.15], gap="medium")
+            with el_c1:
+                cur_eng = p_cfg.get("tts_engine", aete.ENGINE_CHOICES[0])
+                sel_tts_eng = st.selectbox(
+                    "🧠 Select Voice Synthesis Brain:",
+                    aete.ENGINE_CHOICES,
+                    index=aete.ENGINE_CHOICES.index(cur_eng) if cur_eng in aete.ENGINE_CHOICES else 0,
+                    key="sel_tts_brain_engine"
+                )
+            with el_c2:
+                cur_gv = p_cfg.get("gemini_acting_voice", list(aete.GEMINI_ACTING_VOICES.keys())[0])
+                gv_keys = list(aete.GEMINI_ACTING_VOICES.keys())
+                sel_gem_voice = st.selectbox(
+                    "🎭 Select AI Emotional Acting Preacher Voice:",
+                    gv_keys,
+                    index=gv_keys.index(cur_gv) if cur_gv in gv_keys else 0,
+                    key="sel_gem_acting_voice"
+                )
+            feel_prompt_in = st.text_input(
+                "💬 Natural-Language Feeling / Acting Command (Tell the AI *how* to feel & preach — just like ElevenLabs v3!):",
+                value=p_cfg.get("custom_feeling_prompt", "Start with deep tearful empathy and a soft sigh, build into fiery righteous preacher authority on power words, and finish with a warm, slow, comforting whisper on Amen."),
+                key="in_custom_feeling_cmd"
+            )
+            st.divider()
             st.info("""💡 **AI-Powered or Manual Control:** Click **'🤖 AI Auto-Direct Emotions & SFX'** below and Gemini AI will automatically read your script and inject **`[angry]`**, **`[empathy]`**, **`[whisper]`**, **`[warfare]`**, **`[scripture]`**, **`[boom]`**, and **`*POWER WORDS*`** so the preacher sounds 100% human!""")
 
             pc1, pc2, pc3, pc4, pc5 = st.columns(5, gap="small")
@@ -795,14 +891,27 @@ with st.container(border=True):
                 "sfx_swell": chk_swel,
                 "sfx_boom": chk_boom,
                 "sfx_bell": chk_bell,
-                "sentence_overrides": new_overrides
+                "sentence_overrides": new_overrides,
+                "tts_engine": sel_tts_eng,
+                "gemini_acting_voice": sel_gem_voice,
+                "custom_feeling_prompt": feel_prompt_in
             }
             pae.save_preacher_config(updated_p_cfg)
 
             with aud_c1:
                 p_btn1, p_btn2 = st.columns(2)
                 with p_btn1:
-                    if st.button("🔥 Audition Preacher Voice + SFX", key="btn_deck_audition", width="stretch"):
+                    if st.button("🧪 Load Extreme Contrast Test ([soft] ➔ [angry] ➔ [whisper])", key="btn_load_contrast_test", width="stretch"):
+                        st.session_state["deck_test_script_in"] = (
+                            "[soft] Listen closely, my friend... I know you are tired and carrying so much pain. "
+                            "[angry] [boom] But *ENOUGH* is *ENOUGH*! Devil, take your hands off this family right *NOW*! "
+                            "[scripture] [shimmer] Isaiah 54, verse 17 says: No weapon formed against you shall prosper. "
+                            "[whisper] [swell] Close your eyes... Jesus is right here in your room. "
+                            "[amen] [bell] Be healed and rest in peace, Amen."
+                        )
+                        st.rerun()
+
+                    if st.button("🔥 Audition Preacher Voice + Verify Tags Now", key="btn_deck_audition", width="stretch"):
                         with st.spinner("Synthesizing Angry, Empathy & Warfare pitch shifts + Sacred SFX..."):
                             out_test_p = backend.BASE_DIR / "assets" / "voice_previews" / "deck_preacher_audition.mp3"
                             pae.synthesize_preacher_voiceover(
@@ -819,6 +928,10 @@ with st.container(border=True):
                         st.toast("✅ Pushed AI-Directed Preacher Script into Tab 1!")
                 if st.session_state.get("deck_audition_mp3") and Path(st.session_state["deck_audition_mp3"]).exists():
                     st.audio(st.session_state["deck_audition_mp3"], format="audio/mp3", autoplay=True)
+                    ver_rows = pae.preview_script_preacher_breakdown(test_preach_txt, base_rate=global_rate_str, base_pitch=global_v_obj.get("pitch", "+0Hz"))
+                    st.markdown("##### ✅ Live Tag & Pitch Verification Log (What Just Played):")
+                    for vr_item in ver_rows:
+                        st.caption(f"**Chunk {int(vr_item['ID'])+1}** | **{vr_item['Emotion']}** (`Pitch: {vr_item['Pitch']}`, `Speed: {vr_item['Speed']}`, `Vol: {vr_item['Vol']}`, `SFX: {vr_item['SFX']}`) ➔ *'{vr_item["Clean Sentence"]}'*")
 
         with tab_flow_music:
             st.markdown("#### 🎵 AI Flow Worship Music & Underscore Generator (Connected to Your API Key)")
@@ -856,6 +969,50 @@ with st.container(border=True):
 # ==============================================================================
 # REUSABLE CUSTOM THUMBNAIL STUDIO WIDGET
 # ==============================================================================
+def render_multi_channel_publish_box(video_path: Path, chosen_cover: Path | None, key_prefix: str, live_desc_override: str | None = None):
+    """Renders a live Multi-Channel Selector (Grace of the Lord, Iron & Faith, or BOTH Channels) + Publish Button."""
+    live_channels_dict = backend.load_channels()
+    live_ch_names = list(live_channels_dict.keys())
+
+    m_meta = backend.load_clip_metadata(video_path)
+    up_map = m_meta.get("uploaded_channels", {})
+    if not isinstance(up_map, dict):
+        up_map = {}
+
+    if up_map:
+        for ch_k, y_id in up_map.items():
+            st.success(f"🟢 Live on **{ch_k}**: https://youtu.be/{y_id}")
+    elif m_meta.get("youtube_id"):
+        st.success(f"🟢 Live on YouTube: https://youtu.be/{m_meta['youtube_id']}")
+
+    if len(live_ch_names) > 1:
+        both_label = "🔥 BOTH Channels (" + " + ".join([c.split("(")[0].strip() for c in live_ch_names]) + ")"
+        pub_opts = [both_label] + live_ch_names
+    else:
+        pub_opts = live_ch_names
+
+    sel_pub_target = st.radio(
+        "📺 Select Where to Publish This Video:",
+        pub_opts,
+        index=0,
+        key=f"{key_prefix}_ch_target_radio"
+    )
+
+    if st.button(f"🚀 Publish Now to: {sel_pub_target}", key=f"{key_prefix}_multi_pub_btn", width="stretch"):
+        if live_desc_override is not None:
+            backend.save_clip_metadata(video_path, m_meta.get("title", ""), live_desc_override, m_meta.get("tags", []), topic=m_meta.get("topic", ""))
+        with st.spinner(f"Publishing '{video_path.name}' to {sel_pub_target}..."):
+            pub_res = backend.publish_video_to_selected_target(sel_pub_target, video_path, thumbnail_path=chosen_cover)
+            if pub_res:
+                st.cache_data.clear()
+                for c_done, y_done in pub_res:
+                    st.success(f"🎉 Published to **{c_done}**: https://youtu.be/{y_done}")
+                time.sleep(0.8)
+                st.rerun()
+            else:
+                st.error("❌ Upload failed or selected channel needs re-authentication. Click '➕ Add Channel' in Sidebar if token expired.")
+
+
 def render_custom_thumbnail_manager(video_path: Path, key_prefix: str) -> Path | None:
     v_dir = video_path.parent
     meta = backend.load_clip_metadata(video_path)
@@ -948,21 +1105,21 @@ def render_custom_thumbnail_manager(video_path: Path, key_prefix: str) -> Path |
 # MAIN STUDIO TABS
 # ==============================================================================
 _NAV_TABS = [
-    "🎬 1. English Shorts Studio",
+    "🎬 1. English Shorts",
     "🇮🇳 2. Hindi Shorts",
-    "🕊️ 3. Long-Form Prayers (5m-1Hr)",
-    "🎬 4. 3-Min Flow Story Movies",
-    "📂 5. Video Vault",
+    "🕊️ 3. Long-Form Prayers",
+    "🎥 4. 3-Min Story Movies",
+    "📂 5. Master Video Vault",
     "🎙️ 6. Podcast Clipper",
-    "📊 7. Channel Analytics",
-    "🧪 8. AI Engine Tester Lab",
+    "🧠 7. Personal AI Analyzer",
+    "🧪 8. AI Tester Lab",
 ]
 active_nav_tab = st.radio("Studio Navigation:", _NAV_TABS, index=0, horizontal=True, label_visibility="collapsed", key="fast_nav_bar")
 
 # ==============================================================================
 # TAB 1: CONSOLIDATED & ORGANIZED ENGLISH SHORTS STUDIO
 # ==============================================================================
-if active_nav_tab == "🎬 1. English Shorts Studio":
+if "1." in active_nav_tab:
     short_style = st.radio(
         "Select Shorts Creation Style:",
         [
@@ -1159,15 +1316,23 @@ if active_nav_tab == "🎬 1. English Shorts Studio":
                         "thumbnail_prompt": f"Vertical 9:16 Christian devotional thumbnail for {qs_topic} ({qs_ref})"
                     }
 
-                    # Trim long verses to core clause so total Short stays in the 18-22s viral sweet spot!
-                    short_v_words = qs_v_txt.strip().split()
-                    compact_v = (" ".join(short_v_words[:22]) + ".") if len(short_v_words) > 24 else qs_v_txt.strip()
-                    def_full_script = (
-                        f"{qs_opening} "
-                        f"{qs_ref_spoken}. {compact_v} "
-                        f"{synced_pkg['prayer']} "
-                        f"Type AMEN to claim this!"
-                    )
+                    # Strict viral budget: 38-42 words total = strictly 20-23 seconds!
+                    v_words = qs_v_txt.strip().split()
+                    core_v = (" ".join(v_words[:14]) + ".") if len(v_words) > 15 else qs_v_txt.strip()
+                    if not core_v.endswith("."): core_v += "."
+
+                    # Compact 1-sentence prayer under 8 words
+                    short_pray = re.sub(r"^(Lord Jesus,|Lord,)\s*", "", synced_pkg.get("prayer", "Grant peace and breakthrough, Amen.")).strip()
+                    pray_words = short_pray.split()
+                    compact_p = " ".join(pray_words[:8]) if len(pray_words) > 8 else short_pray
+                    if not compact_p.lower().endswith("amen.") and not compact_p.lower().endswith("amen"):
+                        compact_p = compact_p.rstrip(". ") + ", Amen."
+
+                    # Ultra-punchy 6-word hook
+                    short_hook = qs_opening.split(",")[0].strip() if "," in qs_opening else qs_opening[:35]
+                    if not short_hook.endswith("..."): short_hook += "..."
+
+                    def_full_script = f"{short_hook} {qs_ref_spoken}: {core_v} Lord, {compact_p} Type AMEN to claim this!"
                     st.session_state["qs_spoken_script_area"] = def_full_script
                     st.session_state["qs_synced_title_in"] = synced_pkg["title"]
                     st.session_state["qs_synced_desc_in"] = synced_pkg["description"]
@@ -1199,10 +1364,16 @@ if active_nav_tab == "🎬 1. English Shorts Studio":
                 )
 
                 words_cnt = len(qs_spoken_script.split())
-                speed_fac = 2.35 * (1.0 + (global_speed_pct / 100.0))
-                est_d = round(words_cnt / max(1.2, speed_fac) + 2.5, 1)
+                # Real preacher speed calculation including prosody + pauses
+                est_d = round((words_cnt / 1.95) + 1.8, 1)
+                if est_d <= 25.0:
+                    status_badge = f'<span style="color:#4ADE80;font-weight:800;">🟢 {est_d}s — Perfect Viral Sweet Spot (&lt;25s)</span>'
+                elif est_d <= 30.0:
+                    status_badge = f'<span style="color:#FACC15;font-weight:800;">🟡 {est_d}s — Good (Under 30s)</span>'
+                else:
+                    status_badge = f'<span style="color:#F87171;font-weight:800;">🔴 {est_d}s — TOO LONG (&gt;30s)! Trim to under 42 words!</span>'
                 st.markdown(
-                    f'<div class="budget-badge">⏱️ Words: <b>{words_cnt}</b> | Est. Duration: <b>{est_d}s</b> [Target: 20–25s]</div>',
+                    f'<div class="budget-badge">⏱️ Spoken Words: <b>{words_cnt}</b> &nbsp;|&nbsp; Estimated Duration: {status_badge}</div>',
                     unsafe_allow_html=True
                 )
 
@@ -1392,24 +1563,12 @@ if active_nav_tab == "🎬 1. English Shorts Studio":
                     st.text_area("Description:", value=m_meta["description"], height=120, key=f"mon_d_{mvp.parent.name}")
                     st.code(", ".join(m_meta.get("tags", [])), language="text")
 
-                if m_meta.get("youtube_id"):
-                    st.success(f"🎉 LIVE ON YOUTUBE: https://youtube.com/shorts/{m_meta['youtube_id']}")
-                else:
-                    if st.button(f"🚀 Publish Video + Selected Thumbnail to '{global_target_ch}'", key=f"pub_btn_{mvp.parent.name}", width="stretch"):
-                        live_ed_d = st.session_state.get(f"mon_d_{mvp.parent.name}", m_meta.get("description", ""))
-                        backend.save_clip_metadata(mvp, m_meta.get("title", ""), live_ed_d, m_meta.get("tags", []), topic=m_meta.get("topic", ""))
-                        with st.spinner(f"Publishing to {global_target_ch}..."):
-                            yt_id = backend.upload_video_to_youtube(global_target_ch, mvp, thumbnail_path=chosen_cover)
-                            if yt_id:
-                                gle.post_pinned_comment_if_possible(global_target_ch, yt_id, mvp)
-                                st.success(f"Live on YouTube! https://youtube.com/shorts/{yt_id}")
-                                time.sleep(1.0)
-                                st.rerun()
-
+                live_ed_d = st.session_state.get(f"mon_d_{mvp.parent.name}", m_meta.get("description", ""))
+                render_multi_channel_publish_box(mvp, chosen_cover, f"tab1_{mvp.parent.name}", live_desc_override=live_ed_d)
 # ==============================================================================
 # TAB 2: HINDI SHORTS
 # ==============================================================================
-elif active_nav_tab == "🇮🇳 2. Hindi Shorts":
+elif "2." in active_nav_tab:
     st.markdown("### 🇮🇳 Hindi Shorts Maker (पवित्र बाइबिल)")
     hi_c1, hi_c2 = st.columns([1.18, 1.0], gap="large")
     with hi_c1:
@@ -1545,15 +1704,11 @@ elif active_nav_tab == "🇮🇳 2. Hindi Shorts":
                 h_vp = Path(hi_last)
                 st.video(str(h_vp))
                 h_cov = render_custom_thumbnail_manager(h_vp, f"hi_pub_{h_vp.parent.name}")
-                if st.button(f"🚀 Publish to '{global_target_ch}'", key=f"hi_pub_btn_{h_vp.parent.name}", width="stretch"):
-                    yt_id = backend.upload_video_to_youtube(global_target_ch, h_vp, thumbnail_path=h_cov)
-                    if yt_id:
-                        st.success(f"Live! https://youtube.com/shorts/{yt_id}")
-
+                render_multi_channel_publish_box(h_vp, h_cov, f"tab2_hi_{h_vp.parent.name}")
 # ==============================================================================
 # TAB 3: LONG-FORM PRAYER SANCTUARY (5M - 1 HOUR) — 5-CHAPTER STRICT JSON ENGINE
 # ==============================================================================
-elif active_nav_tab == "🕊️ 3. Long-Form Prayers (5m-1Hr)":
+elif "3." in active_nav_tab:
     st.markdown("### 🕊️ Long-Form Soaking Prayer Sanctuary (15 Min • 30 Min • 5m–1Hr Multi-Chapter Pastoral Engine)")
     lf_left, lf_right = st.columns([1.22, 1.0], gap="large")
 
@@ -1623,7 +1778,25 @@ elif active_nav_tab == "🕊️ 3. Long-Form Prayers (5m-1Hr)":
                 lf_journey["pinned_comment"] = st.text_input("📌 Pinned Community Comment:", value=lf_journey.get("pinned_comment", ""), key="lf_pin_ed")
                 lf_journey["youtube_tags"] = st.text_input("🏷️ 15 SEO Keywords / Tags:", value=lf_journey.get("youtube_tags", ""), key="lf_tags_ed")
 
-                with st.expander("📖 View / Edit All 5 Chapters (Pain ➔ Scripture ➔ Warfare ➔ Blessing ➔ Benediction)", expanded=True):
+                st.markdown("##### 🎙️ Step 1B: AI Preacher Tone, Pitch & Sacred SFX Director for All 5 Chapters")
+                lf_d1, lf_d2 = st.columns([1.3, 1.0])
+                with lf_d1:
+                    if st.button("🤖 AI Auto-Direct Tone, Pitch & Sacred SFX Across All 5 Chapters", key="lf_ai_direct_5ch_btn", width="stretch"):
+                        with st.spinner("🤖 Gemini AI directing Empathy, Scripture, Angry/Warfare Rebuke, Blessing & Amen SFX across all 5 chapters..."):
+                            lf_journey, ch_cues = lpe.ai_direct_longform_5chapters(lf_journey)
+                            st.session_state["lf_active_journey"] = lf_journey
+                            st.session_state["lf_ch_cue_summary"] = ch_cues
+                            for stg_u in lf_journey["stages"]:
+                                st.session_state[f"lf_stg_edit_{stg_u['stage_num']}"] = stg_u["full_text"]
+                            st.rerun()
+                with lf_d2:
+                    st.caption("💡 Automatically shifts from **🥺 Empathy (Ch 1)** ➔ **📖 Scripture Shimmer (Ch 2)** ➔ **😡🔥 Fierce Warfare Boom (Ch 3)** ➔ **✨ Blessing (Ch 4)** ➔ **🙏 Amen Bell (Ch 5)**!")
+
+                if st.session_state.get("lf_ch_cue_summary"):
+                    with st.expander("📊 View 5-Chapter AI Tone, Pitch & Sacred SFX Map", expanded=True):
+                        st.dataframe(pd.DataFrame(st.session_state["lf_ch_cue_summary"]), hide_index=True, width="stretch")
+
+                with st.expander("📖 View / Edit All 5 Chapters (Supports [empathy], [angry], [warfare], [whisper], [boom], [shimmer], [swell], [bell] & *WORD*)", expanded=True):
                     for idx_c, stg in enumerate(lf_journey["stages"]):
                         st.markdown(f"**Chapter {stg['stage_num']}: {stg['chapter_title']}**")
                         edited_stg = st.text_area(
@@ -1644,42 +1817,140 @@ elif active_nav_tab == "🕊️ 3. Long-Form Prayers (5m-1Hr)":
                     lf_journey["strict_json"]["youtube_tags"] = lf_journey["youtube_tags"]
                     st.code(json.dumps(lf_journey["strict_json"], indent=2, ensure_ascii=False), language="json")
 
+                st.markdown("##### 🎨 Step 1C: 16:9 Visuals & Synced On-Screen Subtitle Font Designer")
                 v_col1, v_col2 = st.columns(2)
                 intro_vids = get_media_files(str(backend.INTRO_DIR), (".mp4", ".mov", ".webm", ".mkv"))
                 bg_imgs = get_media_files(str(backend.BG_DIR), (".jpg", ".jpeg", ".png", ".webp"))
                 with v_col1:
                     lf_sub_mode = st.selectbox(
-                        "📝 Subtitle Style & Render Speed:",
+                        "📝 On-Screen Subtitles Mode:",
                         [
-                            "⚡ Instant 3-Second Render (YouTube CC & .SRT Subtitles)",
-                            "🎬 Burned-In Subtitles (Hardsubs — Re-encodes All Frames)"
+                            "⚡ Fast Burned-In Subtitles (100% Synced On-Screen Like Shorts — Recommended!)",
+                            "⚡ Instant 3-Second Render (No On-Screen Text — YouTube CC .SRT Only)"
                         ],
                         index=0,
                         key="lf_sub_mode_sel"
                     )
-                    lf_vis_mode = st.selectbox("🎬 16:9 Style:", ["Looping Video Background", "Cinematic Ken Burns Wallpaper"], key="lf_vis_mode")
+                    lf_vis_mode = st.selectbox("🎬 16:9 Style:", ["Cinematic Ken Burns Wallpaper (Fastest Burned-In Subs)", "Looping Video Background"], index=0, key="lf_vis_mode")
                     lf_pick_vid = st.selectbox("🎬 Video:", ["Auto / Newest"] + [f.name for f in intro_vids], key="lf_vid_dd")
                 with v_col2:
                     lf_pick_img = st.selectbox("🖼️ Wallpaper:", ["Auto / Newest"] + [f.name for f in bg_imgs], key="lf_img_dd")
+                    lf_sub_font = st.selectbox("🔤 Subtitle Font:", list(lpe.LONGFORM_FONT_OPTIONS.keys()), index=0, key="lf_sub_font_sel")
+                    lf_sub_color = st.selectbox("🎨 Subtitle Color & Style:", list(lpe.LONGFORM_COLOR_THEMES.keys()), index=0, key="lf_sub_col_sel")
 
-                if st.button(f"🚀 2. RENDER {lf_dur.upper()} 16:9 SOAKING PRAYER VIDEO", key="lf_render_btn", width="stretch"):
-                    lf_loader = LiveTaskLoader(f"Producing {lf_dur} Soaking Prayer")
-                    out_folder = lpe.get_next_longform_folder(f"{lf_dur}_{lf_topic}")
-                    voice_raw_mp3 = out_folder / "meditative_voice.mp3"
-                    master_mix_mp3 = out_folder / "master_soaking_audio.mp3"
+                sub_c1, sub_c2, sub_c3 = st.columns(3)
+                with sub_c1:
+                    lf_sub_size = st.slider("📏 Font Size (px):", min_value=48, max_value=130, value=98, step=2, key="lf_sub_sz_sl")
+                with sub_c2:
+                    lf_sub_pos = st.selectbox("📍 Subtitle Screen Position:", list(lpe.LONGFORM_POSITIONS.keys()), index=0, key="lf_sub_pos_sel")
+                with sub_c3:
+                    lf_sub_words = st.slider("⏱️ Words Per Subtitle Card:", min_value=2, max_value=8, value=4, step=1, key="lf_sub_w_sl")
+
+                st.markdown("##### 🎙️ Step 2A: Generate & Listen to AI-Directed Long-Form Preacher Audio + SFX First")
+                lf_aud_c1, lf_aud_c2 = st.columns([1.2, 1.0])
+                with lf_aud_c1:
+                    if st.button("🎧 1. Generate & Audition 60s Multi-Emotion Highlight (Fast Test)", key="lf_fast_aud_btn", width="stretch"):
+                        with st.spinner("Synthesizing 60s Preacher Highlight (Empathy ➔ Warfare Boom ➔ Amen Bell) with SFX & BGM..."):
+                            # Take 1 sentence from Ch1 (Empathy), Ch2 (Scripture), Ch3 (Angry/Warfare), and Ch5 (Amen)
+                            s_ch1 = lf_journey["stages"][0]["paragraphs"][0].split(".")[0] + "."
+                            s_ch2 = lf_journey["stages"][min(1, len(lf_journey["stages"])-1)]["paragraphs"][0].split(".")[0] + "."
+                            s_ch3 = lf_journey["stages"][min(2, len(lf_journey["stages"])-1)]["paragraphs"][0].split(".")[0] + "!"
+                            s_ch5 = lf_journey["stages"][-1]["paragraphs"][-1].split(".")[-2] + ". In Jesus' name, Amen." if "." in lf_journey["stages"][-1]["paragraphs"][-1] else "In Jesus' name, Amen."
+                            sample_5ch = f"[empathy] [swell] {pae.strip_emotion_tags(s_ch1)} [scripture] [shimmer] {pae.strip_emotion_tags(s_ch2)} [angry] [boom] {pae.strip_emotion_tags(s_ch3)} [amen] [bell] {pae.strip_emotion_tags(s_ch5)}"
+                            use_v_name = "hi-IN-MadhurNeural" if "Hindi" in lf_lang_mode else global_v_obj["voice"]
+                            hl_v = backend.BASE_DIR / "assets" / "voice_previews" / "lf_highlight_voice.mp3"
+                            hl_m = backend.BASE_DIR / "assets" / "voice_previews" / "lf_highlight_mix.mp3"
+                            hl_pkg = pae.build_ai_directed_preacher_audio_preview(
+                                sample_5ch,
+                                out_voice_mp3=hl_v,
+                                out_mixed_preview_mp3=hl_m,
+                                voice_name=use_v_name,
+                                base_rate=global_rate_str,
+                                base_pitch=global_v_obj.get("pitch", "-2Hz"),
+                                bgm_file=global_bgm_file,
+                                bgm_vol=global_bgm_vol
+                            )
+                            st.session_state["lf_highlight_pkg"] = hl_pkg
+
+                with lf_aud_c2:
+                    if st.button(f"🎙️ 2. Pre-Master Full {lf_dur} Audio (Voice + SFX + BGM + {lf_nature})", key="lf_full_aud_btn", width="stretch"):
+                        lf_aud_loader = LiveTaskLoader(f"Mastering Full {lf_dur} Preacher Audio & SFX")
+                        # Auto-direct chapters if not already tagged
+                        if not st.session_state.get("lf_ch_cue_summary"):
+                            lf_aud_loader.update(15, "🤖 AI directing 5-Chapter Preacher Tone, Pitch & Sacred SFX...")
+                            lf_journey, ch_cues = lpe.ai_direct_longform_5chapters(lf_journey)
+                            st.session_state["lf_active_journey"] = lf_journey
+                            st.session_state["lf_ch_cue_summary"] = ch_cues
+
+                        out_folder = lpe.get_next_longform_folder(f"{lf_dur}_{lf_topic}")
+                        voice_raw_mp3 = out_folder / "meditative_voice.mp3"
+                        master_mix_mp3 = out_folder / "master_soaking_audio.mp3"
+
+                        lf_aud_loader.update(40, "🎙️ Synthesizing 5-Chapter Dynamic Preacher Voice + Sacred SFX...")
+                        use_v_name = "hi-IN-MadhurNeural" if "Hindi" in lf_lang_mode else global_v_obj["voice"]
+                        v_res = lpe.synthesize_meditative_voiceover(lf_journey, voice_raw_mp3, voice_name=use_v_name, rate_str=global_rate_str, pitch_str=global_v_obj.get("pitch", "-2Hz"))
+
+                        lf_aud_loader.update(80, f"🎵 Mixing {lf_dur} Master Audio with Worship Pad & {lf_nature}...")
+                        lpe.mix_longform_master_audio(voice_raw_mp3, master_mix_mp3, target_duration_sec=lf_journey["config"]["target_seconds"], bgm_file=global_bgm_file, bgm_volume=global_bgm_vol, nature_style=lf_nature)
+
+                        st.session_state["lf_preapproved_audio"] = {
+                            "folder": str(out_folder),
+                            "voice_mp3": str(voice_raw_mp3),
+                            "master_mp3": str(master_mix_mp3),
+                            "v_res": v_res,
+                            "topic": lf_topic,
+                            "dur_label": lf_dur
+                        }
+                        lf_aud_loader.complete(f"🎧 Full {lf_dur} Master Preacher Audio Ready! Listen below before rendering video.")
+
+                if st.session_state.get("lf_highlight_pkg"):
+                    hl = st.session_state["lf_highlight_pkg"]
+                    st.info(f"🎧 **60s Multi-Emotion Highlight Preview ({hl['duration_sec']}s):** {hl['ai_note']}")
+                    st.audio(hl["preview_mp3"], format="audio/mp3", autoplay=True)
+                    with st.expander("🎛️ View Highlight Phrase-by-Phrase Pitch & SFX Cue Sheet", expanded=False):
+                        st.dataframe(pd.DataFrame(hl["segments"]), hide_index=True, width="stretch")
+
+                if st.session_state.get("lf_preapproved_audio"):
+                    pa_lf = st.session_state["lf_preapproved_audio"]
+                    if Path(pa_lf["master_mp3"]).exists():
+                        st.success(f"✅ **Approved Full Master Audio Ready (`{Path(pa_lf['folder']).name}`):** Listen below, then click Render Video!")
+                        st.audio(pa_lf["master_mp3"], format="audio/mp3")
+
+                st.markdown("##### 🎬 Step 2B: Render Full-HD 16:9 Long-Form Video")
+                if st.button(f"🚀 3. RENDER {lf_dur.upper()} 16:9 SOAKING PRAYER VIDEO (Uses Approved AI Preacher Audio)", key="lf_render_btn", width="stretch"):
+                    lf_loader = LiveTaskLoader(f"Producing {lf_dur} Soaking Prayer Video")
+
+                    # Auto-direct chapters with AI Tone & SFX if not already directed
+                    if not st.session_state.get("lf_ch_cue_summary"):
+                        lf_loader.update(12, "🤖 AI directing 5-Chapter Preacher Tone, Pitch & Sacred SFX...")
+                        lf_journey, ch_cues = lpe.ai_direct_longform_5chapters(lf_journey)
+                        st.session_state["lf_active_journey"] = lf_journey
+                        st.session_state["lf_ch_cue_summary"] = ch_cues
+
+                    pa_lf = st.session_state.get("lf_preapproved_audio")
+                    if pa_lf and Path(pa_lf["master_mp3"]).exists() and pa_lf.get("topic") == lf_topic and pa_lf.get("dur_label") == lf_dur:
+                        out_folder = Path(pa_lf["folder"])
+                        voice_raw_mp3 = Path(pa_lf["voice_mp3"])
+                        master_mix_mp3 = Path(pa_lf["master_mp3"])
+                        v_res = pa_lf["v_res"]
+                        lf_loader.update(65, "🎙️ Using your pre-approved Master Preacher Audio & SFX track...")
+                    else:
+                        out_folder = lpe.get_next_longform_folder(f"{lf_dur}_{lf_topic}")
+                        voice_raw_mp3 = out_folder / "meditative_voice.mp3"
+                        master_mix_mp3 = out_folder / "master_soaking_audio.mp3"
+
+                        lf_loader.update(25, "🎙️ Synthesizing 5-Chapter AI Preacher Voiceover + Pitch Shifts + Sacred SFX...")
+                        use_v_name = "hi-IN-MadhurNeural" if "Hindi" in lf_lang_mode else global_v_obj["voice"]
+                        v_res = lpe.synthesize_meditative_voiceover(lf_journey, voice_raw_mp3, voice_name=use_v_name, rate_str=global_rate_str, pitch_str=global_v_obj.get("pitch", "-2Hz"))
+
+                        lf_loader.update(55, f"🎵 Mixing {lf_dur} master soaking audio with worship pad & {lf_nature}...")
+                        lpe.mix_longform_master_audio(voice_raw_mp3, master_mix_mp3, target_duration_sec=lf_journey["config"]["target_seconds"], bgm_file=global_bgm_file, bgm_volume=global_bgm_vol, nature_style=lf_nature)
+
                     final_16x9_mp4 = out_folder / f"{out_folder.name}.mp4"
                     final_16x9_thumb = out_folder / f"{out_folder.name}_thumb.jpg"
 
-                    # Save strict JSON & pinned_comment.txt into the output folder
                     (out_folder / "soaking_prayer_script.json").write_text(json.dumps(lf_journey["strict_json"], indent=2, ensure_ascii=False), encoding="utf-8")
                     (out_folder / "pinned_comment.txt").write_text(lf_journey.get("pinned_comment", ""), encoding="utf-8")
-
-                    lf_loader.update(25, "🎙️ Synthesizing unhurried pastoral voiceover & chapter timestamps...")
-                    use_v_name = "hi-IN-MadhurNeural" if "Hindi" in lf_lang_mode else global_v_obj["voice"]
-                    v_res = lpe.synthesize_meditative_voiceover(lf_journey, voice_raw_mp3, voice_name=use_v_name, rate_str=global_rate_str, pitch_str="-2Hz")
-
-                    lf_loader.update(55, f"🎵 Mixing {lf_dur} master soaking audio with worship pad & {lf_nature}...")
-                    lpe.mix_longform_master_audio(voice_raw_mp3, master_mix_mp3, target_duration_sec=lf_journey["config"]["target_seconds"], bgm_file=global_bgm_file, bgm_volume=global_bgm_vol, nature_style=lf_nature)
 
                     lf_loader.update(80, "🎬 Rendering Full-HD 1920x1080 (16:9) Video...")
                     chosen_v = (backend.INTRO_DIR / lf_pick_vid) if (lf_pick_vid != "Auto / Newest") else (intro_vids[0] if intro_vids else backend.prepare_muted_short_main())
@@ -1690,6 +1961,11 @@ elif active_nav_tab == "🕊️ 3. Long-Form Prayers (5m-1Hr)":
                         bg_image_path=chosen_i, bg_video_path=chosen_v,
                         visual_mode=lf_vis_mode, palette_name=global_palette,
                         subtitle_mode=lf_sub_mode,
+                        sub_font=lf_sub_font,
+                        sub_size=lf_sub_size,
+                        sub_color=lf_sub_color,
+                        sub_pos=lf_sub_pos,
+                        sub_words=lf_sub_words,
                         progress_cb=lambda pct, msg: lf_loader.update(pct, msg)
                     )
                     if ok_lf:
@@ -1725,17 +2001,11 @@ elif active_nav_tab == "🕊️ 3. Long-Form Prayers (5m-1Hr)":
 
                 lf_th = render_custom_thumbnail_manager(lf_p, f"lf_pub_{lf_p.parent.name}")
                 st.markdown(f"**🏆 Title:** `{lf_meta.get('title', '')}`")
-                if st.button(f"🚀 Publish Video + Thumbnail + Pinned Comment to '{global_target_ch}'", key="lf_pub_main", width="stretch"):
-                    with st.spinner(f"Uploading {lf_p.name} to {global_target_ch}..."):
-                        yt_id = backend.upload_video_to_youtube(global_target_ch, lf_p, thumbnail_path=lf_th)
-                        if yt_id:
-                            gle.post_pinned_comment_if_possible(global_target_ch, yt_id, lf_p)
-                            st.success(f"🎉 Live on YouTube! https://www.youtube.com/watch?v={yt_id}")
-
+                render_multi_channel_publish_box(lf_p, lf_th, f"tab3_lf_{lf_p.parent.name}")
 # ==============================================================================
 # TAB 4: 3-MIN FLOW STORY MOVIES
 # ==============================================================================
-elif active_nav_tab == "🎬 4. 3-Min Flow Story Movies":
+elif "4." in active_nav_tab:
     st.markdown("### 🎬 3-Minute Story Movies (Google Flow & Gemini Omni 1.2)")
     st_left, st_right = st.columns([1.18, 1.0], gap="large")
 
@@ -1803,21 +2073,90 @@ elif active_nav_tab == "🎬 4. 3-Min Flow Story Movies":
                 mv_p = Path(st_prev)
                 st.video(str(mv_p))
                 m_th = render_custom_thumbnail_manager(mv_p, f"st_pub_{mv_p.parent.name}")
-                if st.button(f"🚀 Publish to '{global_target_ch}'", key="st_pub_main", width="stretch"):
-                    yt_id = backend.upload_video_to_youtube(global_target_ch, mv_p, thumbnail_path=m_th)
-                    if yt_id:
-                        st.success(f"Live! https://www.youtube.com/watch?v={yt_id}")
+                render_multi_channel_publish_box(mv_p, m_th, f"tab4_st_{mv_p.parent.name}")
+# ==============================================================================
+# TAB 5: VIDEO VAULT (POST TO GRACE OF THE LORD, IRON & FAITH, OR BOTH CHANNELS)
+# ==============================================================================
+elif "5." in active_nav_tab:
+    st.markdown("### 📂 Master Video Vault (Post Any Video to Grace of the Lord, Iron & Faith, or BOTH Channels)")
 
-# ==============================================================================
-# TAB 5: VIDEO VAULT
-# ==============================================================================
-elif active_nav_tab == "📂 5. Video Vault":
-    st.markdown("### 📂 Video Vault")
-    if not all_videos:
-        st.info("No videos in clips/ yet.")
+    live_ch_map = backend.load_channels()
+    live_ch_list = list(live_ch_map.keys())
+    if len(live_ch_list) > 1:
+        both_vault_lbl = "🔥 BOTH Channels (" + " + ".join([c.split("(")[0].strip() for c in live_ch_list]) + ")"
+        vault_pub_opts = [both_vault_lbl] + live_ch_list
     else:
-        show_all = st.checkbox(f"Show All {len(all_videos)} Videos (Default shows newest 6)", value=False, key="lib_show_all")
-        disp_vids = all_videos if show_all else all_videos[:6]
+        vault_pub_opts = live_ch_list
+
+    vault_vids_sh = [
+        f for f in sorted(list(backend.CLIPS_DIR.rglob("*.mp4")), key=lambda p: p.stat().st_mtime, reverse=True)
+        if "temp_" not in str(f) and "muted_" not in f.name and f.parent.name not in ("scenes", "grace_scenes", "muted_cache")
+    ]
+    vault_vids_lf = [
+        f for f in sorted(list(lpe.LONGFORM_DIR.rglob("*.mp4")), key=lambda p: p.stat().st_mtime, reverse=True)
+        if "temp_" not in str(f) and "instant_base" not in f.name
+    ]
+    vault_vids_st = [
+        f for f in sorted(list(fse.STORY_MOVIES_DIR.rglob("ST*.mp4")), key=lambda p: p.stat().st_mtime, reverse=True)
+        if "temp_" not in str(f)
+    ]
+
+    with st.container(border=True):
+        vf_c1, vf_c2, vf_c3, vf_c4 = st.columns([1.45, 1.15, 0.9, 0.9])
+        with vf_c1:
+            vault_cat = st.radio(
+                "Filter Vault By Format:",
+                [
+                    f"📱 Shorts ({len(vault_vids_sh)})",
+                    f"🎬 All ({len(vault_vids_sh) + len(vault_vids_lf) + len(vault_vids_st)})",
+                    f"🕊️ Long-Form ({len(vault_vids_lf)})",
+                    f"🎥 Movies ({len(vault_vids_st)})"
+                ],
+                horizontal=True,
+                key="vault_cat_filter"
+            )
+        with vf_c2:
+            vault_status_filter = st.selectbox(
+                "Filter By Upload Status:",
+                [
+                    "All Videos (Live + Ready)",
+                    "🔵 Ready / Not Posted to Both Yet",
+                    "🟢 Already Live on YouTube"
+                ],
+                index=0,
+                key="vault_status_filter_dd"
+            )
+        with vf_c3:
+            vault_default_ch = st.selectbox("📺 Default Target:", vault_pub_opts, index=0, key="vault_def_ch_sel")
+        with vf_c4:
+            st.markdown("<div style='height:26px;'></div>", unsafe_allow_html=True)
+            show_all = st.checkbox("Show All Videos", value=False, key="lib_show_all")
+
+    if "Shorts" in vault_cat:
+        raw_vault_list = vault_vids_sh
+    elif "Long-Form" in vault_cat:
+        raw_vault_list = vault_vids_lf
+    elif "Movies" in vault_cat:
+        raw_vault_list = vault_vids_st
+    else:
+        raw_vault_list = sorted(vault_vids_sh + vault_vids_lf + vault_vids_st, key=lambda p: p.stat().st_mtime, reverse=True)
+
+    # Apply status filter
+    active_vault_list = []
+    for v_item in raw_vault_list:
+        m_item = backend.load_clip_metadata(v_item)
+        up_ch = m_item.get("uploaded_channels", {}) if isinstance(m_item.get("uploaded_channels"), dict) else {}
+        has_any_id = bool(up_ch or m_item.get("youtube_id"))
+        if "Ready" in vault_status_filter and len(up_ch) >= len(live_ch_list) and len(live_ch_list) > 1:
+            continue
+        if "Already Live" in vault_status_filter and not has_any_id:
+            continue
+        active_vault_list.append(v_item)
+
+    if not active_vault_list:
+        st.info("No videos match the current filter.")
+    else:
+        disp_vids = active_vault_list if show_all else active_vault_list[:9]
         for i in range(0, len(disp_vids), 3):
             cols = st.columns(3, gap="medium")
             for j in range(3):
@@ -1825,24 +2164,63 @@ elif active_nav_tab == "📂 5. Video Vault":
                     vid = disp_vids[i + j]
                     thumb = vid.with_name(f"{vid.stem}_thumb.jpg")
                     meta = backend.load_clip_metadata(vid)
+                    up_channels = meta.get("uploaded_channels", {}) if isinstance(meta.get("uploaded_channels"), dict) else {}
+                    if not up_channels and meta.get("youtube_id"):
+                        # Legacy single-channel upload was on Grace of the Lord
+                        up_channels = {live_ch_list[0]: meta["youtube_id"]}
+
                     with cols[j]:
                         with st.container(border=True):
-                            badge = "🟢 LIVE" if meta.get("youtube_id") else "🔵 READY"
+                            badge = f"🟢 LIVE ({len(up_channels)}/{len(live_ch_list)} Ch)" if up_channels else "🔵 READY"
                             st.markdown(f"**`{vid.parent.name}`** — `{badge}`")
                             if thumb.exists():
                                 st.image(str(thumb), width="stretch")
-                            st.caption(f"📌 **{meta['title']}**")
-                            if meta.get("youtube_id"):
-                                st.success(f"https://youtube.com/shorts/{meta['youtube_id']}")
-                            else:
-                                if st.button(f"🚀 Upload", key=f"grid_up_{vid.parent.name}", width="stretch"):
-                                    backend.upload_video_to_youtube(global_target_ch, vid)
+
+                            with st.expander("▶️ Watch Video / Edit Title & Description / Custom Cover", expanded=False):
+                                st.video(str(vid))
+                                ed_vt = st.text_input("Title:", value=meta.get("title", ""), key=f"v_ed_t_{vid.parent.name}_{i}_{j}")
+                                ed_vd = st.text_area("Description:", value=meta.get("description", ""), height=100, key=f"v_ed_d_{vid.parent.name}_{i}_{j}")
+                                if st.button("💾 Save Metadata Changes", key=f"v_sv_m_{vid.parent.name}_{i}_{j}", width="stretch"):
+                                    backend.save_clip_metadata(vid, ed_vt, ed_vd, meta.get("tags", []), topic=meta.get("topic", ""))
+                                    st.cache_data.clear()
+                                    st.toast("✅ Saved!")
                                     st.rerun()
+
+                            st.caption(f"📌 **{meta.get('title', vid.stem)}**")
+
+                            # Show exact channel status badges
+                            for ch_name_check in live_ch_list:
+                                ch_short = ch_name_check.split("(")[0].strip()
+                                if ch_name_check in up_channels:
+                                    st.caption(f"🟢 **{ch_short}:** https://youtu.be/{up_channels[ch_name_check]}")
+                                else:
+                                    st.caption(f"⚪ **{ch_short}:** *Not posted yet*")
+
+                            # Channel radio selector on EVERY card (even if already posted to 1 channel!)
+                            card_target = st.radio(
+                                "Select Channel to Post:",
+                                vault_pub_opts,
+                                index=vault_pub_opts.index(vault_default_ch) if vault_default_ch in vault_pub_opts else 0,
+                                key=f"vault_rad_{vid.parent.name}_{i}_{j}"
+                            )
+
+                            if st.button(f"🚀 Post to: {card_target.split('(')[0].strip()}", key=f"grid_up_{vid.parent.name}_{i}_{j}", width="stretch"):
+                                with st.spinner(f"Publishing '{vid.name}' to {card_target}..."):
+                                    th_to_use = thumb if thumb.exists() else None
+                                    pub_res = backend.publish_video_to_selected_target(card_target, vid, thumbnail_path=th_to_use)
+                                    if pub_res:
+                                        st.cache_data.clear()
+                                        for c_ok, y_ok in pub_res:
+                                            st.success(f"🎉 Live on {c_ok}: https://youtu.be/{y_ok}")
+                                        time.sleep(0.6)
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Upload failed — check terminal logs.")
 
 # ==============================================================================
 # TAB 6: PODCAST CLIPPER
 # ==============================================================================
-elif active_nav_tab == "🎙️ 6. Podcast Clipper":
+elif "6." in active_nav_tab:
     st.markdown("### 🎙️ Podcast Clipper")
     p_c1, p_c2 = st.columns(2, gap="large")
     with p_c1:
@@ -1877,51 +2255,208 @@ elif active_nav_tab == "🎙️ 6. Podcast Clipper":
                     st.caption(f"🔥 **{c['title'][:48]}** — `{c.get('views_per_day', 0):,.0f} views/day`")
 
 # ==============================================================================
-# TAB 7: CHANNEL ANALYTICS
+# TAB 7: PERSONAL AI VIDEO ANALYZER & CHANNEL ANALYTICS
 # ==============================================================================
-elif active_nav_tab == "📊 7. Channel Analytics":
-    st.markdown("### 📊 Channel Analytics")
-    ctl_c1, ctl_c2, ctl_c3 = st.columns([1.5, 1.2, 1.2])
-    with ctl_c1:
-        stat_ch = st.selectbox("Channel to Audit:", channel_names, key="stats_ch_sel")
-    with ctl_c2:
-        stat_days = st.selectbox("Period:", [28, 90, 365], index=1, format_func=lambda x: f"Last {x} Days", key="stats_period_sel")
-    with ctl_c3:
-        st.markdown("<div style='height:26px;'></div>", unsafe_allow_html=True)
-        if st.button("🔄 Refresh Analytics", key="refresh_stats_btn", width="stretch"):
-            st.session_state[f"full_intel_{stat_ch}_{stat_days}"] = cae.fetch_complete_channel_intelligence(stat_ch, days_back=stat_days)
+elif "7." in active_nav_tab:
+    st.markdown("### 🧠 Personal AI Video Analyzer & Channel Intelligence Hub")
 
-    cache_k = f"full_intel_{stat_ch}_{stat_days}"
-    intel = st.session_state.get(cache_k)
-    if intel is None:
-        st.info(f"💡 Click **'Refresh Analytics'** above to load live Subscribers, Video Audit, and Geography for **{stat_ch}**.")
-    elif not intel.get("ok"):
-        st.error(f"⚠️ {intel.get('error', 'Could not load data.')}")
-    else:
-        ov = intel["overview"]
-        tot = intel["totals"]
-        vids = intel["videos"]
-        live_views = max(ov["lifetime_views"], sum(v["views"] for v in vids))
-        wh_mins = tot["watch_time_minutes_period"]
-        wh_hrs = round(wh_mins / 60.0, 1)
+    ana_mode_tab1, ana_mode_tab2, ana_mode_tab3 = st.tabs([
+        "🤖 1. Personal AI Video Analyzer (Scans All Your Videos + 1-Click Fix)",
+        "💬 2. Ask Your Personal AI Analyst (Chat With Your Video Data)",
+        "📊 3. Live YouTube Channel & Geography Analytics"
+    ])
 
-        r1 = st.columns(4)
-        r1[0].metric("👥 Total Subscribers", f"{ov['subscribers']:,}")
-        r1[1].metric("👁️ Total Channel Views", f"{live_views:,}", f"{tot['shorts_views']:,} Shorts • {tot['longform_views']:,} Long-Form")
-        r1[2].metric("📹 Total Public Videos", f"{max(ov['total_videos'], len(vids)):,}", f"{tot['shorts_count']} Shorts • {tot['longform_count']} Long-Form")
-        r1[3].metric("⏱️ Est. Watch Time", f"{wh_hrs:,.1f} hrs", f"{wh_mins:,} mins")
+    # Gather live YouTube video stats if cached in session_state
+    cached_yt_vids = []
+    for k_st, v_st in st.session_state.items():
+        if k_st.startswith("full_intel_") and isinstance(v_st, dict) and v_st.get("videos"):
+            cached_yt_vids = v_st["videos"]
+            break
 
-        r2 = st.columns(4)
-        r2[0].metric("👍 Total Likes", f"{tot['total_likes']:,}")
-        r2[1].metric("💬 Total Comments", f"{tot['total_comments']:,}")
-        r2[2].metric("🔥 Engagement Rate", f"{tot['engagement_rate_pct']:.2f}%")
-        top_v = max([v["views"] for v in vids], default=0)
-        r2[3].metric("🚀 Top Video Views", f"{top_v:,}")
+    all_scanned_vids = paa.scan_all_studio_videos(live_yt_videos=cached_yt_vids)
 
-        if vids:
-            st.write("")
-            df_v = pd.DataFrame([{"Rank": f"#{i+1}", "Type": v["type"], "Title": v["title"][:50], "Views": v["views"], "Likes": v["likes"], "Comments": v["comments"], "Duration": v["duration_str"], "Date": v["published_date"]} for i, v in enumerate(vids)])
-            st.dataframe(df_v, hide_index=True, width="stretch")
+    # --- SUB-TAB 1: PERSONAL AI PORTFOLIO & SINGLE-VIDEO ANALYZER ---
+    with ana_mode_tab1:
+        tot_v = len(all_scanned_vids)
+        live_cnt = sum(1 for x in all_scanned_vids if "LIVE" in x["status"])
+        ready_cnt = tot_v - live_cnt
+        avg_health = int(round(sum(x["health_score"] for x in all_scanned_vids) / max(1, tot_v))) if tot_v else 0
+        needs_fix_cnt = sum(1 for x in all_scanned_vids if x["issues"])
+
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("🎬 Total Videos Scanned", f"{tot_v}", f"{live_cnt} Live • {ready_cnt} Ready")
+        k2.metric("🏆 Avg Viral Readiness Score", f"{avg_health}/100", "Across Shorts & Long-Form")
+        k3.metric("⚡ Ready to Upload Now", f"{ready_cnt}", "In clips/ & longform_videos/")
+        k4.metric("🔧 Videos With Fixable Issues", f"{needs_fix_cnt}", "1-Click AI Fix Available Below")
+
+        with st.container(border=True):
+            st.markdown("#### 🧠 Step 1: AI Master Portfolio Coach (Analyzes All Your Videos Together)")
+            ac_b1, ac_b2 = st.columns([1.4, 1.0])
+            with ac_b1:
+                if st.button("🚀 Run Personal AI Audit on All My Videos Now", key="btn_run_full_ai_audit", width="stretch"):
+                    with st.spinner(f"🤖 Gemini AI analyzing all {tot_v} videos in your studio..."):
+                        st.session_state["personal_ai_audit_rep"] = paa.run_ai_portfolio_master_audit(all_scanned_vids, channel_name=global_target_ch)
+            with ac_b2:
+                if st.button("📡 Sync Live YouTube Views Into Analyzer", key="btn_sync_yt_into_ana", width="stretch"):
+                    with st.spinner(f"Fetching live YouTube views & velocity for {global_target_ch}..."):
+                        st.session_state[f"full_intel_{global_target_ch}_90"] = cae.fetch_complete_channel_intelligence(global_target_ch, days_back=90)
+                        st.rerun()
+
+            if "personal_ai_audit_rep" not in st.session_state and paa.AI_AUDIT_CACHE_FILE.exists():
+                try:
+                    st.session_state["personal_ai_audit_rep"] = json.loads(paa.AI_AUDIT_CACHE_FILE.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+
+            if "personal_ai_audit_rep" in st.session_state:
+                rep_a = st.session_state["personal_ai_audit_rep"]
+                st.markdown(
+                    f'<div class="verse-card">'
+                    f'<div class="verse-hdr">🏆 Overall Studio Grade: <b>{rep_a.get("overall_channel_grade", "A")}</b> &nbsp;|&nbsp; '
+                    f'🧠 Engine: <b>{rep_a.get("model_used", "Gemini AI")}</b></div>'
+                    f'<div class="verse-body">{rep_a.get("executive_summary", "")}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+                col_w1, col_w2 = st.columns(2, gap="large")
+                with col_w1:
+                    st.markdown("##### ✅ What Is Working Best Across Your Videos")
+                    for w_item in rep_a.get("what_is_working_best", []):
+                        st.markdown(f"- 🟢 {w_item}")
+                with col_w2:
+                    st.markdown("##### 🔧 Hidden Bottlenecks Costing You Views")
+                    for b_item in rep_a.get("bottlenecks_to_fix", []):
+                        st.markdown(f"- 🟠 {b_item}")
+
+                if rep_a.get("next_5_viral_video_ideas"):
+                    with st.expander("🔥 AI 5-Video Next Upload Blueprint (Exact Topics, Verses, Titles & Preacher Emotions)", expanded=True):
+                        st.dataframe(pd.DataFrame(rep_a["next_5_viral_video_ideas"]), hide_index=True, width="stretch")
+
+        with st.container(border=True):
+            st.markdown("#### 📋 Complete Video Library Health & Audit Table (All Shorts, Long-Form & Movies)")
+            if all_scanned_vids:
+                df_all = pd.DataFrame([{
+                    "Status": x["status"],
+                    "Type": x["category"],
+                    "Folder": x["folder"],
+                    "Health": f"{x['health_score']}/100",
+                    "Dur (s)": f"{x['duration_sec']:.1f}s",
+                    "Title": x["title"],
+                    "Views": x["views"],
+                    "Vel/Day": x["views_per_day"],
+                    "Tags (c)": f"{x['tag_chars']}/380",
+                    "Audit Diagnosis": x["issues_str"]
+                } for x in all_scanned_vids])
+                st.dataframe(df_all, hide_index=True, width="stretch")
+
+        with st.container(border=True):
+            st.markdown("#### 🩺 Step 2: Single-Video AI Doctor & 1-Click Metadata Optimizer")
+            if all_scanned_vids:
+                vid_opts = [f"[{x['status']} | {x['health_score']}/100] {x['folder']} — {x['title'][:45]}" for x in all_scanned_vids]
+                sel_v_lbl = st.selectbox("Select Any Video to Diagnose, Preview & Upgrade:", vid_opts, index=0, key="paa_single_sel")
+                sel_v_obj = all_scanned_vids[vid_opts.index(sel_v_lbl)]
+
+                d_left, d_right = st.columns([1.05, 1.35], gap="large")
+                with d_left:
+                    st.video(sel_v_obj["path"])
+                    st.caption(f"📂 **Folder:** `{sel_v_obj['folder']}` | ⏱️ **Duration:** `{sel_v_obj['duration_sec']}s` | 🎯 **Health Score:** `{sel_v_obj['health_score']}/100`")
+                    st.markdown(f"**🔍 Automated Audit Check:**\n`{sel_v_obj['issues_str']}`")
+
+                with d_right:
+                    if st.button(f"🤖 Ask AI Doctor to Diagnose & Upgrade '{sel_v_obj['folder']}'", key="btn_doc_single", width="stretch"):
+                        with st.spinner("Gemini AI inspecting video metadata, title CTR & tags..."):
+                            st.session_state["paa_single_doc"] = paa.ai_diagnose_and_upgrade_single_video(sel_v_obj)
+                            st.session_state["paa_single_doc_folder"] = sel_v_obj["folder"]
+
+                    if st.session_state.get("paa_single_doc") and st.session_state.get("paa_single_doc_folder") == sel_v_obj["folder"]:
+                        doc = st.session_state["paa_single_doc"]
+                        st.info(f"🩺 **AI Critique ({doc['model_used']}):** {doc['ai_critique']}")
+                        up_t = st.text_input("🏆 AI Upgraded High-CTR Title:", value=doc["upgraded_title"], key=f"doc_t_{sel_v_obj['folder']}")
+                        st.caption(f"💡 *Why this beats the old title:* {doc['why_title_is_better']}")
+                        up_d = st.text_area("📝 AI Upgraded Clean Description (With Your Affiliates):", value=doc["upgraded_description"], height=150, key=f"doc_d_{sel_v_obj['folder']}")
+                        up_p = st.text_input("📌 AI Upgraded Pinned Comment:", value=doc["upgraded_pinned_comment"], key=f"doc_p_{sel_v_obj['folder']}")
+                        up_tags = st.text_area("🏷️ AI Upgraded 380-Char SEO Tags:", value=", ".join(doc["upgraded_tags"]), height=68, key=f"doc_g_{sel_v_obj['folder']}")
+
+                        if st.button(f"🔒 Lock All AI Upgrades Into '{sel_v_obj['folder']}' (100/100 Ready!)", key="btn_lock_doc_up", width="stretch"):
+                            v_p = Path(sel_v_obj["path"])
+                            clean_t_list = backend.sanitize_youtube_tags([t.strip() for t in up_tags.split(",") if t.strip()])
+                            backend.save_clip_metadata(v_p, up_t.strip(), up_d.strip(), clean_t_list, topic=sel_v_obj["topic"])
+                            (v_p.parent / "pinned_comment.txt").write_text(up_p.strip(), encoding="utf-8")
+                            st.cache_data.clear()
+                            st.success(f"🎉 Locked upgraded Title, Description, Pinned Comment & {len(clean_t_list)} Tags into `{sel_v_obj['folder']}`!")
+                            time.sleep(0.5)
+                            st.rerun()
+
+    # --- SUB-TAB 2: ASK YOUR PERSONAL AI ANALYST ---
+    with ana_mode_tab2:
+        with st.container(border=True):
+            st.markdown("#### 💬 Chat With Your Personal AI Channel & Video Strategist")
+            st.caption("Ask anything about your videos—Gemini AI has your full video list, durations, health scores, and views loaded in context!")
+            q_presets = [
+                "Custom Question (Type Below)",
+                "Which 3 of my READY unuploaded videos should I publish first and why?",
+                "Analyze my video titles — which ones have the highest CTR potential and which ones need rewriting?",
+                "How should I balance my 25-second Shorts with my 15-minute Long-Form Soaking Prayers this week?",
+                "Give me a 7-day upload schedule using my existing videos plus new topics."
+            ]
+            q_pick = st.selectbox("⚡ Quick Strategy Questions:", q_presets, index=1, key="paa_q_preset")
+            q_custom = st.text_input(
+                "✍️ Or Ask Your Own Question:",
+                value="" if q_pick != "Custom Question (Type Below)" else "How can I get more views and AMEN comments on my next 5 Shorts?",
+                key="paa_q_custom"
+            )
+            final_q = q_custom.strip() if q_pick == "Custom Question (Type Below)" else q_pick
+            if st.button("🧠 Ask Personal AI Analyst", key="btn_ask_paa", width="stretch"):
+                with st.spinner("Gemini AI analyzing your video library to answer..."):
+                    st.session_state["paa_chat_answer"] = paa.ask_personal_ai_analyst(final_q, all_scanned_vids, channel_name=global_target_ch)
+            if st.session_state.get("paa_chat_answer"):
+                st.markdown("---")
+                st.markdown(st.session_state["paa_chat_answer"])
+
+    # --- SUB-TAB 3: LIVE YOUTUBE CHANNEL ANALYTICS ---
+    with ana_mode_tab3:
+        ctl_c1, ctl_c2, ctl_c3 = st.columns([1.5, 1.2, 1.2])
+        with ctl_c1:
+            stat_ch = st.selectbox("Channel to Audit:", channel_names, key="stats_ch_sel")
+        with ctl_c2:
+            stat_days = st.selectbox("Period:", [28, 90, 365], index=1, format_func=lambda x: f"Last {x} Days", key="stats_period_sel")
+        with ctl_c3:
+            st.markdown("<div style='height:26px;'></div>", unsafe_allow_html=True)
+            if st.button("🔄 Refresh Live YouTube Analytics", key="refresh_stats_btn", width="stretch"):
+                st.session_state[f"full_intel_{stat_ch}_{stat_days}"] = cae.fetch_complete_channel_intelligence(stat_ch, days_back=stat_days)
+                st.rerun()
+
+        cache_k = f"full_intel_{stat_ch}_{stat_days}"
+        intel = st.session_state.get(cache_k)
+        if intel is None:
+            st.info(f"💡 Click **'Refresh Live YouTube Analytics'** above to load live Subscribers, Video Audit, and Geography for **{stat_ch}**.")
+        elif not intel.get("ok"):
+            st.error(f"⚠️ {intel.get('error', 'Could not load data.')}")
+        else:
+            ov = intel["overview"]
+            tot = intel["totals"]
+            vids = intel["videos"]
+            live_views = max(ov["lifetime_views"], sum(v["views"] for v in vids))
+            wh_mins = tot["watch_time_minutes_period"]
+            wh_hrs = round(wh_mins / 60.0, 1)
+
+            r1 = st.columns(4)
+            r1[0].metric("👥 Total Subscribers", f"{ov['subscribers']:,}")
+            r1[1].metric("👁️ Total Channel Views", f"{live_views:,}", f"{tot['shorts_views']:,} Shorts • {tot['longform_views']:,} Long-Form")
+            r1[2].metric("📹 Total Public Videos", f"{max(ov['total_videos'], len(vids)):,}", f"{tot['shorts_count']} Shorts • {tot['longform_count']} Long-Form")
+            r1[3].metric("⏱️ Est. Watch Time", f"{wh_hrs:,.1f} hrs", f"{wh_mins:,} mins")
+
+            r2 = st.columns(4)
+            r2[0].metric("👍 Total Likes", f"{tot['total_likes']:,}")
+            r2[1].metric("💬 Total Comments", f"{tot['total_comments']:,}")
+            r2[2].metric("🔥 Engagement Rate", f"{tot['engagement_rate_pct']:.2f}%")
+            top_v = max([v["views"] for v in vids], default=0)
+            r2[3].metric("🚀 Top Video Views", f"{top_v:,}")
+
+            if vids:
+                st.write("")
+                df_v = pd.DataFrame([{"Rank": f"#{i+1}", "Type": v["type"], "Title": v["title"][:50], "Views": v["views"], "Vel/Day": v["views_per_day"], "Likes": v["likes"], "Comments": v["comments"], "Duration": v["duration_str"], "Date": v["published_date"]} for i, v in enumerate(vids)])
+                st.dataframe(df_v, hide_index=True, width="stretch")
 
 elif "8. AI Engine Tester Lab" in active_nav_tab:
     st.markdown("### 🧪 Live AI Engine Tester & Command Lab (Clean Data • Multi-Engine Studio)")

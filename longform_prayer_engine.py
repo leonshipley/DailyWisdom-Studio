@@ -465,11 +465,13 @@ def synthesize_meditative_voiceover(journey_pkg: Dict[str, Any], out_voice_mp3: 
         is_strong_punct = bool(re.search(r"[.;!?]", w_obj["text"])) or (len(cur_w) >= 4 and "," in w_obj["text"])
         if nxt_len > 44 or len(cur_w) >= 6 or is_strong_punct or i == len(all_word_timings) - 1:
             c_en = all_word_timings[i + 1]["start"] if i + 1 < len(all_word_timings) else (w_obj["end"] + 0.25)
+            t_str = re.sub(r"\[(angry|fierce|rebuke|empathy|sad|comfort|whisper|soft|scripture|verse|warfare|bold|joy|praise|amen|normal|boom|thunder|swell|shimmer|bell)\]", "", t_str, flags=re.IGNORECASE)
             safe_t = re.sub(r"[^a-zA-Z0-9\s:\-',.!?\u0900-\u097F]", "", t_str).strip()
             if safe_t:
                 phrases.append({"text": safe_t, "start": round(c_st, 3), "end": round(c_en, 3)})
             cur_w = []
 
+    (out_voice_mp3.parent / "longform_word_timings.json").write_text(json.dumps({"voice_dur": total_voice_dur, "timings": all_word_timings}, indent=2), encoding="utf-8")
     ass_path = out_voice_mp3.parent / "longform_subtitles.ass"
     ass_lines = [
         "[Script Info]", "ScriptType: v4.00+", "PlayResX: 1920", "PlayResY: 1080", "",
@@ -654,7 +656,25 @@ def _make_lf_thumb(bg_image_path, journey_pkg, out_thumb_jpg, palette_name):
     except Exception:
         pass
 
-def render_longform_16x9_video(master_audio_mp3: Path, out_video_mp4: Path, out_thumb_jpg: Path, journey_pkg: Dict[str, Any], bg_image_path: Path, bg_video_path: Path | None = None, visual_mode: str = "Looping Video Background (Fastest)", palette_name: str = "Gold Classic", subtitle_mode: str = "Instant Render (YouTube CC / .SRT)", progress_cb=None, **kwargs) -> bool:
+def render_longform_16x9_video(
+    master_audio_mp3: Path,
+    out_video_mp4: Path,
+    out_thumb_jpg: Path,
+    journey_pkg: Dict[str, Any],
+    bg_image_path: Path,
+    bg_video_path: Path | None = None,
+    visual_mode: str = "Looping Video Background",
+    palette_name: str = "Gold Classic",
+    subtitle_mode: str = "⚡ Fast Burned-In Subtitles (Synced On-Screen Like Shorts)",
+    sub_font: str = "📜 Sacred Bible Serif (Georgia / Palatino Bold)",
+    sub_size: int = 98,
+    sub_color: str = "✨ Pure White + Deep Shadow",
+    sub_pos: str = "Lower-Middle (Above Bottom Border)",
+    sub_words: int = 5,
+    progress_cb=None,
+    **kwargs
+) -> bool:
+    import time
     from PIL import Image
     w, h = 1920, 1080
     total_dur = get_audio_duration(master_audio_mp3)
@@ -665,10 +685,35 @@ def render_longform_16x9_video(master_audio_mp3: Path, out_video_mp4: Path, out_
     work_dir.mkdir(parents=True, exist_ok=True)
     overlay_png = work_dir / "lf_overlay_16x9.png"
     create_16x9_stage_overlay_png(overlay_png, journey_pkg.get("topic", "Prayer"), journey_pkg.get("scriptures", []), w=w, h=h)
-    
+
     ass_path = out_video_mp4.parent / "longform_subtitles.ass"
-    if not ass_path.exists():
-        ass_path = master_audio_mp3.parent / "longform_subtitles.ass"
+    srt_path = out_video_mp4.parent / "longform_subtitles.srt"
+    timings_file = out_video_mp4.parent / "longform_word_timings.json"
+
+    # Rebuild ASS & SRT with user's chosen Font, Size, Color, Position & Multi-Cycle Sync!
+    if timings_file.exists():
+        try:
+            t_data = json.loads(timings_file.read_text(encoding="utf-8"))
+            build_synced_longform_subtitles(
+                word_timings=t_data.get("timings", []),
+                single_voice_dur=float(t_data.get("voice_dur", total_dur)),
+                target_total_dur=total_dur,
+                interlude_sec=45.0,
+                out_ass_path=ass_path,
+                out_srt_path=srt_path,
+                font_label=sub_font,
+                font_size=sub_size,
+                color_label=sub_color,
+                pos_label=sub_pos,
+                words_per_card=sub_words
+            )
+        except Exception:
+            pass
+
+    # Copy local temp ASS into BASE_DIR so FFmpeg filter path never has Windows drive-colon issues
+    local_temp_ass = BASE_DIR / "temp_lf_active_subs.ass"
+    if ass_path.exists():
+        shutil.copy(ass_path, local_temp_ass)
 
     prebaked_bg_jpg = work_dir / "prebaked_bg_1080p.jpg"
     try:
@@ -684,37 +729,68 @@ def render_longform_16x9_video(master_audio_mp3: Path, out_video_mp4: Path, out_
     except Exception:
         shutil.copy(bg_image_path, prebaked_bg_jpg)
 
-    is_instant_mode = ("Instant" in str(subtitle_mode) or "CC" in str(subtitle_mode) or "SRT" in str(subtitle_mode))
+    is_no_burn_mode = ("No On-Screen" in str(subtitle_mode) or "YouTube CC Only" in str(subtitle_mode))
 
-    if is_instant_mode:
-        if progress_cb: progress_cb(85, "⚡ Pre-baking loop & stream-copying in ~3s...")
+    if is_no_burn_mode:
+        if progress_cb:
+            progress_cb(85, "⚡ Stream-copying 1080p video + embedding soft .SRT subtitles in ~3s...")
         loop_segment = work_dir / "instant_base_loop.mp4"
         if "Video" in visual_mode and bg_video_path and bg_video_path.exists():
             cmd_base = ["ffmpeg", "-y", "-threads", "0", "-stream_loop", "-1", "-t", "16", "-i", str(bg_video_path.absolute()), "-loop", "1", "-t", "16", "-i", str(overlay_png.absolute()), "-filter_complex", f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps=24,format=yuv420p,setsar=1,eq=brightness=-0.07:contrast=1.10[v0];[v0][1:v]overlay=0:0:format=auto,format=yuv420p[vout]", "-map", "[vout]", "-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "24", str(loop_segment.absolute())]
         else:
             cmd_base = ["ffmpeg", "-y", "-threads", "0", "-loop", "1", "-t", "16", "-i", str(prebaked_bg_jpg.absolute()), "-vf", f"scale={w}:{h},fps=24,format=yuv420p", "-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "24", str(loop_segment.absolute())]
         subprocess.run(cmd_base, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
+
         if loop_segment.exists() and loop_segment.stat().st_size > 5000:
-            if progress_cb: progress_cb(92, "⚡ Muxing master video & audio...")
             cmd_instant = ["ffmpeg", "-y", "-stream_loop", "-1", "-i", str(loop_segment.absolute()), "-i", str(master_audio_mp3.absolute()), "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-t", f"{total_dur:.2f}", str(out_video_mp4.absolute())]
             r_inst = subprocess.run(cmd_instant, capture_output=True, text=True, encoding="utf-8", errors="replace")
             if r_inst.returncode == 0 and out_video_mp4.exists():
                 _make_lf_thumb(bg_image_path, journey_pkg, out_thumb_jpg, palette_name)
                 return True
 
-    sub_filter_str = f"subtitles='{ass_path.absolute().as_posix()}'" if ass_path.exists() else "null"
+    # ⚡ TURBO BURNED-IN SUBTITLES ENGINE (Uses GPU NVENC/QSV or 15fps Ultrafast Still-Image Tuning!)
+    sub_filter_str = "subtitles='temp_lf_active_subs.ass'" if local_temp_ass.exists() else "null"
     enc_name, enc_opts = detect_hardware_video_encoder()
 
     if "Video" in visual_mode and bg_video_path and bg_video_path.exists():
-        filter_complex = f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps=24,format=yuv420p,setsar=1,eq=brightness=-0.07:contrast=1.10[v0];[v0][1:v]overlay=0:0:format=auto,{sub_filter_str}[vout]"
-        inputs = ["-stream_loop", "-1", "-t", f"{total_dur:.2f}", "-i", str(bg_video_path.absolute()), "-loop", "1", "-t", f"{total_dur:.2f}", "-i", str(overlay_png.absolute()), "-i", str(master_audio_mp3.absolute()), "-filter_complex", filter_complex, "-map", "[vout]", "-map", "2:a:0"]
-    else:
-        filter_complex = f"[0:v]scale={w}:{h},fps=24,format=yuv420p,{sub_filter_str}[vout]"
-        inputs = ["-loop", "1", "-t", f"{total_dur:.2f}", "-i", str(prebaked_bg_jpg.absolute()), "-i", str(master_audio_mp3.absolute()), "-filter_complex", filter_complex, "-map", "[vout]", "-map", "1:a:0"]
+        # Pre-bake a 16-second 1080p background loop first so FFmpeg doesn't rescale + alpha-composite every frame!
+        prebaked_vid_loop = work_dir / "prebaked_vid_loop.mp4"
+        subprocess.run([
+            "ffmpeg", "-y", "-threads", "0",
+            "-stream_loop", "-1", "-t", "16", "-i", str(bg_video_path.absolute()),
+            "-loop", "1", "-t", "16", "-i", str(overlay_png.absolute()),
+            "-filter_complex", f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},fps=20,format=yuv420p,setsar=1,eq=brightness=-0.07:contrast=1.10[v0];[v0][1:v]overlay=0:0:format=auto,format=yuv420p[vout]",
+            "-map", "[vout]", "-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", str(prebaked_vid_loop.absolute())
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    cmd = ["ffmpeg", "-y", "-threads", "0", *inputs, "-c:v", enc_name, *enc_opts, "-c:a", "aac", "-b:a", "128k", "-t", f"{total_dur:.2f}", "-progress", "pipe:1", str(out_video_mp4.absolute())]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True, encoding="utf-8", errors="replace")
+        filter_complex = f"[0:v]{sub_filter_str}[vout]"
+        inputs = [
+            "-stream_loop", "-1", "-t", f"{total_dur:.2f}", "-i", str(prebaked_vid_loop.absolute()),
+            "-i", str(master_audio_mp3.absolute()),
+            "-filter_complex", filter_complex, "-map", "[vout]", "-map", "1:a:0"
+        ]
+    else:
+        # Static prebaked 1080p wallpaper + burned-in subtitles at 15fps with stillimage tuning (5x faster!)
+        if enc_name == "libx264":
+            enc_opts = ["-preset", "ultrafast", "-tune", "stillimage", "-crf", "24"]
+        filter_complex = f"[0:v]fps=15,format=yuv420p,{sub_filter_str}[vout]"
+        inputs = [
+            "-loop", "1", "-framerate", "15", "-t", f"{total_dur:.2f}", "-i", str(prebaked_bg_jpg.absolute()),
+            "-i", str(master_audio_mp3.absolute()),
+            "-filter_complex", filter_complex, "-map", "[vout]", "-map", "1:a:0"
+        ]
+
+    cmd = [
+        "ffmpeg", "-y", "-threads", "0",
+        *inputs,
+        "-c:v", enc_name, *enc_opts,
+        "-c:a", "aac", "-b:a", "128k",
+        "-t", f"{total_dur:.2f}",
+        "-progress", "pipe:1",
+        str(out_video_mp4.absolute())
+    ]
+
+    proc = subprocess.Popen(cmd, cwd=str(BASE_DIR), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True, encoding="utf-8", errors="replace")
     last_ui_update = 0.0
     if proc.stdout:
         for line in proc.stdout:
@@ -723,12 +799,15 @@ def render_longform_16x9_video(master_audio_mp3: Path, out_video_mp4: Path, out_
                     us_val = int(line.strip().split("=")[1])
                     curr_sec = us_val / 1000000.0
                     now_t = time.time()
-                    if (now_t - last_ui_update) >= 1.2:
+                    if (now_t - last_ui_update) >= 0.8:
                         last_ui_update = now_t
                         pct = min(99, int(80 + (curr_sec / max(1.0, total_dur)) * 19))
-                        if progress_cb: progress_cb(pct, f"🎬 Rendering 1080p Video: {format_mm_ss(curr_sec)} / {format_mm_ss(total_dur)}")
-                except Exception: pass
+                        if progress_cb:
+                            progress_cb(pct, f"⚡ Burning Synced Subtitles ({sub_font.split('(')[0].strip()}, {sub_size}px): {format_mm_ss(curr_sec)} / {format_mm_ss(total_dur)}")
+                except Exception:
+                    pass
     proc.wait()
+    local_temp_ass.unlink(missing_ok=True)
     _make_lf_thumb(bg_image_path, journey_pkg, out_thumb_jpg, palette_name)
     return proc.returncode == 0 and out_video_mp4.exists()
 
@@ -790,3 +869,198 @@ Disclaimer: As an Amazon Associate, I earn from qualifying purchases at no extra
     raw_tag_candidates = [f"{topic} Prayer", f"Prayer for {topic}", f"{dur_lbl} Christian Prayer", "Deep Soul Prayer", "Soaking Prayer", "Christian Meditation", "Bible Verses For Sleep", "Jesus Christ"] + [v.replace(":", " ") for v in all_refs[:6]] + hashtags
     packed_tags = vr.pack_tags_to_limit(topic, hashtags, raw_tag_candidates, max_chars=380)
     return ai_title, desc, packed_tags
+
+
+def ai_direct_longform_5chapters(journey_pkg: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, str]]]:
+    """
+    Uses AI Preacher Director to inject chapter-specific Preacher Emotion Tags ([empathy], [scripture],
+    [angry], [warfare], [joy], [amen]), Sacred SFX ([swell], [shimmer], [boom], [bell]), and *WORD EMPHASIS*
+    across all 5 chapters of a Long-Form Soaking Prayer or Chapter Reading!
+    """
+    import preacher_audio_engine as pae
+
+    chapter_arc_defaults = [
+        ("🥺 Empathy & Surrender", "[empathy] [swell]"),
+        ("📖 Reverent Scripture Authority", "[scripture] [shimmer]"),
+        ("😡🔥 Fierce Spiritual Warfare & Rebuke", "[angry] [boom]"),
+        ("✨ Prophetic Blessing & Overflow", "[joy] [swell]"),
+        ("🙏 Deep Peace & Benediction", "[amen] [bell]"),
+    ]
+
+    cue_summary = []
+    stages = journey_pkg.get("stages", [])
+    for idx, stg in enumerate(stages):
+        arc_label, default_prefix = chapter_arc_defaults[min(idx, len(chapter_arc_defaults) - 1)]
+        raw_txt = stg.get("full_text", "") or stg.get("spoken_script", "")
+        clean_raw = pae.strip_emotion_tags(raw_txt)
+
+        # Direct with Gemini AI (or smart chapter-aware prosody injector)
+        directed_txt, ai_note = pae.ai_direct_preacher_script(
+            clean_raw,
+            topic=f"{journey_pkg.get('topic', 'Prayer')} - Chapter {stg.get('stage_num', idx+1)}: {stg.get('chapter_title', '')} ({arc_label})"
+        )
+
+        # Guarantee the chapter starts with its signature emotional tone & sacred SFX cue
+        if not re.search(r"\[(angry|empathy|whisper|warfare|scripture|joy|amen)\]", directed_txt[:45], re.IGNORECASE):
+            directed_txt = f"{default_prefix} {directed_txt}"
+
+        sents = [s.strip() for s in re.split(r"(?<=[.!?।])\s+", directed_txt) if s.strip()]
+        paras = [" ".join(sents[i:i+3]) for i in range(0, len(sents), 3)] if len(sents) > 3 else [directed_txt]
+
+        stg["full_text"] = "\n\n".join(paras)
+        stg["spoken_script"] = directed_txt
+        stg["paragraphs"] = paras
+        stg["ai_tone_arc"] = arc_label
+        if idx < len(journey_pkg.get("chapters", [])):
+            journey_pkg["chapters"][idx]["spoken_script"] = directed_txt
+
+        # Count tags for visual summary table
+        emotions_found = re.findall(r"\[(angry|empathy|whisper|warfare|scripture|joy|amen)\]", directed_txt, re.IGNORECASE)
+        sfx_found = re.findall(r"\[(boom|shimmer|swell|bell)\]", directed_txt, re.IGNORECASE)
+        emph_words = re.findall(r"\*([^*]+)\*", directed_txt)
+
+        cue_summary.append({
+            "Chapter": f"Ch {stg.get('stage_num', idx+1)}: {stg.get('chapter_title', '')[:28]}",
+            "Preacher Tone Arc": arc_label,
+            "Emotion Shifts": ", ".join(dict.fromkeys([f"[{e.lower()}]" for e in emotions_found])) or default_prefix.split()[0],
+            "Sacred SFX": ", ".join(dict.fromkeys([f"🔔 {s.lower()}" for s in sfx_found])) or "Auto",
+            "Power Words (*PUNCH*)": ", ".join(emph_words[:4]) if emph_words else "Auto Cadence"
+        })
+
+    return journey_pkg, cue_summary
+
+
+LONGFORM_FONT_OPTIONS = {
+    "📜 Sacred Bible Serif (Georgia / Palatino Bold)": "Georgia",
+    "📖 Classical Scripture Antiqua (Book Antiqua)": "Book Antiqua",
+    "🕊️ Sacred Cathedral Serif (Cambria Bold)": "Cambria",
+    "✨ Ancient Scripture Serif (Palatino Linotype)": "Palatino Linotype",
+    "👑 Segoe UI Bold (Modern Clean Preacher)": "Segoe UI",
+    "🇮🇳 Nirmala UI Bold (Bilingual Hindi + English)": "Nirmala UI",
+    "⚡ Arial Black (Ultra-Bold Modern)": "Arial Black",
+}
+
+LONGFORM_COLOR_THEMES = {
+    "✨ Pure White + Deep Shadow": ("&H00FFFFFF", "&H90000000", 1),
+    "🏆 Sacred Gold + Black Stroke": ("&H0037B9EB", "&H90000000", 1),
+    "💎 Semi-Transparent Glass White (Shorts Style)": ("&H35FFFFFF", "&H80000000", 1),
+    "📦 White Text Inside Dark Cinema Box": ("&H00FFFFFF", "&H96080C14", 3),
+    "🌟 Warm Sunlight Yellow + Black Stroke": ("&H0047E0FD", "&H95000000", 1),
+}
+
+LONGFORM_POSITIONS = {
+    "Center Screen (Eye-Level Like Shorts)": (5, 30),
+    "Lower-Middle (Above Bottom Border)": (2, 135),
+    "Classic Cinema Bottom": (2, 75),
+}
+
+def build_synced_longform_subtitles(
+    word_timings: List[Dict[str, Any]],
+    single_voice_dur: float,
+    target_total_dur: float,
+    interlude_sec: float,
+    out_ass_path: Path,
+    out_srt_path: Path,
+    font_label: str = "📜 Sacred Bible Serif (Georgia / Palatino Bold)",
+    font_size: int = 98,
+    color_label: str = "✨ Pure White + Deep Shadow",
+    pos_label: str = "Lower-Middle (Above Bottom Border)",
+    words_per_card: int = 5
+):
+    """
+    1. Groups millisecond word timings into clean subtitle phrases.
+    2. Repeats & offsets those exact phrases across every soaking cycle (voice_dur + 45s interlude)
+       so subtitles are 100% synced for the ENTIRE 5m/15m/30m/1Hr video!
+    3. Applies the user's chosen Font, Size, Color/Box Theme, and Screen Position!
+    """
+    import preacher_audio_engine as pae
+
+    max_w = max(2, int(words_per_card))
+    max_chars = max_w * 8 + 6
+
+    base_phrases = []
+    cur_w = []
+    c_st = 0.0
+    for i, w_obj in enumerate(word_timings):
+        w_clean = pae.strip_emotion_tags(str(w_obj.get("text", ""))).strip()
+        if not w_clean:
+            continue
+        if not cur_w:
+            c_st = float(w_obj["start"])
+        cur_w.append(w_clean)
+        t_str = " ".join(cur_w)
+        nxt_len = len(t_str) + (len(word_timings[i + 1]["text"]) + 1 if i + 1 < len(word_timings) else 0)
+        is_strong_punct = bool(re.search(r"[.;!?।]", w_clean)) or (len(cur_w) >= 3 and "," in w_clean)
+
+        if nxt_len > max_chars or len(cur_w) >= max_w or is_strong_punct or i == len(word_timings) - 1:
+            c_en = float(word_timings[i + 1]["start"]) if i + 1 < len(word_timings) else (float(w_obj["end"]) + 0.25)
+            safe_t = re.sub(r"[^a-zA-Z0-9\s:\-',.!?\u0900-\u097F]", "", t_str).strip()
+            if safe_t:
+                base_phrases.append({"text": safe_t, "start": round(c_st, 3), "end": round(c_en, 3)})
+            cur_w = []
+
+    # Expand across all soaking cycles so subtitles never stop after cycle 1!
+    cycle_span = max(10.0, float(single_voice_dur) + float(interlude_sec))
+    cycles_needed = max(1, int(float(target_total_dur) // cycle_span) + 2)
+    all_phrases = []
+    for cyc in range(cycles_needed):
+        offset = cyc * cycle_span
+        if offset >= target_total_dur:
+            break
+        for bp in base_phrases:
+            st_c = round(bp["start"] + offset, 3)
+            en_c = round(min(target_total_dur, bp["end"] + offset), 3)
+            if st_c >= target_total_dur:
+                break
+            all_phrases.append({"text": bp["text"], "start": st_c, "end": max(st_c + 0.15, en_c)})
+
+        # During the 45s soaking music interlude, show a peaceful meditative prompt
+        interlude_start = offset + single_voice_dur + 2.0
+        interlude_end = min(target_total_dur, offset + cycle_span - 2.0)
+        if interlude_end - interlude_start > 5.0:
+            all_phrases.append({
+                "text": "Breathe deeply and rest in God's presence... Type AMEN in the comments.",
+                "start": round(interlude_start, 3),
+                "end": round(interlude_end, 3)
+            })
+
+    font_name = LONGFORM_FONT_OPTIONS.get(font_label, "Segoe UI")
+    pri_col, back_col, border_style = LONGFORM_COLOR_THEMES.get(color_label, ("&H00FFFFFF", "&H90000000", 1))
+    align_val, margin_v = LONGFORM_POSITIONS.get(pos_label, (2, 135))
+    f_sz = max(32, min(96, int(font_size)))
+
+    ass_lines = [
+        "[Script Info]",
+        "ScriptType: v4.00+",
+        "PlayResX: 1920",
+        "PlayResY: 1080",
+        "",
+        "[V4+ Styles]",
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+        f"Style: LongFormSubs,{font_name},{f_sz},{pri_col},&H0000D4FF,&H95000000,{back_col},-1,0,0,0,100,100,0,0,{border_style},5,3,{align_val},100,100,{margin_v},1",
+        "",
+        "[Events]",
+        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
+    ]
+
+    for p in all_phrases:
+        t_s = p["text"]
+        w_p = t_s.split()
+        if len(t_s) > 20 and len(w_p) >= 3:
+            mid_w = len(w_p) // 2
+            l1, l2 = " ".join(w_p[:mid_w]), " ".join(w_p[mid_w:])
+            disp = f"{l1}\\N{l2}"
+        else:
+            disp = t_s
+        st_t = _sec_to_ass_time_lf(p["start"])
+        en_t = _sec_to_ass_time_lf(p["end"])
+        ass_lines.append(f"Dialogue: 0,{st_t},{en_t},LongFormSubs,,0,0,0,,{{\\fs{f_sz}}}{disp}")
+
+    out_ass_path.write_text("\n".join(ass_lines), encoding="utf-8")
+
+    srt_blocks = []
+    for idx_s, p in enumerate(all_phrases, start=1):
+        st_srt = _sec_to_srt_time(p["start"])
+        en_srt = _sec_to_srt_time(p["end"])
+        srt_blocks.append(f"{idx_s}\n{st_srt} --> {en_srt}\n{p['text']}\n")
+    out_srt_path.write_text("\n".join(srt_blocks), encoding="utf-8")

@@ -510,7 +510,7 @@ def render_grace_3scene_short(
         sticker_path, total_dur, position=sticker_position, timing=sticker_timing
     )
     if has_bgm and bgm_audio:
-        inputs.extend(["-stream_loop", "-1", "-t", f"{total_dur:.2f}", "-i", str(Path(bgm_audio).absolute())])
+        inputs.extend(["-stream_loop", "-1", "-i", str(Path(bgm_audio).absolute())])
     if stk_inputs:
         inputs.extend(stk_inputs)
         filter_complex = filter_complex.replace("[vout];", f"[vout];[6:v]{stk_filter};")

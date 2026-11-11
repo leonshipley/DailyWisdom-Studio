@@ -1414,7 +1414,7 @@ def render_complete_3min_story_movie(
 
             "-i", str(merged_no_bgm.absolute()),
 
-            "-stream_loop", "-1", "-t", f"{total_movie_dur:.2f}", "-i", str(Path(bgm_file).absolute()),
+            "-stream_loop", "-1", "-i", str(Path(bgm_file).absolute()),
 
             "-filter_complex",
 

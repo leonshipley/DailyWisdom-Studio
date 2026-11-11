@@ -1,0 +1,47 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: LongFormSubs,Segoe UI,58,&H00FFFFFF,&H0000D4FF,&H95000000,&H90000000,-1,0,0,0,100,100,0,0,1,4,3,5,120,120,30,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.10,0:00:01.22,LongFormSubs,,0,0,0,,{\fs58}Welcome to the reading
+Dialogue: 0,0:00:01.22,0:00:03.98,LongFormSubs,,0,0,0,,{\fs58}of God's Holy Word
+Dialogue: 0,0:00:03.98,0:00:05.41,LongFormSubs,,0,0,0,,{\fs58}Today we are reading
+Dialogue: 0,0:00:05.41,0:00:06.07,LongFormSubs,,0,0,0,,{\fs58}from the book of
+Dialogue: 0,0:00:06.07,0:00:11.57,LongFormSubs,,0,0,0,,{\fs58}Psalms chapter\N117 Let your
+Dialogue: 0,0:00:11.57,0:00:14.07,LongFormSubs,,0,0,0,,{\fs58}be still and His
+Dialogue: 0,0:00:14.07,0:00:23.74,LongFormSubs,,0,0,0,,{\fs58}truth Verse 1 O
+Dialogue: 0,0:00:23.74,0:00:24.85,LongFormSubs,,0,0,0,,{\fs58}the LORD all ye
+Dialogue: 0,0:00:24.85,0:00:26.59,LongFormSubs,,0,0,0,,{\fs58}nations praise him all
+Dialogue: 0,0:00:26.59,0:00:31.86,LongFormSubs,,0,0,0,,{\fs58}ye people Verse 2
+Dialogue: 0,0:00:31.86,0:00:33.24,LongFormSubs,,0,0,0,,{\fs58}For his merciful kindness
+Dialogue: 0,0:00:33.24,0:00:35.51,LongFormSubs,,0,0,0,,{\fs58}is toward us and
+Dialogue: 0,0:00:35.51,0:00:36.19,LongFormSubs,,0,0,0,,{\fs58}the truth of the
+Dialogue: 0,0:00:36.19,0:00:38.80,LongFormSubs,,0,0,0,,{\fs58}LORD endureth Praise ye
+Dialogue: 0,0:00:38.80,0:00:45.16,LongFormSubs,,0,0,0,,{\fs58}the LORD May the
+Dialogue: 0,0:00:45.16,0:00:47.09,LongFormSubs,,0,0,0,,{\fs58}Lord the reading of
+Dialogue: 0,0:00:47.09,0:00:48.31,LongFormSubs,,0,0,0,,{\fs58}His Holy Word and
+Dialogue: 0,0:00:48.31,0:00:51.20,LongFormSubs,,0,0,0,,{\fs58}may it bring and
+Dialogue: 0,0:00:51.20,0:00:53.49,LongFormSubs,,0,0,0,,{\fs58}to your soul In
+Dialogue: 0,0:00:53.49,0:01:00.66,LongFormSubs,,0,0,0,,{\fs58}Jesus' name Amen Verse
+Dialogue: 0,0:01:00.66,0:01:04.51,LongFormSubs,,0,0,0,,{\fs58}7 Thou hast put
+Dialogue: 0,0:01:04.51,0:01:05.76,LongFormSubs,,0,0,0,,{\fs58}in my heart more
+Dialogue: 0,0:01:05.76,0:01:06.48,LongFormSubs,,0,0,0,,{\fs58}than in the time
+Dialogue: 0,0:01:06.48,0:01:07.33,LongFormSubs,,0,0,0,,{\fs58}that their corn and
+Dialogue: 0,0:01:07.33,0:01:10.26,LongFormSubs,,0,0,0,,{\fs58}their wine increased Verse
+Dialogue: 0,0:01:10.26,0:01:15.17,LongFormSubs,,0,0,0,,{\fs58}8 I will both
+Dialogue: 0,0:01:15.17,0:01:16.55,LongFormSubs,,0,0,0,,{\fs58}me down in peace
+Dialogue: 0,0:01:16.55,0:01:18.24,LongFormSubs,,0,0,0,,{\fs58}and sleep for thou
+Dialogue: 0,0:01:18.24,0:01:19.79,LongFormSubs,,0,0,0,,{\fs58}LORD only makest me
+Dialogue: 0,0:01:19.79,0:01:26.34,LongFormSubs,,0,0,0,,{\fs58}dwell in May the
+Dialogue: 0,0:01:26.34,0:01:28.18,LongFormSubs,,0,0,0,,{\fs58}Lord the reading of
+Dialogue: 0,0:01:28.18,0:01:29.36,LongFormSubs,,0,0,0,,{\fs58}His Holy Word and
+Dialogue: 0,0:01:29.36,0:01:30.17,LongFormSubs,,0,0,0,,{\fs58}may it bring deep
+Dialogue: 0,0:01:30.17,0:01:32.02,LongFormSubs,,0,0,0,,{\fs58}peace and to your
+Dialogue: 0,0:01:32.02,0:01:36.26,LongFormSubs,,0,0,0,,{\fs58}soul In name Amen
+Dialogue: 0,0:01:43.34,0:02:02.98,LongFormSubs,,0,0,0,,{\fs58}Breathe deeply and rest in God's\Npresence... Type AMEN in the comments.

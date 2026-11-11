@@ -7,256 +7,271 @@
   {
     "text": "your",
     "start": 0.297,
-    "end": 0.493
+    "end": 0.48
   },
   {
     "text": "heart",
-    "start": 0.506,
-    "end": 0.792
+    "start": 0.493,
+    "end": 0.779
   },
   {
     "text": "feels",
-    "start": 0.805,
-    "end": 1.456
+    "start": 0.792,
+    "end": 1.144
+  },
+  {
+    "text": "broken",
+    "start": 1.157,
+    "end": 1.626
   },
   {
     "text": "and",
-    "start": 2.357,
-    "end": 2.526
+    "start": 1.639,
+    "end": 1.743
   },
   {
     "text": "exhausted",
-    "start": 2.539,
-    "end": 3.164
+    "start": 1.756,
+    "end": 2.368
   },
   {
     "text": "tonight",
-    "start": 3.177,
-    "end": 3.724
+    "start": 2.381,
+    "end": 2.902
   },
   {
     "text": "take",
-    "start": 5.174,
-    "end": 5.421
+    "start": 4.358,
+    "end": 4.605
   },
   {
     "text": "a",
-    "start": 5.434,
-    "end": 5.539
+    "start": 4.619,
+    "end": 4.723
   },
   {
     "text": "deep",
-    "start": 5.552,
-    "end": 5.838
+    "start": 4.736,
+    "end": 5.022
   },
   {
     "text": "breath",
-    "start": 5.851,
-    "end": 6.346
+    "start": 5.035,
+    "end": 5.53
   },
   {
     "text": "Enough",
-    "start": 7.79,
-    "end": 8.144
+    "start": 6.974,
+    "end": 7.328
   },
   {
     "text": "is",
-    "start": 8.155,
-    "end": 8.565
+    "start": 7.339,
+    "end": 7.749
   },
   {
     "text": "The",
-    "start": 9.962,
-    "end": 10.117
+    "start": 9.146,
+    "end": 9.301
   },
   {
     "text": "devil",
-    "start": 10.128,
-    "end": 10.438
+    "start": 9.312,
+    "end": 9.633
   },
   {
     "text": "is",
-    "start": 10.449,
-    "end": 10.548
+    "start": 9.644,
+    "end": 9.744
   },
   {
     "text": "a",
-    "start": 10.56,
-    "end": 10.626
+    "start": 9.755,
+    "end": 9.821
   },
   {
     "text": "liar",
-    "start": 10.637,
-    "end": 11.079
+    "start": 9.832,
+    "end": 10.275
   },
   {
     "text": "and",
-    "start": 11.091,
-    "end": 11.168
+    "start": 10.286,
+    "end": 10.352
   },
   {
     "text": "he",
-    "start": 11.179,
-    "end": 11.268
+    "start": 10.363,
+    "end": 10.452
   },
   {
     "text": "cannot",
-    "start": 11.279,
-    "end": 11.588
+    "start": 10.463,
+    "end": 10.772
   },
   {
     "text": "have",
-    "start": 11.599,
-    "end": 11.787
+    "start": 10.783,
+    "end": 10.96
   },
   {
     "text": "your",
-    "start": 11.799,
-    "end": 12.141
+    "start": 10.971,
+    "end": 11.071
+  },
+  {
+    "text": "family",
+    "start": 11.082,
+    "end": 11.591
   },
   {
     "text": "Psalm",
-    "start": 13.32,
-    "end": 13.79
+    "start": 12.768,
+    "end": 13.238
   },
   {
     "text": "34",
-    "start": 13.804,
-    "end": 14.57
+    "start": 13.252,
+    "end": 14.018
   },
   {
     "text": "verse",
-    "start": 14.825,
-    "end": 15.121
+    "start": 14.273,
+    "end": 14.569
   },
   {
     "text": "18",
-    "start": 15.134,
-    "end": 15.591
+    "start": 14.582,
+    "end": 15.039
   },
   {
     "text": "declares",
-    "start": 15.605,
-    "end": 16.29
+    "start": 15.053,
+    "end": 15.738
   },
   {
     "text": "The",
-    "start": 16.572,
-    "end": 16.707
+    "start": 16.02,
+    "end": 16.155
   },
   {
     "text": "Lord",
-    "start": 16.72,
-    "end": 17.029
+    "start": 16.168,
+    "end": 16.477
   },
   {
     "text": "is",
-    "start": 17.043,
-    "end": 17.177
+    "start": 16.491,
+    "end": 16.625
   },
   {
     "text": "near",
-    "start": 17.191,
-    "end": 17.433
+    "start": 16.639,
+    "end": 16.881
   },
   {
     "text": "to",
-    "start": 17.446,
-    "end": 17.54
+    "start": 16.894,
+    "end": 16.988
   },
   {
     "text": "the",
-    "start": 17.554,
-    "end": 17.648
+    "start": 17.002,
+    "end": 17.096
   },
   {
     "text": "brokenhearted",
-    "start": 17.661,
-    "end": 18.508
+    "start": 17.109,
+    "end": 17.956
   },
   {
     "text": "In",
-    "start": 19.954,
-    "end": 20.098
+    "start": 19.402,
+    "end": 19.546
   },
   {
     "text": "the",
-    "start": 20.11,
-    "end": 20.17
+    "start": 19.558,
+    "end": 19.618
   },
   {
     "text": "mighty",
-    "start": 20.182,
-    "end": 20.495
+    "start": 19.63,
+    "end": 19.931
   },
   {
     "text": "name",
-    "start": 20.507,
-    "end": 20.783
+    "start": 19.943,
+    "end": 20.207
   },
   {
     "text": "of",
-    "start": 20.795,
-    "end": 21.012
+    "start": 20.219,
+    "end": 20.34
+  },
+  {
+    "text": "Jesus",
+    "start": 20.352,
+    "end": 20.916
   },
   {
     "text": "break",
-    "start": 21.216,
-    "end": 21.505
+    "start": 21.121,
+    "end": 21.409
   },
   {
     "text": "every",
-    "start": 21.517,
-    "end": 21.757
+    "start": 21.421,
+    "end": 21.674
   },
   {
     "text": "chain",
-    "start": 21.769,
-    "end": 22.142
+    "start": 21.686,
+    "end": 22.034
   },
   {
     "text": "of",
-    "start": 22.154,
-    "end": 22.262
+    "start": 22.046,
+    "end": 22.154
   },
   {
     "text": "fear",
-    "start": 22.274,
-    "end": 22.622
+    "start": 22.167,
+    "end": 22.503
   },
   {
     "text": "right",
-    "start": 22.634,
-    "end": 22.839
+    "start": 22.515,
+    "end": 22.719
   },
   {
     "text": "now",
-    "start": 22.851,
-    "end": 23.211
+    "start": 22.731,
+    "end": 23.092
   },
   {
     "text": "Rest",
-    "start": 24.502,
-    "end": 24.846
+    "start": 24.382,
+    "end": 24.726
   },
   {
     "text": "in",
-    "start": 24.857,
-    "end": 24.915
+    "start": 24.737,
+    "end": 24.795
   },
   {
     "text": "His",
-    "start": 24.926,
-    "end": 25.052
+    "start": 24.806,
+    "end": 24.932
   },
   {
     "text": "peace",
-    "start": 25.064,
-    "end": 25.465
+    "start": 24.944,
+    "end": 25.345
   },
   {
     "text": "Amen",
-    "start": 25.649,
-    "end": 26.073
+    "start": 25.529,
+    "end": 25.953
   }
 ]

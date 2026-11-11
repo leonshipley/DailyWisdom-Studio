@@ -3,7 +3,7 @@
   "sfx_enabled": true,
   "sfx_vol": 0.45,
   "reverb_enabled": true,
-  "sfx_shimmer": true,
+  "sfx_shimmer": false,
   "sfx_swell": true,
   "sfx_boom": true,
   "sfx_bell": true,
@@ -29,5 +29,8 @@
   "amen_rate": 5,
   "amen_vol": 4,
   "sentence_overrides": {},
+  "tts_engine": "\ud83c\udf99\ufe0f Edge-TTS + Preacher Pitch/Speed Modulator (Fast Standard Neural)",
+  "gemini_acting_voice": "Charon \u2014 Deep Gravelly Pulpit Preacher (Male)",
+  "custom_feeling_prompt": "Start with deep tearful empathy and a soft sigh, build into fiery righteous preacher authority on power words, and finish with a warm, slow, comforting whisper on Amen.",
   "auto_ai_direct": true
 }
